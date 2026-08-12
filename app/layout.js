@@ -1,14 +1,20 @@
-import { Cairo } from "next/font/google";
+import { IBM_Plex_Sans_Arabic, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const cairo = Cairo({
-  variable: "--font-cairo",
+const plexArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-arabic",
   subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-latin",
+  subsets: ["latin"],
 });
 
 export const metadata = {
-  title: "احسم",
-  description: "مساعد القرارات الذكي والمرح",
+  title: "احسم — مساعد القرارات",
+  description: "اكتب خياراتك، جاوب أسئلة سريعة، وأحسمها لك — مع السبب.",
 };
 
 export default function RootLayout({ children }) {
@@ -16,7 +22,7 @@ export default function RootLayout({ children }) {
     <html
       lang="ar"
       dir="rtl"
-      className={`${cairo.variable} h-full antialiased`}
+      className={`${plexArabic.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

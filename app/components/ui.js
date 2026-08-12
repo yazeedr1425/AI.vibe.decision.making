@@ -1,16 +1,20 @@
 "use client";
 
-// عناصر مشتركة بسيطة — تشتغل في الوضع الفاتح والغامق بدون إعداد إضافي
+// عناصر مشتركة مبنية على لوحة التصميم الجديدة
+
+export function Tag({ children, className = "" }) {
+  return <span className={"tag " + className}>{children}</span>;
+}
 
 export function Choice({ selected, children, className = "", ...props }) {
   return (
     <button
       type="button"
       className={
-        "rounded-full px-4 py-2 text-sm transition-colors " +
+        "rounded-full px-4 py-2 text-sm transition-all " +
         (selected
-          ? "bg-foreground text-background"
-          : "border border-foreground/15 hover:border-foreground/40") +
+          ? "bg-accent text-accent-ink shadow-[0_2px_0_0_var(--foreground)]"
+          : "border border-line bg-card hover:border-foreground/40") +
         " " +
         className
       }
@@ -26,8 +30,10 @@ export function PrimaryButton({ children, className = "", ...props }) {
     <button
       type="button"
       className={
-        "rounded-full bg-foreground px-6 py-3 font-medium text-background " +
-        "transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-30 " +
+        "rounded-full bg-accent px-7 py-3.5 font-semibold text-accent-ink " +
+        "shadow-[0_3px_0_0_var(--foreground)] transition-all " +
+        "hover:translate-y-px hover:shadow-[0_2px_0_0_var(--foreground)] " +
+        "disabled:cursor-not-allowed disabled:bg-line disabled:text-muted disabled:shadow-none " +
         className
       }
       {...props}
@@ -42,8 +48,8 @@ export function GhostButton({ children, className = "", ...props }) {
     <button
       type="button"
       className={
-        "rounded-full border border-foreground/15 px-5 py-2.5 text-sm " +
-        "transition-colors hover:border-foreground/40 " +
+        "rounded-full border border-line bg-card px-5 py-2.5 text-sm " +
+        "transition-colors hover:border-foreground/40 disabled:opacity-40 " +
         className
       }
       {...props}
@@ -57,7 +63,7 @@ export function Card({ children, className = "" }) {
   return (
     <section
       className={
-        "rounded-3xl border border-foreground/10 p-6 sm:p-8 " + className
+        "rounded-3xl border border-line bg-card p-6 sm:p-8 " + className
       }
     >
       {children}
@@ -65,24 +71,29 @@ export function Card({ children, className = "" }) {
   );
 }
 
-export function Stepper({ steps, current }) {
-  const index = steps.findIndex((s) => s.id === current);
+// عنوان قسم: ليبل لاتيني صغير فوق عنوان عربي
+export function SectionHeading({ tag, title, sub, className = "" }) {
   return (
-    <div className="flex items-center justify-center gap-2">
-      {steps.map((s, i) => (
-        <span
-          key={s.id}
-          title={s.label}
-          className={
-            "h-1.5 rounded-full transition-all " +
-            (i === index
-              ? "w-8 bg-foreground"
-              : i < index
-                ? "w-4 bg-foreground/40"
-                : "w-4 bg-foreground/15")
-          }
+    <header className={"flex flex-col gap-1.5 " + className}>
+      {tag && <Tag>{tag}</Tag>}
+      <h2 className="text-2xl font-bold sm:text-3xl">{title}</h2>
+      {sub && <p className="text-sm text-muted">{sub}</p>}
+    </header>
+  );
+}
+
+export function Progress({ current, total }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Tag>
+        {current}/{total}
+      </Tag>
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-line">
+        <div
+          className="h-full rounded-full bg-accent transition-all duration-500"
+          style={{ width: `${(current / total) * 100}%` }}
         />
-      ))}
+      </div>
     </div>
   );
 }

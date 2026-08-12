@@ -1,25 +1,42 @@
 @import "tailwindcss";
 
+/* لوحة الألوان من ملف التصميم — تصميم فاتح فقط.
+   ما فيه وضع غامق في الموك أب، فما اخترعنا واحد. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf6ef;
+  --foreground: #1f1b16;
+  --accent: #e85d2f;
+  --accent-ink: #fff8f0;
+  --card: #fffdf9;
+  --line: #e4dbcd;
+  --muted: #8a8072;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-cairo);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-arabic);
+  --font-latin: var(--font-latin);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-cairo), system-ui, sans-serif;
+  font-family: var(--font-arabic), system-ui, sans-serif;
+}
+
+/* الليبلات اللاتينية الصغيرة (STEP 01, RUSHING, SCOREBOARD) */
+.tag {
+  font-family: var(--font-latin), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  direction: ltr;
+  unicode-bidi: isolate;
 }
