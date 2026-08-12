@@ -5,11 +5,15 @@ import { getCategory } from "@/lib/engine/categories";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import AuthPanel from "./components/AuthPanel";
 import Landing from "./components/Landing";
 import QuestionStep from "./components/QuestionStep";
 import RatingGrid from "./components/RatingGrid";
 import Result from "./components/Result";
 import Thinking from "./components/Thinking";
+import VoiceControls from "./components/VoiceControls";
+import VoiceMode from "./components/VoiceMode";
 import { Card, Choice } from "./components/ui";
 
 // معرّفات ثابتة للخيارين الأوليين حتى لا يختلف الرندر بين الخادم والمتصفح
@@ -19,6 +23,7 @@ const initialOptions = () => [
 ];
 
 export default function Home() {
+  const { user, signOut, accessToken } = useAuth();
   const [step, setStep] = useState("landing");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [categoryId, setCategoryId] = useState(null);
@@ -76,25 +81,31 @@ export default function Home() {
 
   // نداء المحرك: التوصية تجي من /api/decide، والحساب المحلي يبقى
   // كخط رجعة لو النداء فشل حتى ما تنكسر الشاشة على المستخدم.
-  const decide = useCallback(async () => {
+  // override يجي من وضع المحادثة الصوتية، لأن الحالة ما تكون تحدّثت بعد
+  const decide = useCallback(async (override) => {
     setStep("thinking");
     setApiError(null);
     setRecommendation(null);
     setSaveState(null);
 
-    const labels = filledOptions.map((o) => o.label);
+    const labels = override?.options ?? filledOptions.map((o) => o.label);
+    const finalAnswers = override?.answers ?? answers;
+    const finalCategory = override?.categoryId ?? categoryId;
     let result = null;
 
     try {
-      const userId = await decisionService.currentUserId();
+      // التوكن هو الهوية — أوثق من إرسال userId في الـ body
+      const token = await accessToken();
       const res = await fetch("/api/decide", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           options: labels,
-          answers,
-          categoryId,
-          ...(userId ? { userId } : {}),
+          answers: finalAnswers,
+          categoryId: finalCategory,
         }),
       });
 
@@ -121,11 +132,11 @@ export default function Home() {
       setSaveState({ status: "saving" });
       try {
         const saved = await decisionService.saveDecision({
-          categoryId,
+          categoryId: finalCategory,
           options: labels,
           chosen: result.selected_option,
           reason: result.funny_reason,
-          answers,
+          answers: finalAnswers,
           weights,
         });
         setSaveState(
@@ -138,7 +149,19 @@ export default function Home() {
         setSaveState({ status: "failed", message: "تعذر الحفظ في السجل." });
       }
     }
-  }, [filledOptions, answers, categoryId, weights]);
+  }, [filledOptions, answers, categoryId, weights, accessToken]);
+
+  // المحادثة الصوتية تعطينا كل شي دفعة واحدة، بدون مرحلة التقييم
+  const fromVoice = useCallback(
+    (payload) => {
+      setCategoryId(payload.categoryId);
+      setOptions(payload.options.map((label, i) => ({ id: `voice-${i}`, label })));
+      setAnswers(payload.answers);
+      setRatings({});
+      decide(payload);
+    },
+    [decide]
+  );
 
   const restart = () => {
     setStep("landing");
@@ -154,7 +177,10 @@ export default function Home() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-10 sm:py-16">
+    <main
+      id="main"
+      className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-10 sm:py-16"
+    >
       <header className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span
@@ -169,7 +195,9 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <VoiceControls onVoiceMode={() => setStep("voice")} />
+
           {TONES.map((t) => (
             <Choice
               key={t.id}
@@ -180,10 +208,34 @@ export default function Home() {
               {t.label}
             </Choice>
           ))}
+
+          {user ? (
+            <Choice
+              onClick={signOut}
+              className="px-3 py-1 text-xs"
+              title={user.email}
+            >
+              خروج
+            </Choice>
+          ) : (
+            <Choice
+              onClick={() => setStep("auth")}
+              selected={step === "auth"}
+              className="px-3 py-1 text-xs"
+            >
+              دخول
+            </Choice>
+          )}
         </div>
       </header>
 
       <Card>
+        {step === "auth" && <AuthPanel onDone={() => setStep("landing")} />}
+
+        {step === "voice" && (
+          <VoiceMode onComplete={fromVoice} onCancel={() => setStep("landing")} />
+        )}
+
         {step === "landing" && (
           <Landing
             mood={mood}
@@ -193,6 +245,7 @@ export default function Home() {
             options={options}
             setOptions={setOptions}
             onStart={start}
+            onVoiceMode={() => setStep("voice")}
           />
         )}
 
@@ -214,7 +267,7 @@ export default function Home() {
             ratings={ratings}
             setRatings={setRatings}
             weights={weights}
-            onNext={decide}
+            onNext={() => decide()}
             onBack={() => {
               setQuestionIndex(category.questions.length - 1);
               setStep("questions");
