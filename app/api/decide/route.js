@@ -141,8 +141,11 @@ function firstOf(value) {
 async function fetchRecentDecisions(userId) {
   const { data, error } = await supabaseAdmin()
     .from("decisions")
+    // لازم نحدد اسم الـ FK: فيه علاقتان بين decisions و options
+    // (options.decision_id → decisions.id، و decisions.winner_option_id → options.id)
+    // وبدون التحديد يرجع PostgREST خطأ PGRST201 لأنه ما يعرف أيهما نقصد.
     .select(
-      "id, title, category, status, winner_option_id, created_at, options(id, label), feedback(satisfaction)"
+      "id, title, category, status, winner_option_id, created_at, options!options_decision_id_fkey(id, label), feedback(satisfaction)"
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
