@@ -1,11 +1,16 @@
 "use client";
 
+import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
 import { GhostButton, Progress, SectionHeading } from "./ui";
 
 // سؤال واحد في كل شاشة، مثل ملف التصميم
 export default function QuestionStep({ category, index, answers, setAnswers, onAnswer, onBack }) {
   const question = category.questions[index];
   const total = category.questions.length;
+
+  useScreenAnnounce(
+    `${question.label} ${question.choices.map((c) => c.label).join("، أو ")}`
+  );
 
   const pick = (value) => {
     setAnswers((prev) => ({ ...prev, [question.key]: value }));

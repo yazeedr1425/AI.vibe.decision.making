@@ -1,4 +1,6 @@
 import { IBM_Plex_Sans_Arabic, Space_Grotesk } from "next/font/google";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { VoiceProvider } from "@/lib/voice/VoiceProvider";
 import "./globals.css";
 
 const plexArabic = IBM_Plex_Sans_Arabic({
@@ -24,7 +26,17 @@ export default function RootLayout({ children }) {
       dir="rtl"
       className={`${plexArabic.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-ink"
+        >
+          تخطَّ إلى المحتوى
+        </a>
+        <AuthProvider>
+          <VoiceProvider>{children}</VoiceProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { chancesFor, weightedRandomPick } from "@/lib/engine/score";
 import { detailedBreakdown, reasonPhrase } from "@/lib/engine/explain";
 import { voice } from "@/lib/engine/tone";
+import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
 import { GhostButton, PrimaryButton, Tag } from "./ui";
 
 const SPIN_MS = 1200;
@@ -38,6 +39,9 @@ export default function Result({
   const reason = recommendation?.funny_reason ?? `${reasonPhrase(scored)}.`;
   const disagrees =
     recommendation && recommendation.selected_option !== localWinner.label;
+
+  // تُقرأ تلقائياً لو المستخدم مفعّل القراءة، ويعيدها زر R
+  useScreenAnnounce(`قرارك هو ${chosen}. ${reason}`);
 
   const spin = () => {
     if (spinning) return;
