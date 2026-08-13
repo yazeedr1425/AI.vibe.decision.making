@@ -1,6 +1,6 @@
 "use client";
 
-import { Car, Clock, MapPin, Shuffle } from "../icons";
+import { Car, Clock, Droplet, MapPin, Shuffle, Thermometer } from "../icons";
 import { formatClock, minutesOfDay } from "@/lib/plan/config";
 
 // الأوقات والمسافات أرقام لاتينية داخل نص عربي. بدون عزلها صراحةً
@@ -125,7 +125,38 @@ function Stop({ stop, index, total, next }) {
   );
 }
 
-export default function PlanTimeline({ plan, onSwap, busy }) {
+// شريط الطقس — يختفي كلياً بلا بيانات.
+//
+// ما نعرض "الطقس غير متاح": الطقس تحسين للخطة لا جزء منها، ورسالة
+// عطل عن شي المستخدم ما طلبه تضيف ضجيجاً وتخليه يظن إن في خلل.
+function WeatherStrip({ weather }) {
+  if (!weather) return null;
+
+  return (
+    <p className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted">
+      <span className="flex items-center gap-1.5">
+        <Thermometer size={15} />
+        <span>
+          الإحساس{" "}
+          <Ltr>
+            {weather.minFeels}–{weather.maxFeels}
+            {weather.unit}
+          </Ltr>
+        </span>
+      </span>
+      {weather.maxRain != null && (
+        <span className="flex items-center gap-1.5">
+          <Droplet size={15} />
+          <span>
+            احتمال المطر <Ltr>{weather.maxRain}%</Ltr>
+          </span>
+        </span>
+      )}
+    </p>
+  );
+}
+
+export default function PlanTimeline({ plan, weather, onSwap, busy }) {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1.5">
@@ -140,6 +171,7 @@ export default function PlanTimeline({ plan, onSwap, busy }) {
           {plan.stops.length} محطات · تبدأ{" "}
           <Ltr>{plan.stops[0].arrival_time}</Ltr>
         </p>
+        <WeatherStrip weather={weather} />
       </header>
 
       <ol className="flex flex-col">
