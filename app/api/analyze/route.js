@@ -8,8 +8,29 @@ export const dynamic = "force-dynamic";
 
 const MODEL = "gemini-2.5-flash";
 
-// الباحث أبطأ من البقية لأنه يطلع للشبكة فعلياً
-const TIMEOUT_MS = { research: 45000, default: 30000 };
+// المهل لكل وكيل حسب ثقله الفعلي، مو رقم واحد للجميع.
+//
+// الباحث بطيء لأنه يطلع للشبكة. والمراجع النقدي أبطأ منه لسبب
+// مختلف: برومبته أكبر واحد (نص الباحث + SWOT + المسارات) ومهمته
+// أثقل استدلالاً — "هاجم كل شي" تستنزف أقصى تفكير من النموذج.
+// كان على ٣٠ ثانية مثل الوكلاء الخفاف، فكان يتجاوزها غالباً
+// ويسقط الخط كله معه.
+const TIMEOUT_MS = {
+  research: 45000,
+  critic: 75000,
+  synthesis: 45000,
+  default: 30000,
+};
+
+// gemini-2.5-flash يفكّر افتراضياً بميزانية تلقائية، وتوكنات
+// التفكير تُحسب من ميزانية المخرجات. مهمة عدائية بلا سقف تفكير
+// تطوّل بلا حد وتصطدم بالمهلة. السقف يخلي الزمن متوقعاً.
+const THINKING_BUDGET = { critic: 2048, synthesis: 2048, default: 1024 };
+
+// محاولة إضافية للأخطاء العابرة (مهلة، رد فاضي، JSON مقطوع).
+// الفشل هنا عابر بطبيعته، وإعادة المحاولة أرخص بكثير من إسقاط
+// خط كامل استغرق دقيقة.
+const RETRIES = 2;
 
 const MAX_STATEMENT = 600;
 const MAX_CONTEXT = 2000;
@@ -73,6 +94,9 @@ async function runAgent(ai, agent, prompt) {
       abortSignal: controller.signal,
       // الباحث يحتاج حرية أوسع في الصياغة؛ البقية نبيهم منضبطين
       temperature: agent.grounded ? 0.3 : 0.5,
+      thinkingConfig: {
+        thinkingBudget: THINKING_BUDGET[agent.id] ?? THINKING_BUDGET.default,
+      },
     };
 
     if (agent.grounded) {
@@ -90,7 +114,12 @@ async function runAgent(ai, agent, prompt) {
     });
 
     const text = response?.text?.trim();
-    if (!text) throw new Error(`${agent.id}: empty response`);
+    if (!text) {
+      // سبب الإنهاء يفرّق بين "انقطع عند الحد" و"حُجب" و"خطأ" —
+      // بدونه كل الحالات تطلع "empty response" وما تنشخّص.
+      const reason = response?.candidates?.[0]?.finishReason ?? "UNKNOWN";
+      throw new Error(`${agent.id}: empty response (finishReason=${reason})`);
+    }
 
     if (agent.grounded) {
       // المصادر تجي من grounding metadata، مو من نص النموذج —
@@ -126,6 +155,67 @@ async function runAgent(ai, agent, prompt) {
 
 const section = (title, body) => `\n\n## ${title}\n${body}`;
 
+// مخرجات المراحل تُمرَّر كنص مضغوط لا JSON.stringify.
+//
+// الـ JSON الخام كان يضاعف حجم البرومبت بأقواس ومفاتيح وحقول
+// enum ما يحتاجها النموذج ليقرأ، وأثقل من يدفع الثمن هو المراجع
+// النقدي لأنه يستقبل كل شي قبله. تقليص المدخل يقصّر زمن الرد،
+// وزمن الرد هو اللي كان يصطدم بالمهلة.
+
+function renderSwot(swot) {
+  if (!swot) return "لا شيء";
+  const titles = {
+    strengths: "قوة",
+    weaknesses: "ضعف",
+    opportunities: "فرص",
+    threats: "تهديدات",
+  };
+
+  return Object.entries(titles)
+    .map(([key, title]) => {
+      const points = (swot[key] ?? [])
+        .map((p) => `  - ${p.point} (دليل: ${p.evidence}، ثقة: ${p.confidence})`)
+        .join("\n");
+      return `${title}:\n${points || "  - لا شيء"}`;
+    })
+    .join("\n");
+}
+
+function renderPaths(paths) {
+  if (!paths?.length) return "لا شيء";
+
+  return paths
+    .map((p) => {
+      const branches = (p.branches ?? [])
+        .map((b) => `    · ${b.condition} ← ${b.outcome}`)
+        .join("\n");
+      const assumptions = (p.assumptions ?? []).join("؛ ") || "لا شيء";
+
+      return [
+        `- ${p.label}: ${p.summary}`,
+        `  ضرر: احتمال ${p.downside_likelihood}/أثر ${p.downside_impact} · مكسب: احتمال ${p.upside_likelihood}/أثر ${p.upside_impact} · تراجع: ${p.reversibility}`,
+        `  افتراضات: ${assumptions}`,
+        branches,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    })
+    .join("\n");
+}
+
+function renderChallenges(challenges) {
+  if (!challenges) return "لا شيء — مرحلة المراجعة النقدية ما اكتملت.";
+
+  const items = (challenges.challenges ?? [])
+    .map((c) => `- [${c.severity}] ${c.target} — ${c.why_fragile}`)
+    .join("\n");
+  const missing = (challenges.missing_data ?? []).join("؛ ");
+
+  return [items || "لا اعتراضات.", missing ? `بيانات ناقصة: ${missing}` : ""]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function promptFor(agent, state) {
   const head = [
     `القرار المطروح: ${state.statement}`,
@@ -140,18 +230,26 @@ function promptFor(agent, state) {
 
   if (agent.id === SWOT.id) return prompt;
 
-  prompt += section("تحليل SWOT", JSON.stringify(state.swot ?? {}, null, 1));
+  prompt += section("تحليل SWOT", renderSwot(state.swot));
 
   if (agent.id === SCENARIOS.id) return prompt;
 
-  prompt += section("المسارات المطروحة", JSON.stringify(state.paths ?? [], null, 1));
+  prompt += section("المسارات المطروحة", renderPaths(state.paths));
 
   if (agent.id === CRITIC.id) return prompt;
 
-  prompt += section(
-    "اعتراضات الفريق الأحمر",
-    JSON.stringify(state.challenges ?? {}, null, 1),
-  );
+  prompt += section("اعتراضات المراجع النقدي", renderChallenges(state.challenges));
+
+  // لو سقطت المراجعة، المُركِّب لازم يعرف — وإلا كتب توصية واثقة
+  // على تحليل ما فحصه أحد، وهذا أسوأ من عدم إعطاء توصية أصلاً.
+  if (state.criticSkipped) {
+    prompt += section(
+      "تنبيه",
+      "مرحلة المراجعة النقدية فشلت ولم تُنفَّذ. لم يفحص أحد هذا التحليل بحثاً عن " +
+        "الثغرات. اضبط confidence على low، واذكر في confidence_note صراحةً أن " +
+        "التحليل لم يخضع للمراجعة النقدية، وشدّد على would_change_my_mind.",
+    );
+  }
 
   // المُركِّب يشوف الدرجات المحسوبة، مو المستويات الخام فقط
   prompt += section(
@@ -165,6 +263,29 @@ function promptFor(agent, state) {
   );
 
   return prompt;
+}
+
+// إعادة المحاولة مع تراجع بسيط. الفشل هنا عابر تقريباً دائماً:
+// مهلة، رد فاضي، أو JSON مقطوع. المحاولة الثانية تنجح غالباً.
+async function runAgentWithRetry(ai, agent, prompt) {
+  let last;
+
+  for (let attempt = 1; attempt <= RETRIES + 1; attempt++) {
+    try {
+      return await runAgent(ai, agent, prompt);
+    } catch (err) {
+      last = err;
+      console.warn(
+        `[api/analyze] ${agent.id} attempt ${attempt}/${RETRIES + 1} failed:`,
+        err.name === "AbortError" ? "timeout" : err.message,
+      );
+      if (attempt <= RETRIES) {
+        await new Promise((r) => setTimeout(r, 400 * attempt));
+      }
+    }
+  }
+
+  throw last;
 }
 
 function absorb(agent, output, state) {
@@ -236,9 +357,25 @@ export async function POST(request) {
 
           let output;
           try {
-            output = await runAgent(ai, agent, promptFor(agent, state));
+            output = await runAgentWithRetry(ai, agent, promptFor(agent, state));
           } catch (err) {
-            console.error(`[api/analyze] ${agent.id} failed:`, err);
+            console.error(`[api/analyze] ${agent.id} failed after retries:`, err);
+
+            // المراجع النقدي وحده اختياري: لو سقط بعد كل المحاولات
+            // نكمل بدونه بدل ما نرمي دقيقة من شغل الوكلاء الثلاثة
+            // قبله. لكن ما نخفيه — المُركِّب يُبلَّغ أنه ما راجع أحد
+            // تحليله، والواجهة تعرض ذلك بوضوح للمستخدم.
+            if (agent.id === CRITIC.id) {
+              state.criticSkipped = true;
+              ndjson(controller, encoder, {
+                type: "agent_skipped",
+                agent: agent.id,
+                message:
+                  "المراجعة النقدية ما اكتملت — التحليل أدناه ما راجعه أحد.",
+              });
+              continue;
+            }
+
             ndjson(controller, encoder, {
               type: "fatal",
               agent: agent.id,
@@ -264,7 +401,8 @@ export async function POST(request) {
           sources: state.sources ?? [],
           swot: state.swot,
           paths: state.ranked ?? [],
-          challenges: state.challenges,
+          challenges: state.challenges ?? null,
+          criticSkipped: Boolean(state.criticSkipped),
           recommendation: state.recommendation,
           model: MODEL,
         };

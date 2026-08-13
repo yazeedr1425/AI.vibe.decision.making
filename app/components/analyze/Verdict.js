@@ -72,7 +72,28 @@ export function Recommendation({ recommendation }) {
   );
 }
 
-export function RedTeam({ challenges }) {
+export function Critique({ challenges, skipped }) {
+  // التخطي لازم يظهر بوضوح: غياب الاعتراضات يقرأه المستخدم
+  // "ما فيه ملاحظات"، والحقيقة "ما راجعها أحد" — فرق جوهري.
+  if (skipped) {
+    return (
+      <section
+        role="alert"
+        className="rounded-3xl border-2 border-accent-strong bg-accent-soft p-6"
+      >
+        <Tag>CRITIQUE — SKIPPED</Tag>
+        <h3 className="mt-1 text-lg font-semibold text-accent-strong">
+          المراجعة النقدية ما اكتملت
+        </h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-accent-strong">
+          هذي المرحلة تفحص التحليل بحثاً عن افتراضات هشّة وأرقام بلا مصدر، وهي
+          تعثّرت هالمرة. يعني التوصية أعلاه <strong>ما راجعها أحد</strong> —
+          تعامل معها بحذر أكبر، وأعد التحليل إذا القرار كبير.
+        </p>
+      </section>
+    );
+  }
+
   if (!challenges) return null;
   const items = challenges.challenges ?? [];
   const missing = challenges.missing_data ?? [];
@@ -80,11 +101,11 @@ export function RedTeam({ challenges }) {
   return (
     <section className="rounded-3xl border border-line bg-card p-6">
       <header className="flex flex-col gap-1">
-        <Tag>RED TEAM</Tag>
+        <Tag>CRITIQUE</Tag>
         <h3 className="text-lg font-semibold">اعتراضات على التحليل</h3>
         <p className="text-sm text-muted">
-          وكيل مستقل مهمته يهاجم ما بناه بقية الوكلاء — بدونه التحليل يميل
-          يبرر أي مسار.
+          وكيل مستقل مهمته يراجع ما بناه بقية الوكلاء ويهاجمه — بدونه التحليل
+          يميل يبرر أي مسار.
         </p>
       </header>
 

@@ -7,14 +7,14 @@ import { Card, PrimaryButton, GhostButton, SectionHeading, Tag } from "../compon
 import AgentTrail from "../components/analyze/AgentTrail";
 import SwotGrid from "../components/analyze/SwotGrid";
 import PathTree from "../components/analyze/PathTree";
-import { Recommendation, RedTeam, Sources } from "../components/analyze/Verdict";
+import { Recommendation, Critique, Sources } from "../components/analyze/Verdict";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 const STEPS = [
   { id: "research", index: 1, label: "الباحث", en: "RESEARCH", note: "يبحث في السوق ويجمع الحقائق بمصادرها" },
   { id: "swot", index: 2, label: "محلل SWOT", en: "SWOT", note: "يبني التحليل الرباعي من الحقائق" },
   { id: "scenarios", index: 3, label: "باني السيناريوهات", en: "SCENARIOS", note: "يرسم المسارات وتفرّعاتها" },
-  { id: "critic", index: 4, label: "محامي الشيطان", en: "RED TEAM", note: "يهاجم التحليل ويكشف الافتراضات الهشّة" },
+  { id: "critic", index: 4, label: "المراجع النقدي", en: "CRITIQUE", note: "يراجع التحليل ويكشف الافتراضات الهشّة" },
   { id: "synthesis", index: 5, label: "المُركِّب", en: "VERDICT", note: "يوازن ويوصي" },
 ];
 
@@ -40,6 +40,7 @@ export default function AnalyzePage() {
   const [context, setContext] = useState("");
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState({});
+  const [skipped, setSkipped] = useState({});
   const [current, setCurrent] = useState(null);
   const [failed, setFailed] = useState(null);
   const [detail, setDetail] = useState({});
@@ -94,6 +95,15 @@ export default function AnalyzePage() {
       return;
     }
 
+    // المراجع النقدي وحده يُتخطّى بدل ما يُسقط الخط — الخط يكمل
+    // والمرحلة تُعلَّم كمتخطّاة بدل مكتملة.
+    if (event.type === "agent_skipped") {
+      setCurrent(null);
+      setSkipped((s) => ({ ...s, [event.agent]: true }));
+      setDetail((d) => ({ ...d, [event.agent]: event.message }));
+      return;
+    }
+
     if (event.type === "fatal") {
       setFailed(event.agent ?? null);
       setError(event.message);
@@ -112,6 +122,7 @@ export default function AnalyzePage() {
 
     setRunning(true);
     setDone({});
+    setSkipped({});
     setDetail({});
     setFailed(null);
     setError(null);
@@ -180,6 +191,7 @@ export default function AnalyzePage() {
   const steps = STEPS.map((s) => ({
     ...s,
     done: Boolean(done[s.id]),
+    skipped: Boolean(skipped[s.id]),
     detail: detail[s.id],
   }));
 
@@ -300,7 +312,10 @@ export default function AnalyzePage() {
               </div>
             </div>
 
-            <RedTeam challenges={result.challenges} />
+            <Critique
+              challenges={result.challenges}
+              skipped={result.criticSkipped}
+            />
             <Sources sources={result.sources} findings={result.findings} />
 
             {notice && (
