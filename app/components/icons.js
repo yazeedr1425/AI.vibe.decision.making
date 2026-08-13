@@ -224,6 +224,240 @@ export function Sun(props) {
   );
 }
 
+export function Flame(props) {
+  return (
+    <Icon {...props}>
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+    </Icon>
+  );
+}
+
+export function Leaf(props) {
+  return (
+    <Icon {...props}>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+    </Icon>
+  );
+}
+
+export function BatteryLow(props) {
+  return (
+    <Icon {...props}>
+      <rect width="16" height="10" x="2" y="7" rx="2" ry="2" />
+      <line x1="22" x2="22" y1="11" y2="13" />
+      <line x1="6" x2="6" y1="11" y2="13" />
+    </Icon>
+  );
+}
+
+export function Smile(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" x2="9.01" y1="9" y2="9" />
+      <line x1="15" x2="15.01" y1="9" y2="9" />
+    </Icon>
+  );
+}
+
+export function Coffee(props) {
+  return (
+    <Icon {...props}>
+      <path d="M10 2v2" />
+      <path d="M14 2v2" />
+      <path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" />
+      <path d="M6 2v2" />
+    </Icon>
+  );
+}
+
+export function Activity(props) {
+  return (
+    <Icon {...props}>
+      <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />
+    </Icon>
+  );
+}
+
+export function Trees(props) {
+  return (
+    <Icon {...props}>
+      <path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z" />
+      <path d="M7 16v6" />
+      <path d="M13 19v3" />
+      <path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5" />
+    </Icon>
+  );
+}
+
+export function Moon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </Icon>
+  );
+}
+
+export function User(props) {
+  return (
+    <Icon {...props}>
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </Icon>
+  );
+}
+
+export function Heart(props) {
+  return (
+    <Icon {...props}>
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+    </Icon>
+  );
+}
+
+export function Baby(props) {
+  return (
+    <Icon {...props}>
+      <path d="M9 12h.01" />
+      <path d="M15 12h.01" />
+      <path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5" />
+      <path d="M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1" />
+    </Icon>
+  );
+}
+
+export function Users(props) {
+  return (
+    <Icon {...props}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </Icon>
+  );
+}
+
+export function TriangleAlert(props) {
+  return (
+    <Icon {...props}>
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </Icon>
+  );
+}
+
+export function Lightbulb(props) {
+  return (
+    <Icon {...props}>
+      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+    </Icon>
+  );
+}
+
+export function Trophy(props) {
+  return (
+    <Icon {...props}>
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </Icon>
+  );
+}
+
+export function Dices(props) {
+  return (
+    <Icon {...props}>
+      <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
+      <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" />
+      <path d="M6 18h.01" />
+      <path d="M10 14h.01" />
+      <path d="M15 6h.01" />
+      <path d="M18 9h.01" />
+    </Icon>
+  );
+}
+
+export function Scale(props) {
+  return (
+    <Icon {...props}>
+      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="M7 21h10" />
+      <path d="M12 3v18" />
+      <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
+    </Icon>
+  );
+}
+
+export function ChevronUp(props) {
+  return (
+    <Icon {...props}>
+      <path d="m18 15-6-6-6 6" />
+    </Icon>
+  );
+}
+
+export function ChevronDown(props) {
+  return (
+    <Icon {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </Icon>
+  );
+}
+
+// السهم يشير لليمين — في واجهة عربية هذا اتجاه الرجوع
+export function ArrowRight(props) {
+  return (
+    <Icon {...props}>
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </Icon>
+  );
+}
+
+export function Check(props) {
+  return (
+    <Icon {...props}>
+      <path d="M20 6 9 17l-5-5" />
+    </Icon>
+  );
+}
+
+export function Star(props) {
+  return (
+    <Icon {...props}>
+      <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
+    </Icon>
+  );
+}
+
+export function Volume2(props) {
+  return (
+    <Icon {...props}>
+      <path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" />
+      <path d="M16 9a5 5 0 0 1 0 6" />
+      <path d="M19.364 18.364a9 9 0 0 0 0-12.728" />
+    </Icon>
+  );
+}
+
+export function RotateCw(props) {
+  return (
+    <Icon {...props}>
+      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+    </Icon>
+  );
+}
+
 // أيقونة كل فئة حسب ما ورد في التصميم
 export const CATEGORY_ICONS = {
   food: Utensils,
@@ -236,4 +470,47 @@ export const CATEGORY_ICONS = {
 export function CategoryIcon({ categoryId, ...props }) {
   const Component = CATEGORY_ICONS[categoryId];
   return Component ? <Component {...props} /> : <Sparkles {...props} />;
+}
+
+// الخرائط تعيش هنا لا في ملفات البيانات: mood.js و plan/config.js
+// بيانات صرفة يستوردها الخادم أيضاً، وحشر JSX فيها يخلطها بالواجهة.
+// وهذا نفس ما يفعله CATEGORY_ICONS فوق.
+
+export const MOOD_ICONS = {
+  hyped: Flame,
+  calm: Leaf,
+  // "مرهق" حرفياً بطارية فاضية — أوضح من هلال ما يقول شيئاً عن التعب
+  drained: BatteryLow,
+  happy: Smile,
+};
+
+export function MoodIcon({ moodId, ...props }) {
+  const Component = MOOD_ICONS[moodId];
+  return Component ? <Component {...props} /> : null;
+}
+
+export const VIBE_ICONS = {
+  chill: Coffee,
+  active: Activity,
+  foodie: Utensils,
+  outdoors: Trees,
+  nightlife: Moon,
+};
+
+export function VibeIcon({ vibeId, ...props }) {
+  const Component = VIBE_ICONS[vibeId];
+  return Component ? <Component {...props} /> : null;
+}
+
+export const GROUP_ICONS = {
+  solo: User,
+  couple: Heart,
+  // الطفل هو ما يميّز هذه المجموعة عن "مع الأصحاب"، لا عدد الأشخاص
+  family_kids: Baby,
+  friends: Users,
+};
+
+export function GroupIcon({ groupId, ...props }) {
+  const Component = GROUP_ICONS[groupId];
+  return Component ? <Component {...props} /> : null;
 }

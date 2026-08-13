@@ -6,6 +6,16 @@ import { detailedBreakdown, reasonPhrase } from "@/lib/engine/explain";
 import { voice } from "@/lib/engine/tone";
 import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
 import { GhostButton, PrimaryButton, Tag } from "./ui";
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  CircleCheck,
+  Dices,
+  Scale,
+  TriangleAlert,
+  Trophy,
+} from "./icons";
 
 const SPIN_MS = 1200;
 
@@ -100,7 +110,8 @@ export default function Result({
           role="alert"
           className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted"
         >
-          ⚠️ {apiError} — هذي نتيجة الحساب المحلي بالأوزان.
+          <TriangleAlert size={15} className="me-1.5 inline align-text-bottom" />
+          {apiError} — هذي نتيجة الحساب المحلي بالأوزان.
           {onRetry && (
             <button
               type="button"
@@ -115,8 +126,9 @@ export default function Result({
 
       {disagrees && (
         <p className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted">
-          🤔 حسابي بالأوزان يقول «{localWinner.label}»، بس شفت إن «{chosen}»
-          أنسب لك اليوم.
+          <Scale size={15} className="me-1.5 inline align-text-bottom" />
+          حسابي بالأوزان يقول «{localWinner.label}»، بس شفت إن «{chosen}» أنسب
+          لك اليوم.
         </p>
       )}
 
@@ -131,9 +143,12 @@ export default function Result({
           <div key={s.id} className="flex flex-col gap-1.5">
             <div className="flex items-baseline justify-between gap-3">
               <span
-                className={s.label === chosen ? "font-semibold" : "text-muted"}
+                className={
+                  "flex items-center gap-1.5 " +
+                  (s.label === chosen ? "font-semibold" : "text-muted")
+                }
               >
-                {s.label === chosen && "🏆 "}
+                {s.label === chosen && <Trophy size={15} />}
                 {s.label}
               </span>
               <span className="text-sm tabular-nums text-muted">
@@ -155,9 +170,10 @@ export default function Result({
         <button
           type="button"
           onClick={() => setShowDetails((v) => !v)}
-          className="self-start text-sm text-accent underline underline-offset-4"
+          className="flex items-center gap-1 self-start text-sm text-accent underline underline-offset-4"
         >
-          {showDetails ? "أخفِ التفاصيل ↑" : "وضّح أكثر ↓"}
+          {showDetails ? "أخفِ التفاصيل" : "وضّح أكثر"}
+          {showDetails ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </button>
 
         {showDetails && (
@@ -179,8 +195,15 @@ export default function Result({
         <p className="text-sm text-muted">{say.hesitantPrompt}</p>
 
         {(spinning || randomPick) && (
-          <p className="mt-4 text-center text-3xl font-bold">
-            {spinning ? flash : `🎲 ${randomPick.label}`}
+          <p className="mt-4 flex items-center justify-center gap-2 text-center text-3xl font-bold">
+            {spinning ? (
+              flash
+            ) : (
+              <>
+                <Dices size={28} className="shrink-0" />
+                {randomPick.label}
+              </>
+            )}
           </p>
         )}
 
@@ -191,8 +214,19 @@ export default function Result({
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <GhostButton onClick={spin} disabled={spinning}>
-            {spinning ? "…" : randomPick ? "مرة ثانية 🎲" : "🎲 أنا متردد جدًا"}
+          <GhostButton
+            onClick={spin}
+            disabled={spinning}
+            className="flex items-center gap-1.5"
+          >
+            {spinning ? (
+              "…"
+            ) : (
+              <>
+                <Dices size={16} />
+                {randomPick ? "مرة ثانية" : "أنا متردد جدًا"}
+              </>
+            )}
           </GhostButton>
           <span className="text-xs text-muted">
             الحظوظ:{" "}
@@ -203,15 +237,31 @@ export default function Result({
 
       {/* حالة الحفظ */}
       {saveState && (
-        <p role="status" className="text-sm text-muted">
+        <p
+          role="status"
+          className="flex items-center gap-1.5 text-sm text-muted"
+        >
           {saveState.status === "saving" && "… يحفظ في سجلك"}
-          {saveState.status === "saved" && "✅ انحفظ في سجلك"}
-          {saveState.status === "failed" && `💾 ${saveState.message}`}
+          {saveState.status === "saved" && (
+            <>
+              <CircleCheck size={15} />
+              انحفظ في سجلك
+            </>
+          )}
+          {saveState.status === "failed" && (
+            <>
+              <TriangleAlert size={15} />
+              {saveState.message}
+            </>
+          )}
         </p>
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <GhostButton onClick={onBack}>→ عدّل التقييمات</GhostButton>
+        <GhostButton onClick={onBack} className="flex items-center gap-1.5">
+          <ArrowRight size={16} />
+          عدّل التقييمات
+        </GhostButton>
         <PrimaryButton onClick={onRestart}>{say.restart}</PrimaryButton>
       </div>
     </div>

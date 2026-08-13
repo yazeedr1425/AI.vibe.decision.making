@@ -8,7 +8,9 @@ import {
   Headphones,
   Mic,
   Plus,
+  RotateCw,
   Sparkles,
+  Volume2,
 } from "../components/icons";
 
 export const metadata = {
@@ -153,8 +155,14 @@ export default function HowItWorks() {
             <li className="flex items-center gap-2">
               <Mic size={16} className="text-accent" /> حرف M — أملِ خياراتك
             </li>
-            <li>🔊 حرف S — تشغيل أو إيقاف القراءة</li>
-            <li>🔁 حرف R — أعد قراءة الشاشة</li>
+            <li className="flex items-center gap-2">
+              <Volume2 size={16} className="text-accent" /> حرف S — تشغيل أو
+              إيقاف القراءة
+            </li>
+            <li className="flex items-center gap-2">
+              <RotateCw size={16} className="text-accent" /> حرف R — أعد قراءة
+              الشاشة
+            </li>
           </ul>
         </section>
 

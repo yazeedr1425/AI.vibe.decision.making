@@ -12,8 +12,10 @@ import {
   CategoryIcon,
   Headphones,
   Mic,
+  MoodIcon,
   Plus,
   Sparkles,
+  TriangleAlert,
 } from "./icons";
 
 // أمثلة الواجهة — كل واحد يعبّي الفئة والخيارات مباشرة.
@@ -251,13 +253,14 @@ export default function Landing({
                   onClick={() => setMood(mood === m.id ? null : m.id)}
                   aria-pressed={mood === m.id}
                   className={
-                    "rounded-full border px-3 py-1.5 text-sm transition-colors " +
+                    "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
                     (mood === m.id
                       ? "border-accent bg-accent text-accent-ink"
                       : "border-line hover:border-muted-soft")
                   }
                 >
-                  <span aria-hidden="true">{m.emoji}</span> {m.label}
+                  <MoodIcon moodId={m.id} size={16} />
+                  {m.label}
                 </button>
               ))}
             </div>
@@ -331,8 +334,12 @@ export default function Landing({
         </div>
 
         {dictationError && (
-          <p role="status" className="mt-2 text-sm text-muted">
-            ⚠️ {dictationError}
+          <p
+            role="status"
+            className="mt-2 flex items-center gap-1.5 text-sm text-muted"
+          >
+            <TriangleAlert size={15} />
+            {dictationError}
           </p>
         )}
 

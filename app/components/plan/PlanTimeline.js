@@ -1,6 +1,15 @@
 "use client";
 
-import { Car, Clock, Droplet, MapPin, Shuffle, Thermometer } from "../icons";
+import {
+  Car,
+  Clock,
+  Droplet,
+  Lightbulb,
+  MapPin,
+  Shuffle,
+  Star,
+  Thermometer,
+} from "../icons";
 import { formatClock, minutesOfDay } from "@/lib/plan/config";
 
 // الأوقات والمسافات أرقام لاتينية داخل نص عربي. بدون عزلها صراحةً
@@ -94,7 +103,10 @@ function Stop({ stop, index, total, next }) {
             {stop.rating != null && (
               <>
                 {" · "}
-                <Ltr>★ {stop.rating}</Ltr>
+                <span className="inline-flex items-center gap-1 align-middle">
+                  <Star size={13} />
+                  <Ltr>{stop.rating}</Ltr>
+                </span>
               </>
             )}
             {PRICE_WORDS[stop.price_level] && (
@@ -187,8 +199,9 @@ export default function PlanTimeline({ plan, weather, onSwap, busy }) {
       </ol>
 
       {plan.note && (
-        <p className="rounded-2xl border border-line bg-background/60 p-4 text-sm leading-relaxed text-muted">
-          💡 {plan.note}
+        <p className="flex items-start gap-2 rounded-2xl border border-line bg-background/60 p-4 text-sm leading-relaxed text-muted">
+          <Lightbulb size={16} className="mt-0.5 shrink-0" />
+          {plan.note}
         </p>
       )}
 

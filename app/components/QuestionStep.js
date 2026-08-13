@@ -2,6 +2,7 @@
 
 import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
 import { GhostButton, Progress, SectionHeading } from "./ui";
+import { ArrowRight } from "./icons";
 
 // سؤال واحد في كل شاشة، مثل ملف التصميم
 export default function QuestionStep({
@@ -63,8 +64,12 @@ export default function QuestionStep({
         ))}
       </div>
 
-      <GhostButton onClick={onBack} className="self-start">
-        → رجوع
+      <GhostButton
+        onClick={onBack}
+        className="flex items-center gap-1.5 self-start"
+      >
+        <ArrowRight size={16} />
+        رجوع
       </GhostButton>
     </div>
   );

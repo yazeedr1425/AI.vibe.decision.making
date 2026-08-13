@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getCategory } from "@/lib/engine/categories";
 import { decisionService } from "@/lib/services/decisions";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { ArrowLeft, CircleCheck } from "./icons";
+import { ArrowLeft, CircleCheck, TriangleAlert } from "./icons";
 
 const rtf = new Intl.RelativeTimeFormat("ar", { numeric: "auto" });
 
@@ -98,8 +98,9 @@ export default function HistorySection({ onSignIn, refreshKey }) {
       )}
 
       {state.status === "error" && (
-        <p className="rounded-2xl border border-dashed border-line bg-card p-5 text-sm text-muted">
-          ⚠️ تعذر جلب السجل. {state.message}
+        <p className="flex items-center gap-2 rounded-2xl border border-dashed border-line bg-card p-5 text-sm text-muted">
+          <TriangleAlert size={15} className="shrink-0" />
+          تعذر جلب السجل. {state.message}
         </p>
       )}
 

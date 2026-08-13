@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Tag } from "./ui";
+import { Dices } from "./icons";
 
 const LINES = [
   "احسم يفكر…",
@@ -30,8 +31,8 @@ export default function Thinking() {
       <div className="relative h-28 w-28">
         <div className="absolute inset-0 animate-spin rounded-full border-4 border-dashed border-accent [animation-duration:2.4s]" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="animate-bounce text-4xl [animation-duration:1.2s]">
-            🎲
+          <span className="animate-bounce text-accent [animation-duration:1.2s]">
+            <Dices size={40} />
           </span>
         </div>
       </div>
