@@ -1,16 +1,26 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import VoiceControls from "./VoiceControls";
 
 const LINKS = [
-  { id: "how", label: "كيف يعمل" },
-  { id: "examples", label: "أمثلة" },
-  { id: "history", label: "سجل القرارات" },
+  { href: "/how", label: "كيف يعمل" },
+  { href: "/#examples", label: "أمثلة" },
+  { href: "/#history", label: "سجل القرارات" },
 ];
 
+// المعالجات اختيارية: الصفحة الرئيسية تمرّرها لأنها تدير حالة الخطوات،
+// وأي صفحة أخرى تكتفي بالتنقّل للرئيسية.
 export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
   const { user, signOut } = useAuth();
+  const router = useRouter();
+
+  const goHome = onHome ?? (() => router.push("/"));
+  const startDeciding = onStart ?? (() => router.push("/"));
+  const signIn = onSignIn ?? (() => router.push("/"));
+  const openVoice = onVoiceMode ?? (() => router.push("/"));
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-background/85 backdrop-blur">
@@ -18,7 +28,7 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
         {/* الشعار — يمين في الاتجاه العربي */}
         <button
           type="button"
-          onClick={onHome}
+          onClick={goHome}
           className="flex items-center gap-2.5"
           aria-label="احسم — الصفحة الرئيسية"
         >
@@ -31,18 +41,18 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
         <div className="flex items-center gap-1 sm:gap-2">
           <ul className="hidden items-center gap-1 md:flex">
             {LINKS.map((l) => (
-              <li key={l.id}>
-                <a
-                  href={`#${l.id}`}
+              <li key={l.href}>
+                <Link
+                  href={l.href}
                   className="rounded-full px-3 py-2 text-sm text-muted transition-colors hover:text-foreground"
                 >
                   {l.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
 
-          <VoiceControls onVoiceMode={onVoiceMode} />
+          <VoiceControls onVoiceMode={openVoice} />
 
           {user ? (
             <button
@@ -56,7 +66,7 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
           ) : (
             <button
               type="button"
-              onClick={onSignIn}
+              onClick={signIn}
               className="rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
             >
               دخول
@@ -65,7 +75,7 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
 
           <button
             type="button"
-            onClick={onStart}
+            onClick={startDeciding}
             className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85"
           >
             ابدأ الآن

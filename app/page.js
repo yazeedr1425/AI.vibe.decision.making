@@ -12,6 +12,7 @@ import QuestionStep from "./components/QuestionStep";
 import RatingGrid from "./components/RatingGrid";
 import HistorySection from "./components/HistorySection";
 import Result from "./components/Result";
+import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import Thinking from "./components/Thinking";
 import VoiceMode from "./components/VoiceMode";
@@ -289,12 +290,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="border-t border-line/70">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-xs text-muted sm:px-6">
-          <p>احسم — يساعدك تحسم قراراتك اليومية بسرعة، مع السبب.</p>
-          <p className="tag">made for the indecisive</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }
