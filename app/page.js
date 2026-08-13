@@ -201,16 +201,26 @@ export default function Home() {
     [filledOptions, answers, categoryId, weights, accessToken],
   );
 
-  // المحادثة الصوتية تعطينا كل شي دفعة واحدة، بدون مرحلة التقييم
+  // المحادثة الصوتية تعطينا كل شي دفعة واحدة — بما فيه التقييمات.
+  // الوكيل يرجّعها مفهرسة بنص الخيار، والمحرك يبيها بمعرّف الخيار.
   const fromVoice = useCallback(
     (payload) => {
+      const voiceOptions = payload.options.map((label, i) => ({
+        id: `voice-${i}`,
+        label,
+      }));
+
+      const byId = {};
+      for (const option of voiceOptions) {
+        const given = payload.ratings?.[option.label];
+        if (given) byId[option.id] = given;
+      }
+
       setCategoryId(payload.categoryId);
-      setOptions(
-        payload.options.map((label, i) => ({ id: `voice-${i}`, label })),
-      );
+      setOptions(voiceOptions);
       setAnswers(payload.answers);
-      setRatings({});
-      decide(payload);
+      setRatings(byId);
+      decide({ ...payload, ratings: byId });
     },
     [decide],
   );

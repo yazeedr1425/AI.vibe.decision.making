@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CATEGORIES, getCategory } from "@/lib/engine/categories";
-import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
+import { MAX_OPTIONS, MIN_OPTIONS, RATING_SCALE } from "@/lib/engine/score";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,17 +13,26 @@ const TIMEOUT_MS = 12000;
 // الفئة والخيارات والإجابات دفعة وحدة، ويسأل فقط عن الناقص.
 const SYSTEM_INSTRUCTION = `You are Ahsem's voice assistant, talking to a user who may be blind and is speaking to you in Arabic. Your entire output is spoken aloud, so keep every reply short, warm, and free of any markup, emoji, lists, or English.
 
-Your job across turns is to fill three slots:
+Your job across turns is to fill four slots:
 1. category_id — which decision template fits
 2. options — the 2 to 5 things they are choosing between
-3. answers — their answer to each of that category's questions
+3. answers — their answer to each of that category's questions (these set how much each criterion MATTERS)
+4. ratings — how each option scores on each criterion, 1 (weak) to 3 (great)
 
 Rules that matter:
 - Extract EVERYTHING the user implies in one utterance. If they say they are rushed and broke, that answers the time and budget questions immediately. Never re-ask something they already told you.
-- Only ever emit question_key and choice_value that exist in the template given to you. Map their natural words onto the closest existing choice; never invent one.
+- Only ever emit question_key, choice_value and criterion_key that exist in the template given to you, and option strings exactly as the user gave them. Never invent one.
 - Ask for only ONE missing thing per reply, in a single short sentence.
 - If they gave options but no category, infer the category yourself rather than asking.
-- Set ready to true only once category_id, at least ${MIN_OPTIONS} options, and every question for that category are filled.
+
+Collecting ratings, which is the part users find tedious — keep it fast:
+- Ask about ONE criterion at a time and compare ALL the options in that single question, e.g. "بالنسبة للسرعة، أيهم أسرع؟" — then fill that criterion for every option from their one answer.
+- Start with the criterion they signalled matters most.
+- Infer aggressively from what they already said. "البرجر أسرع بس السوشي أخف على الجيب" gives you speed and cost in one go.
+- If they say it makes no difference, give every option 2 for that criterion and move on.
+- Never ask option-by-option. That is ${MIN_OPTIONS}x more questions than needed.
+
+- Set ready to true only once category_id, at least ${MIN_OPTIONS} options, every question, AND every criterion rated for every option are filled.
 - When ready is true, your reply should be a brief handoff like "تمام، خلني أحسمها لك" and nothing more.`;
 
 const RESPONSE_SCHEMA = {
@@ -49,11 +58,35 @@ const RESPONSE_SCHEMA = {
         required: ["question_key", "choice_value"],
       },
     },
+    ratings: {
+      type: Type.ARRAY,
+      description:
+        "How each option scores on each criterion. Fill every option for a criterion at once.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          option: { type: Type.STRING },
+          criterion_key: { type: Type.STRING },
+          value: {
+            type: Type.INTEGER,
+            description: "1 weak, 2 average, 3 great",
+          },
+        },
+        required: ["option", "criterion_key", "value"],
+      },
+    },
     reply: { type: Type.STRING, description: "What to say aloud, in Arabic." },
     ready: { type: Type.BOOLEAN },
   },
   required: ["reply", "ready"],
-  propertyOrdering: ["category_id", "options", "answers", "reply", "ready"],
+  propertyOrdering: [
+    "category_id",
+    "options",
+    "answers",
+    "ratings",
+    "reply",
+    "ready",
+  ],
 };
 
 // القوالب تنحقن في البرومبت حتى ما يخترع النموذج مفاتيح
@@ -67,7 +100,10 @@ function templatesForPrompt() {
             .join(" | ")}`,
       )
       .join("\n");
-    return `- ${c.id} ("${c.label}"): ${c.hint}\n${questions}`;
+    const criteria = c.criteria
+      .map((cr) => `    * ${cr.key}: "${cr.label}" (1=${cr.low}, 3=${cr.high})`)
+      .join("\n");
+    return `- ${c.id} ("${c.label}"): ${c.hint}\n  questions:\n${questions}\n  criteria to rate:\n${criteria}`;
   }).join("\n");
 }
 
@@ -103,14 +139,44 @@ function sanitize(raw) {
     }
   }
 
-  // ما نثق بـ ready من النموذج — نحسبها من الحالة الفعلية
+  // التقييمات: { "برجر": { speed: 3, cost: 2 } } — الخيار لازم يكون
+  // من القائمة، والمعيار من القالب، والقيمة ضمن السلم
+  const ratings = {};
+  if (category && Array.isArray(raw.ratings)) {
+    for (const entry of raw.ratings) {
+      const option = options.find((o) => o === entry?.option);
+      const criterion = category.criteria.find(
+        (c) => c.key === entry?.criterion_key,
+      );
+      const value = Number(entry?.value);
+      if (option && criterion && value >= 1 && value <= RATING_SCALE.length) {
+        ratings[option] = { ...ratings[option], [criterion.key]: value };
+      } else {
+        dropped.push(
+          `rating ${entry?.option}/${entry?.criterion_key}=${entry?.value}`,
+        );
+      }
+    }
+  }
+
+  // ما نثق بـ ready من النموذج — نحسبها من الحالة الفعلية.
+  // كل معيار لازم يكون مقيَّماً لكل خيار، وإلا صار "حسابك بالأوزان"
+  // متساوياً وبلا معنى — وهذا اللي كان يصير قبل.
+  const everythingRated =
+    category &&
+    options.length > 0 &&
+    options.every((o) =>
+      category.criteria.every((c) => ratings[o]?.[c.key] != null),
+    );
+
   const ready = Boolean(
     category &&
     options.length >= MIN_OPTIONS &&
-    category.questions.every((q) => answers[q.key]),
+    category.questions.every((q) => answers[q.key]) &&
+    everythingRated,
   );
 
-  return { categoryId, options, answers, ready, dropped };
+  return { categoryId, options, answers, ratings, ready, dropped };
 }
 
 export async function POST(request) {
@@ -143,6 +209,16 @@ export async function POST(request) {
       Object.entries(state.answers ?? {})
         .map(([k, v]) => `${k}=${v}`)
         .join(", ") || "(none)"
+    }`,
+    `- ratings: ${
+      Object.entries(state.ratings ?? {})
+        .map(
+          ([opt, byCriterion]) =>
+            `${opt}{${Object.entries(byCriterion)
+              .map(([k, v]) => `${k}=${v}`)
+              .join(",")}}`,
+        )
+        .join(" | ") || "(none)"
     }`,
     "",
     history.length ? "Recent conversation:" : "",
@@ -190,6 +266,7 @@ export async function POST(request) {
         categoryId: clean.categoryId,
         options: clean.options,
         answers: clean.answers,
+        ratings: clean.ratings,
       },
     });
   } catch (err) {
