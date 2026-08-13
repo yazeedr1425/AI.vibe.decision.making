@@ -14,7 +14,6 @@
     "url": "git+https://github.com/yazeedr1425/AI.vibe.decision.making.git"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.116.0",
     "@google/genai": "^2.16.0",
     "@supabase/supabase-js": "^2.112.3",
     "next": "16.3.0",

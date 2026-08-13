@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI, Type } from "@google/genai";
 import { fetchCandidates, resolveLocation } from "@/lib/places/client";
 import { prepareCandidates } from "@/lib/places/trim";
 import { travelLegs } from "@/lib/routing/travel";
@@ -20,11 +20,65 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MODEL = "claude-sonnet-4-6";
-const MAX_TOKENS = 8000;
-const CLAUDE_TIMEOUT_MS = 45000; // بالميلي ثانية — SDK الـ JS يقيسها كذا
+// نفس نموذج /api/decide — مزوّد واحد لكل التطبيق
+const MODEL = "gemini-2.5-flash";
+const GEMINI_TIMEOUT_MS = 30000;
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// responseSchema يفرض الشكل على مستوى الـ API، فما نحتاج نتوسّل
+// للنموذج يرجّع JSON نظيفاً. لكنه يفرض الشكل فقط — ما يقدر يمنع
+// النموذج من اختراع place_id، وهذا يبقى شغل lib/plan/parse.js.
+const RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    title: {
+      type: Type.STRING,
+      description: "Short Arabic title for the day, playful and specific.",
+    },
+    stops: {
+      type: Type.ARRAY,
+      description: "Between 3 and 5 stops, in visiting order.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          place_id: {
+            type: Type.STRING,
+            description: "Must be copied verbatim from the candidates list.",
+          },
+          name: { type: Type.STRING, description: "The place name." },
+          arrival_time: {
+            type: Type.STRING,
+            description: "24-hour clock, exactly HH:MM.",
+          },
+          duration_minutes: {
+            type: Type.INTEGER,
+            description: "How long they stay at this stop.",
+          },
+          why: {
+            type: Type.STRING,
+            description:
+              "One short Arabic sentence on why this stop suits them.",
+          },
+        },
+        required: ["place_id", "name", "arrival_time", "duration_minutes", "why"],
+        propertyOrdering: [
+          "place_id",
+          "name",
+          "arrival_time",
+          "duration_minutes",
+          "why",
+        ],
+      },
+    },
+    note: {
+      type: Type.STRING,
+      description: "One practical Arabic line: parking, timing, or booking.",
+    },
+  },
+  required: ["title", "stops", "note"],
+  propertyOrdering: ["title", "stops", "note"],
+};
 
 function fail(status, message, extra) {
   return Response.json({ ok: false, error: message, ...extra }, { status });
@@ -116,53 +170,46 @@ function validate(body) {
 // نداء Claude
 // ---------------------------------------------------------------
 
-function textOf(message) {
-  return (message.content ?? [])
-    .filter((block) => block.type === "text")
-    .map((block) => block.text)
-    .join("")
-    .trim();
-}
-
-async function askClaude(input) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+async function askGemini(input) {
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    const err = new Error("ANTHROPIC_API_KEY is not set");
+    const err = new Error("GEMINI_API_KEY is not set");
     err.code = "NO_API_KEY";
     throw err;
   }
-
-  const client = new Anthropic({ apiKey });
 
   let userPrompt = buildUserPrompt(input);
   if (input.exclude.length) {
     userPrompt += `\n\nDo NOT use these place_ids — the user rejected them: ${input.exclude.join(", ")}`;
   }
 
-  const message = await client.messages.create(
-    {
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      // الترتيب لتقليل التنقّل داخل نافذة زمنية = استدلال حقيقي،
-      // مو استخراج. التفكير التكيّفي يحسّن الترتيب بوضوح.
-      thinking: { type: "adaptive" },
-      output_config: { effort: "medium" },
-      messages: [{ role: "user", content: userPrompt }],
-    },
-    { timeout: CLAUDE_TIMEOUT_MS },
-  );
+  const ai = new GoogleGenAI({ apiKey });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
-  if (message.stop_reason === "refusal") {
-    const err = new Error("Claude refused the request");
-    err.code = "REFUSED";
-    throw err;
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model: MODEL,
+      contents: userPrompt,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: RESPONSE_SCHEMA,
+        // أقل من /api/decide: هناك نبي طرافة، وهنا نبي ترتيباً
+        // يحترم الوقت والمسافة. الحرارة العالية تعطي جدولاً مبعثراً.
+        temperature: 0.6,
+        abortSignal: controller.signal,
+      },
+    });
+  } finally {
+    clearTimeout(timeout);
   }
 
-  const raw = textOf(message);
+  const raw = response?.text;
   if (!raw) {
-    const err = new Error(`Claude returned no text (stop: ${message.stop_reason})`);
-    err.code = message.stop_reason === "max_tokens" ? "TRUNCATED" : "EMPTY";
+    const err = new Error("Gemini returned an empty response");
+    err.code = "EMPTY";
     throw err;
   }
 
@@ -224,6 +271,15 @@ export async function POST(request) {
     if (err.name === "AbortError") {
       return fail(504, "خدمة الأماكن تأخرت بالرد، جرب مرة ثانية.");
     }
+    // 403 من Places يعني إعداد المفتاح غالباً لا عطلاً: إما قيود
+    // التطبيق على "HTTP referrers" (والنداء من الخادم بلا referer)،
+    // أو الـ API نفسه غير مفعّل. رسالة عامة هنا تضيّع ساعة تشخيص.
+    if (err.status === 403) {
+      return fail(
+        503,
+        "مفتاح الخرائط مرفوض — تأكد أن قيود التطبيق None (مو HTTP referrers) وأن Places API (New) و Routes API مفعّلتان.",
+      );
+    }
     return fail(502, "ما قدرنا نجيب أماكن قريبة منك الحين.");
   }
 
@@ -241,14 +297,14 @@ export async function POST(request) {
   // ٤ — الخطة من النموذج
   let raw;
   try {
-    raw = await askClaude({ ...input, candidates, locationLabel: origin.label });
+    raw = await askGemini({ ...input, candidates, locationLabel: origin.label });
   } catch (err) {
-    console.error(`[api/plan] claude failed (${err.code ?? "UNKNOWN"}):`, err);
+    console.error(`[api/plan] gemini failed (${err.code ?? "UNKNOWN"}):`, err);
 
     if (err.code === "NO_API_KEY") {
-      return fail(503, "مولّد الخطة غير مهيأ — ANTHROPIC_API_KEY مفقود.");
+      return fail(503, "مولّد الخطة غير مهيأ — GEMINI_API_KEY مفقود.");
     }
-    if (err.name === "AbortError" || err.status === 408) {
+    if (err.name === "AbortError") {
       return fail(504, "مولّد الخطة تأخر بالرد، جرب مرة ثانية.");
     }
     if (err.status === 429) {
