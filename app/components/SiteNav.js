@@ -3,14 +3,19 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import VoiceControls from "./VoiceControls";
+import VoiceShortcuts from "./VoiceShortcuts";
 
+// صفحات فقط. «سجل القرارات» و«أمثلة» انحذفا لأنهما مرساتان داخل
+// الرئيسية لا وجهتان: القفز لوسط صفحة أخرى ليس تنقّلاً، والخلط
+// بينهما يخلي المستخدم ما يدري وين بيوديه الرابط.
+//
+// القسمان باقيان في مكانهما، ورابط السجل باقٍ في الفوتر. ومرساة
+// ‎/#examples‎ باقية كذلك رغم أن لا شيء يشير إليها الآن — الرابط
+// المحفوظ عند أحدهم لازم يظل يشتغل.
 const LINKS = [
   { href: "/how", label: "كيف يعمل" },
   { href: "/plan", label: "خطة اليوم" },
   { href: "/analyze", label: "تحليل المخاطر" },
-  { href: "/#examples", label: "أمثلة" },
-  { href: "/#history", label: "سجل القرارات" },
 ];
 
 // المعالجات اختيارية: الصفحة الرئيسية تمرّرها لأنها تدير حالة الخطوات،
@@ -60,9 +65,10 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
           </ul>
         </div>
 
-        {/* الأدوات والحساب في الطرف المقابل */}
+        {/* الحساب في الطرف المقابل. زرّا القراءة الصوتية انحذفا،
+            واختصاراتهما باقية في VoiceShortcuts (ما يرسم شيئاً). */}
         <div className="flex items-center gap-1 sm:gap-2">
-          <VoiceControls onVoiceMode={openVoice} />
+          <VoiceShortcuts onVoiceMode={openVoice} />
 
           {user ? (
             <>
