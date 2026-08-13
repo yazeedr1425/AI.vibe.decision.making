@@ -52,7 +52,6 @@ export default function Landing({
   onVoiceMode,
 }) {
   const { stt } = useVoice();
-  const [editingTopic, setEditingTopic] = useState(false);
   const [dictating, setDictating] = useState(false);
   const [dictationError, setDictationError] = useState(null);
   const stopRef = useRef(() => {});
@@ -82,7 +81,6 @@ export default function Landing({
   const applyExample = (example) => {
     setCategoryId(example.categoryId);
     setOptions(example.options.map((label, i) => ({ id: `ex-${i}`, label })));
-    setEditingTopic(false);
   };
 
   const dictate = useCallback(() => {
@@ -198,8 +196,9 @@ export default function Landing({
           وش القرار اللي محتار فيه؟
         </h2>
 
-        {/* الموضوع + غيّر */}
-        <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-background px-4 py-3">
+        {/* سطر يلخّص اختيارك — الفئة والمزاج معاً، ويتحدث فوراً
+            مع الضغط على الشرائح تحته */}
+        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-line bg-background px-4 py-3">
           <span className="flex items-center gap-2 font-medium">
             <CategoryIcon
               categoryId={categoryId}
@@ -211,69 +210,62 @@ export default function Landing({
               <span className="text-sm text-muted">· {activeMood.label}</span>
             )}
           </span>
-          <button
-            type="button"
-            onClick={() => setEditingTopic((v) => !v)}
-            aria-expanded={editingTopic}
-            className="rounded-full px-3 py-1 text-sm text-accent-strong transition-colors hover:bg-accent-soft"
-          >
-            {editingTopic ? "تم" : "غيّر"}
-          </button>
         </div>
 
-        {editingTopic && (
-          <div className="mt-3 flex flex-col gap-4 rounded-2xl border border-dashed border-line p-4">
-            <div className="flex flex-col gap-2">
-              <span className="text-sm text-muted">نوع القرار</span>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setCategoryId(c.id)}
-                    aria-pressed={categoryId === c.id}
-                    className={
-                      "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
-                      (categoryId === c.id
-                        ? "border-accent bg-accent text-accent-ink"
-                        : "border-line hover:border-muted-soft")
-                    }
-                  >
-                    <CategoryIcon categoryId={c.id} size={16} />
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <span className="text-sm text-muted">
-                مزاجك — يغيّر لون الصفحة ووزن معيار واحد
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {MOODS.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setMood(mood === m.id ? null : m.id)}
-                    aria-pressed={mood === m.id}
-                    className={
-                      "rounded-full border px-3 py-1.5 text-sm transition-colors " +
-                      (mood === m.id
-                        ? "border-accent bg-accent text-accent-ink"
-                        : "border-line hover:border-muted-soft")
-                    }
-                  >
-                    <span aria-hidden="true">{m.emoji}</span> {m.label}
-                  </button>
-                ))}
-              </div>
-              {activeMood && (
-                <p className="text-sm text-muted">{activeMood.line}</p>
-              )}
+        {/* مفتوح دائماً. كان خلف زر «غيّر» فتُفتح بضغطة إضافية، ونوع
+            القرار مطلوب أصلاً قبل «احسمها لي» — إخفاء خطوة إجبارية
+            خلف زر يخلي المستخدم يدوّر على شي ما يعرف إنه موجود. */}
+        <div className="mt-3 flex flex-col gap-4 rounded-2xl border border-line p-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm text-muted">نوع القرار</span>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategoryId(c.id)}
+                  aria-pressed={categoryId === c.id}
+                  className={
+                    "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
+                    (categoryId === c.id
+                      ? "border-accent bg-accent text-accent-ink"
+                      : "border-line hover:border-muted-soft")
+                  }
+                >
+                  <CategoryIcon categoryId={c.id} size={16} />
+                  {c.label}
+                </button>
+              ))}
             </div>
           </div>
-        )}
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm text-muted">
+              مزاجك — يغيّر لون الصفحة ووزن معيار واحد
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {MOODS.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMood(mood === m.id ? null : m.id)}
+                  aria-pressed={mood === m.id}
+                  className={
+                    "rounded-full border px-3 py-1.5 text-sm transition-colors " +
+                    (mood === m.id
+                      ? "border-accent bg-accent text-accent-ink"
+                      : "border-line hover:border-muted-soft")
+                  }
+                >
+                  <span aria-hidden="true">{m.emoji}</span> {m.label}
+                </button>
+              ))}
+            </div>
+            {activeMood && (
+              <p className="text-sm text-muted">{activeMood.line}</p>
+            )}
+          </div>
+        </div>
 
         {/* الخيارات */}
         <ul className="mt-3 flex flex-col gap-2">
@@ -358,7 +350,7 @@ export default function Landing({
           {ready
             ? "ما نحفظ قرارك إلا إذا طلبت. القرار لك دائمًا."
             : !categoryId
-              ? "اختر نوع القرار من «غيّر» أول."
+              ? "اختر نوع القرار فوق أول."
               : `اكتب ${MIN_OPTIONS} خيارات على الأقل.`}
         </p>
       </section>
