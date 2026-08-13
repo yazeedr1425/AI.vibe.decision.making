@@ -10,6 +10,7 @@ import { Tag } from "../ui";
 
 const STATE_LABEL = {
   done: "اكتمل",
+  skipped: "تُخطّي",
   running: "جارٍ",
   pending: "بالانتظار",
 };
@@ -22,11 +23,13 @@ export default function AgentTrail({ steps, current, failed }) {
       className="flex flex-col gap-3"
     >
       {steps.map((s) => {
-        const state = s.done
-          ? "done"
-          : s.id === current
-            ? "running"
-            : "pending";
+        const state = s.skipped
+          ? "skipped"
+          : s.done
+            ? "done"
+            : s.id === current
+              ? "running"
+              : "pending";
         const isFailed = failed === s.id;
 
         return (
@@ -36,18 +39,20 @@ export default function AgentTrail({ steps, current, failed }) {
               "flex items-start gap-3 rounded-2xl border p-4 transition-colors " +
               (isFailed
                 ? "border-accent-strong bg-accent-soft"
-                : state === "done"
-                  ? "border-line bg-card"
-                  : state === "running"
-                    ? "border-accent bg-card"
-                    : "border-line/60 bg-transparent opacity-55")
+                : state === "skipped"
+                  ? "border-accent-strong/60 bg-accent-soft/50"
+                  : state === "done"
+                    ? "border-line bg-card"
+                    : state === "running"
+                      ? "border-accent bg-card"
+                      : "border-line/60 bg-transparent opacity-55")
             }
           >
             <span
               aria-hidden="true"
               className={
                 "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold " +
-                (isFailed
+                (isFailed || state === "skipped"
                   ? "bg-accent-strong text-accent-ink"
                   : state === "done"
                     ? "bg-accent text-accent-ink"
@@ -56,7 +61,11 @@ export default function AgentTrail({ steps, current, failed }) {
                       : "border border-line bg-card text-muted")
               }
             >
-              {isFailed ? "!" : state === "done" ? "✓" : s.index}
+              {isFailed || state === "skipped"
+                ? "!"
+                : state === "done"
+                  ? "✓"
+                  : s.index}
             </span>
 
             <div className="min-w-0 flex-1">
