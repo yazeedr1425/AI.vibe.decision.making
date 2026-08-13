@@ -1,142 +1,71 @@
 "use client";
 
-import { useEffect, useReducer, useRef, useState } from "react";
-import { CATEGORIES, getCategory } from "@/lib/engine/categories";
-import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { listenOnce, speak, stopSpeaking } from "@/lib/voice/speech";
-import { matchCandidate, matchCommand, parseSpokenOptions } from "@/lib/voice/match";
+import { matchCommand } from "@/lib/voice/match";
 import { useVoice } from "@/lib/voice/VoiceProvider";
 import { GhostButton, PrimaryButton, SectionHeading, Tag } from "./ui";
 
 const INTRO =
-  "كلّمني وأنا أعبّي الخيارات وأسألك وأحسمها. ولو الميكروفون ممنوع، بيظهر لك مربع كتابة ونكمل نفس المحادثة.";
+  "كلّمني بطبيعتك وأنا أفهم عليك. قل لي وش محتار فيه وأي شي يهمك، وأنا أكمل الباقي. ولو الميكروفون ممنوع، اكتب لي ونكمل نفس المحادثة.";
+
+const GREETING =
+  "أهلاً. قل لي وش القرار اللي محتار فيه، وأي شي يهمك اليوم — مثلاً: محتار بين برجر وسوشي وأنا مستعجل.";
 
 // ---------------------------------------------------------------
-// آلة الحالة — كل المنطق في reducer نقي، والأثر الجانبي (كلام/استماع)
-// يتبع state.pending. هذا يلغي الاعتماد الدائري بين "اسأل" و"استقبل".
+// الحالة. المطابقة صارت عند النموذج في /api/assist، وهنا نحتفظ
+// بسجل المحادثة وما يُنطق. أوامر التوقف والإعادة تبقى محلية عشان
+// تشتغل فوراً بدون انتظار الشبكة.
 // ---------------------------------------------------------------
-
-const stepsOf = (categoryId) => {
-  const cat = categoryId ? getCategory(categoryId) : null;
-  return ["category", "options", ...(cat?.questions.map((q) => q.key) ?? [])];
-};
-
-function promptFor(stage, categoryId) {
-  const step = stepsOf(categoryId)[stage];
-  if (!step) return null;
-  if (step === "category") {
-    return `وش نوع القرار؟ ${CATEGORIES.map((c) => c.label).join("، ")}؟`;
-  }
-  if (step === "options") {
-    return `وش الخيارات؟ قل لي من ${MIN_OPTIONS} إلى ${MAX_OPTIONS} خيارات، وافصل بينها بكلمة "أو".`;
-  }
-  const question = getCategory(categoryId)?.questions.find((q) => q.key === step);
-  return question
-    ? `${question.label} ${question.choices.map((c) => c.label).join("، أو ")}؟`
-    : null;
-}
 
 const initialState = {
   started: false,
-  stage: 0,
   draft: { categoryId: null, options: [], answers: {} },
   log: [],
-  pending: null, // { text, id } — ما يجب نطقه ثم الاستماع بعده
+  pending: null, // { text, id }
+  busy: false,
   result: null,
   cancelled: false,
 };
 
 let pendingId = 0;
-const say = (state, text) => ({
+const say = (state, text, extra = {}) => ({
   ...state,
   log: [...state.log, { who: "ahsem", text }],
   pending: { text, id: ++pendingId },
+  busy: false,
+  ...extra,
 });
 
 function reducer(state, action) {
   switch (action.type) {
-    case "start": {
-      const text = promptFor(0, null);
-      return { ...initialState, started: true, log: [{ who: "ahsem", text }], pending: { text, id: ++pendingId } };
+    case "start":
+      return say({ ...initialState, started: true }, GREETING);
+
+    case "user":
+      return {
+        ...state,
+        log: [...state.log, { who: "user", text: action.text }],
+        pending: null,
+        busy: true,
+      };
+
+    case "agent": {
+      const next = { ...state, draft: action.state };
+      if (action.ready) {
+        return say(next, action.reply, { result: action.state });
+      }
+      return say(next, action.reply);
     }
 
-    case "mic-blocked":
-      return say({ ...state, pending: null }, "الميكروفون ممنوع — اكتب لي هنا ونكمل نفس المحادثة.");
+    case "error":
+      return say(state, action.message);
 
-    case "misheard":
-      return say(state, "ما سمعت شي — عيد أو اكتبها.");
+    case "repeat":
+      return say(state, action.text);
 
-    case "input": {
-      const text = (action.text ?? "").trim();
-      if (!text) return state;
-
-      const withUser = { ...state, log: [...state.log, { who: "user", text }] };
-      const command = matchCommand(text);
-
-      if (command === "stop") return { ...withUser, cancelled: true, pending: null };
-      if (command === "repeat") {
-        return say(withUser, promptFor(state.stage, state.draft.categoryId));
-      }
-      if (command === "back") {
-        const stage = Math.max(0, state.stage - 1);
-        return say({ ...withUser, stage }, promptFor(stage, state.draft.categoryId));
-      }
-
-      const steps = stepsOf(state.draft.categoryId);
-      const step = steps[state.stage];
-
-      if (step === "category") {
-        const picked = matchCandidate(
-          text,
-          CATEGORIES.map((c) => ({ value: c.id, labels: [c.label, c.en, c.hint] }))
-        );
-        if (!picked) return say(withUser, "ما ضبطت معي. قل مثلاً: أكل، أو ترفيه.");
-        const next = { ...withUser, draft: { ...withUser.draft, categoryId: picked }, stage: 1 };
-        return say(next, promptFor(1, picked));
-      }
-
-      if (step === "options") {
-        const parsed = parseSpokenOptions(text, { max: MAX_OPTIONS });
-        if (parsed.length < MIN_OPTIONS) {
-          return say(withUser, `أبغى ${MIN_OPTIONS} خيارات على الأقل. مثلاً: برجر أو سوشي.`);
-        }
-        const next = {
-          ...withUser,
-          draft: { ...withUser.draft, options: parsed },
-          stage: 2,
-          log: [...withUser.log, { who: "ahsem", text: `تمام: ${parsed.join("، ")}.` }],
-        };
-        return say(next, promptFor(2, withUser.draft.categoryId));
-      }
-
-      const category = getCategory(state.draft.categoryId);
-      const question = category?.questions.find((q) => q.key === step);
-      if (!question) return withUser;
-
-      const picked = matchCandidate(
-        text,
-        question.choices.map((c) => ({ value: c.value, labels: [c.label, c.en] }))
-      );
-      if (!picked) {
-        return say(
-          withUser,
-          `ما فهمت. اختر: ${question.choices.map((c) => c.label).join("، أو ")}.`
-        );
-      }
-
-      const answers = { ...state.draft.answers, [question.key]: picked };
-      const draft = { ...state.draft, answers };
-      const nextStage = state.stage + 1;
-
-      if (nextStage >= steps.length) {
-        return {
-          ...say({ ...withUser, draft }, "تمام، خلني أحسمها لك."),
-          result: draft,
-        };
-      }
-
-      return say({ ...withUser, draft, stage: nextStage }, promptFor(nextStage, draft.categoryId));
-    }
+    case "cancel":
+      return { ...state, cancelled: true, pending: null, busy: false };
 
     default:
       return state;
@@ -152,12 +81,65 @@ export default function VoiceMode({ onComplete, onCancel }) {
   const [micBlocked, setMicBlocked] = useState(false);
   const [typed, setTyped] = useState("");
   const stopListening = useRef(null);
+  const stateRef = useRef(state);
 
-  const { started, stage, draft, log, pending, result, cancelled } = state;
-  const steps = stepsOf(draft.categoryId);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  const { started, draft, log, pending, busy, result, cancelled } = state;
   const textOnly = !stt || micBlocked;
 
-  // ينطق الرسالة المعلّقة ثم يستمع
+  // دورة الوكيل: كلام المستخدم → النموذج → رد منطوق + حالة محدّثة.
+  // stateRef يخلي الدالة ثابتة، فما يعاد بناء تأثير النطق كل رسالة.
+  const handle = useCallback(async (raw) => {
+    const text = (raw ?? "").trim();
+    if (!text) return;
+
+    // أوامر التحكم محلية عشان تستجيب فوراً بدون انتظار الشبكة
+    const command = matchCommand(text);
+    if (command === "stop") return dispatch({ type: "cancel" });
+    if (command === "repeat") {
+      const last = stateRef.current.log.filter((l) => l.who === "ahsem").at(-1);
+      return dispatch({ type: "repeat", text: last?.text ?? GREETING });
+    }
+
+    dispatch({ type: "user", text });
+
+    try {
+      const current = stateRef.current;
+      const res = await fetch("/api/assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          utterance: text,
+          state: current.draft,
+          history: current.log.slice(-6),
+        }),
+      });
+      const payload = await res.json().catch(() => null);
+
+      if (!res.ok || !payload?.ok) {
+        dispatch({
+          type: "error",
+          message: payload?.error ?? "ما قدرت أفهمك الحين، عيد عليّ؟",
+        });
+        return;
+      }
+
+      dispatch({
+        type: "agent",
+        state: payload.state,
+        reply: payload.reply,
+        ready: payload.ready,
+      });
+    } catch (err) {
+      console.error("[voice] assist failed:", err);
+      dispatch({ type: "error", message: "ما وصلت للخادم — عيد عليّ؟" });
+    }
+  }, []);
+
+  // ينطق الرسالة المعلّقة ثم يفتح الميكروفون
   useEffect(() => {
     if (!pending || cancelled || result) return;
     let dead = false;
@@ -169,15 +151,16 @@ export default function VoiceMode({ onComplete, onCancel }) {
         stopListening.current = listenOnce({
           onResult: (text) => {
             setListening(false);
-            dispatch({ type: "input", text });
+            handle(text);
           },
           onError: (code) => {
             setListening(false);
             if (code === "not-allowed" || code === "service-not-allowed") {
               setMicBlocked(true);
-              dispatch({ type: "mic-blocked" });
-            } else if (code === "no-speech") {
-              dispatch({ type: "misheard" });
+              dispatch({
+                type: "error",
+                message: "الميكروفون ممنوع — اكتب لي هنا ونكمل.",
+              });
             }
           },
         });
@@ -189,7 +172,7 @@ export default function VoiceMode({ onComplete, onCancel }) {
       stopSpeaking();
       stopListening.current?.();
     };
-  }, [pending, cancelled, result, stt, micBlocked]);
+  }, [pending, cancelled, result, stt, micBlocked, handle]);
 
   useEffect(() => {
     if (result) onComplete?.(result);
@@ -202,12 +185,12 @@ export default function VoiceMode({ onComplete, onCancel }) {
   useEffect(() => () => stopSpeaking(), []);
 
   const listenAgain = () => {
-    if (!stt || listening) return;
+    if (!stt || listening || busy) return;
     setListening(true);
     stopListening.current = listenOnce({
       onResult: (text) => {
         setListening(false);
-        dispatch({ type: "input", text });
+        handle(text);
       },
       onError: () => setListening(false),
     });
@@ -218,21 +201,31 @@ export default function VoiceMode({ onComplete, onCancel }) {
     const value = typed.trim();
     if (!value) return;
     setTyped("");
-    dispatch({ type: "input", text: value });
+    handle(value);
   };
+
+  const filledCount =
+    (draft.categoryId ? 1 : 0) +
+    (draft.options.length ? 1 : 0) +
+    (Object.keys(draft.answers).length ? 1 : 0);
 
   if (!started) {
     return (
       <div className="flex flex-col gap-5">
-        <SectionHeading tag="talk to ehsim" title="وضع المحادثة الصوتية" sub={INTRO} />
+        <SectionHeading
+          tag="talk to ehsim"
+          title="وضع المحادثة الصوتية"
+          sub={INTRO}
+        />
         {!stt && (
           <p className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted">
-            متصفحك ما يدعم التعرف على الكلام — بنكمل بالكتابة، ونفس المحادثة تشتغل.
+            متصفحك ما يدعم التعرف على الكلام — بنكمل بالكتابة، ونفس المحادثة
+            تشتغل.
           </p>
         )}
         <div className="flex flex-wrap gap-3">
           <PrimaryButton onClick={() => dispatch({ type: "start" })}>
-            🎧 ابدأ المحادثة الصوتية
+            ابدأ المحادثة
           </PrimaryButton>
           <GhostButton onClick={onCancel}>رجوع</GhostButton>
         </div>
@@ -243,15 +236,25 @@ export default function VoiceMode({ onComplete, onCancel }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-xl font-bold">المحادثة</h2>
-        <Tag>{`step ${Math.min(stage + 1, steps.length)} / ${steps.length}`}</Tag>
+        <h2 tabIndex={-1} data-step-heading className="text-xl font-bold">
+          المحادثة
+        </h2>
+        <Tag>{`${filledCount} / 3 filled`}</Tag>
       </div>
 
-      <div className="flex max-h-80 flex-col gap-3 overflow-y-auto" aria-live="polite">
+      {/* السجل منطقة حيّة: قارئ الشاشة يقرأ كل رد جديد */}
+      <div
+        className="flex max-h-80 flex-col gap-3 overflow-y-auto"
+        role="log"
+        aria-live="polite"
+        aria-label="المحادثة"
+      >
         {log.map((entry, i) => (
           <div
             key={i}
-            className={"flex " + (entry.who === "user" ? "justify-start" : "justify-end")}
+            className={
+              "flex " + (entry.who === "user" ? "justify-start" : "justify-end")
+            }
           >
             <p
               className={
@@ -261,18 +264,19 @@ export default function VoiceMode({ onComplete, onCancel }) {
                   : "bg-accent text-accent-ink")
               }
             >
+              <span className="sr-only">
+                {entry.who === "user" ? "أنت: " : "احسم: "}
+              </span>
               {entry.text}
             </p>
           </div>
         ))}
       </div>
 
-      {listening && (
-        <p className="flex items-center gap-2 text-sm text-muted">
-          <span className="inline-block h-2 w-2 animate-ping rounded-full bg-accent" />
-          أسمعك…
-        </p>
-      )}
+      <p role="status" aria-live="polite" className="text-sm text-muted">
+        {busy && "… أفكر"}
+        {!busy && listening && "أسمعك…"}
+      </p>
 
       <form onSubmit={submitTyped} className="flex items-center gap-2">
         <input
@@ -280,17 +284,22 @@ export default function VoiceMode({ onComplete, onCancel }) {
           onChange={(e) => setTyped(e.target.value)}
           placeholder={textOnly ? "اكتب ردك هنا" : "أو اكتبها"}
           aria-label="اكتب ردك"
-          className="w-full rounded-xl border border-line bg-card px-4 py-3 outline-none transition-colors focus:border-accent"
+          disabled={busy}
+          className="w-full rounded-xl border border-line bg-card px-4 py-3 outline-none transition-colors focus:border-accent disabled:opacity-60"
         />
-        <PrimaryButton type="submit" className="shrink-0 px-5 py-3">
+        <PrimaryButton
+          type="submit"
+          disabled={busy}
+          className="shrink-0 px-5 py-3"
+        >
           أرسل
         </PrimaryButton>
       </form>
 
       <div className="flex flex-wrap gap-3">
         {stt && !micBlocked && (
-          <GhostButton onClick={listenAgain} disabled={listening}>
-            🎙️ {listening ? "أسمعك…" : "تكلم"}
+          <GhostButton onClick={listenAgain} disabled={listening || busy}>
+            {listening ? "أسمعك…" : "تكلم"}
           </GhostButton>
         )}
         <GhostButton onClick={onCancel}>إلغاء</GhostButton>
