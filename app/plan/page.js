@@ -5,7 +5,13 @@ import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
 import PlanTimeline from "../components/plan/PlanTimeline";
 import { Card, Choice, GhostButton, PrimaryButton, SectionHeading, Tag } from "../components/ui";
-import { MapPin, RefreshCw } from "../components/icons";
+import {
+  Check,
+  GroupIcon,
+  MapPin,
+  RefreshCw,
+  VibeIcon,
+} from "../components/icons";
 import {
   BUDGETS,
   DEFAULT_RADIUS_KM,
@@ -193,7 +199,8 @@ export default function PlanPage() {
                   className="flex items-center gap-1.5"
                 >
                   <MapPin size={15} />
-                  {locating ? "نحدد…" : coords ? "تم تحديد موقعك ✓" : "حدّد موقعي"}
+                  {locating ? "نحدد…" : coords ? "تم تحديد موقعك" : "حدّد موقعي"}
+                  {coords && !locating && <Check size={15} />}
                 </GhostButton>
 
                 {coords && (
@@ -267,8 +274,10 @@ export default function PlanPage() {
                     selected={groupId === g.id}
                     disabled={loading}
                     onClick={() => setGroupId(g.id)}
+                    className="flex items-center gap-1.5"
                   >
-                    {g.emoji} {g.label}
+                    <GroupIcon groupId={g.id} size={16} />
+                    {g.label}
                   </Choice>
                 ))}
               </div>
@@ -284,8 +293,10 @@ export default function PlanPage() {
                     selected={vibeId === v.id}
                     disabled={loading}
                     onClick={() => setVibeId(v.id)}
+                    className="flex items-center gap-1.5"
                   >
-                    {v.emoji} {v.label}
+                    <VibeIcon vibeId={v.id} size={16} />
+                    {v.label}
                   </Choice>
                 ))}
               </div>

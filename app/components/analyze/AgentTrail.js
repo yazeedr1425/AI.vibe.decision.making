@@ -1,6 +1,7 @@
 "use client";
 
 import { Tag } from "../ui";
+import { Check } from "../icons";
 
 // خط الوكلاء وهو يشتغل. التحليل يأخذ حوالي دقيقة — بدون هذا
 // المستخدم يشوف شاشة معلّقة ويفترض أنها تعطّلت.
@@ -61,11 +62,13 @@ export default function AgentTrail({ steps, current, failed }) {
                       : "border border-line bg-card text-muted")
               }
             >
-              {isFailed || state === "skipped"
-                ? "!"
-                : state === "done"
-                  ? "✓"
-                  : s.index}
+              {isFailed || state === "skipped" ? (
+                "!"
+              ) : state === "done" ? (
+                <Check size={15} />
+              ) : (
+                s.index
+              )}
             </span>
 
             <div className="min-w-0 flex-1">

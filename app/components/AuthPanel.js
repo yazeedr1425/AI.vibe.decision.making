@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { ArrowLeft, CircleCheck } from "./icons";
+import { ArrowLeft, CircleCheck, TriangleAlert } from "./icons";
 
 const MIN_PASSWORD = 6;
 
@@ -122,9 +122,10 @@ export default function AuthPanel({ mode = "signin" }) {
         {error && (
           <p
             role="alert"
-            className="rounded-xl border border-dashed border-line px-4 py-3 text-sm"
+            className="flex items-center gap-2 rounded-xl border border-dashed border-line px-4 py-3 text-sm"
           >
-            ⚠️ {error}
+            <TriangleAlert size={15} className="shrink-0" />
+            {error}
           </p>
         )}
 

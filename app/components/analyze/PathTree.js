@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Tag } from "../ui";
+import { ArrowLeft } from "../icons";
 
 // شجرة القرار. كل مسار بطاقة قابلة للفتح، وتحته فرعان:
 // ماذا لو مشت الأمور، وماذا لو ما مشت.
@@ -110,7 +111,10 @@ function Path({ path, index, recommended, defaultOpen }) {
                 }
               >
                 <p className="text-sm font-medium">{b.condition}</p>
-                <p className="mt-0.5 text-sm text-muted">← {b.outcome}</p>
+                <p className="mt-0.5 flex items-start gap-1.5 text-sm text-muted">
+                  <ArrowLeft size={14} className="mt-0.5 shrink-0" />
+                  {b.outcome}
+                </p>
               </li>
             ))}
           </ul>

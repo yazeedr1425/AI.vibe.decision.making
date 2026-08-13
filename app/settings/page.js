@@ -10,7 +10,12 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { useVoice } from "@/lib/voice/VoiceProvider";
 import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
-import { ArrowLeft, CircleCheck } from "../components/icons";
+import {
+  ArrowLeft,
+  CircleCheck,
+  MoodIcon,
+  TriangleAlert,
+} from "../components/icons";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -122,8 +127,9 @@ export default function SettingsPage() {
         )}
 
         {!authLoading && user && loaded?.error && (
-          <p className="rounded-2xl border border-dashed border-line bg-card p-5 text-sm text-muted">
-            ⚠️ {loaded.error}
+          <p className="flex items-center gap-2 rounded-2xl border border-dashed border-line bg-card p-5 text-sm text-muted">
+            <TriangleAlert size={16} />
+            {loaded.error}
           </p>
         )}
 
@@ -206,13 +212,14 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setForm({ ...form, default_mood: m.id })}
                     className={
-                      "rounded-full border px-4 py-2 text-sm transition-colors " +
+                      "flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors " +
                       (form.default_mood === m.id
                         ? "border-accent bg-accent text-accent-ink"
                         : "border-line hover:border-muted-soft")
                     }
                   >
-                    {m.emoji} {m.label}
+                    <MoodIcon moodId={m.id} size={16} />
+                    {m.label}
                   </button>
                 ))}
               </div>
@@ -230,13 +237,16 @@ export default function SettingsPage() {
                   }
                   className="h-4 w-4 accent-[color:var(--accent)]"
                 />
+                {/* كان يحيل على زر القراءة في الهيدر — والزر انحذف،
+                    فبقيت الإشارة تدل على شي غير موجود */}
                 <span className="text-sm">
-                  اقرأ لي كل شاشة تلقائياً (نفس زر 🔊 واختصار S)
+                  اقرأ لي كل شاشة تلقائياً (اختصار حرف S)
                 </span>
               </label>
               {!tts && (
-                <p className="text-sm text-muted">
-                  ⚠️ متصفحك ما يدعم القراءة الصوتية — الإعداد بينحفظ بس ما راح
+                <p className="flex items-center gap-2 text-sm text-muted">
+                  <TriangleAlert size={15} className="shrink-0" />
+                  متصفحك ما يدعم القراءة الصوتية — الإعداد بينحفظ بس ما راح
                   يشتغل هنا.
                 </p>
               )}

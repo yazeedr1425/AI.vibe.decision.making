@@ -2,6 +2,7 @@
 
 import { DEFAULT_RATING, RATING_SCALE } from "@/lib/engine/score";
 import { Choice, GhostButton, PrimaryButton, SectionHeading, Tag } from "./ui";
+import { ArrowLeft, ArrowRight } from "./icons";
 
 // شبكة تقييم مضغوطة: كل خيار × كل معيار.
 // الافتراضي "متوسط"، فيقدر المستخدم يتخطاها كلها لو استعجل.
@@ -87,8 +88,14 @@ export default function RatingGrid({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <GhostButton onClick={onBack}>→ رجوع</GhostButton>
-        <PrimaryButton onClick={onNext}>احسمها لي ←</PrimaryButton>
+        <GhostButton onClick={onBack} className="flex items-center gap-1.5">
+          <ArrowRight size={16} />
+          رجوع
+        </GhostButton>
+        <PrimaryButton onClick={onNext} className="flex items-center gap-2">
+          احسمها لي
+          <ArrowLeft size={18} />
+        </PrimaryButton>
       </div>
     </div>
   );
