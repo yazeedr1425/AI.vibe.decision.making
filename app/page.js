@@ -5,6 +5,7 @@ import { getCategory } from "@/lib/engine/categories";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
+import { profileService } from "@/lib/services/profile";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import AuthPanel from "./components/AuthPanel";
 import Landing from "./components/Landing";
@@ -37,6 +38,25 @@ export default function Home() {
   const [recommendation, setRecommendation] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [saveState, setSaveState] = useState(null);
+
+  // تفضيلات البروفايل تسبق الحالة المحلية عند تسجيل الدخول،
+  // عشان اللي يحفظه المستخدم في الإعدادات يكون له أثر فعلي هنا
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+
+    profileService.get().then((result) => {
+      if (!active || !result.ok) return;
+      if (result.profile.tone) setTone(result.profile.tone);
+      if (result.profile.default_mood) setMood(result.profile.default_mood);
+    });
+
+    profileService.touchLastSeen();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   // الثيم يتبع المزاج: نكتب data-mood على <html> فتتبدل متغيرات CSS كلها
   useEffect(() => {
