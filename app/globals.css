@@ -1,60 +1,60 @@
 @import "tailwindcss";
 
-/* لوحة الألوان الأساسية من ملف التصميم — تصميم فاتح فقط.
-   ما فيه وضع غامق في الموك أب، فما اخترعنا واحد. */
+/* لوحة الألوان الدافئة من التصميم القديم: كريمي وبرتقالي.
+   التخطيط من Framer، لكن الألوان رجعت للأصل. */
 :root {
   --background: #faf6ef;
   --foreground: #1f1b16;
   --accent: #e85d2f;
   --accent-ink: #fff8f0;
+  --accent-soft: #fbe7db;
+  --accent-strong: #b8461d;
+  --ink: #1f1b16;
   --card: #fffdf9;
   --line: #e4dbcd;
   --muted: #8a8072;
-  --glow: 232 93 47; /* نفس الأكسنت بصيغة RGB للتدرجات */
+  --muted-soft: #a2988a;
+  --glow: 232 93 47;
 }
 
 /* ---------------------------------------------------------------
-   الثيم يتبع المزاج. يُضبط data-mood على <html> من الصفحة،
-   فيتغيّر لون الخلفية والأكسنت والحواف بالكامل.
+   الثيم يتبع المزاج — الدرجات معايرة على الأساس الكريمي.
+   المنتقي داخل زر "غيّر" في بطاقة القرار.
    --------------------------------------------------------------- */
 
 :root[data-mood="hyped"] {
   --background: #fff3e9;
-  --foreground: #23150f;
   --accent: #d93f27;
-  --card: #fffbf6;
+  --accent-soft: #fbe0d7;
+  --accent-strong: #a83318;
   --line: #f0d9c8;
-  --muted: #8c7466;
   --glow: 217 63 39;
 }
 
 :root[data-mood="calm"] {
   --background: #f1f5f4;
-  --foreground: #13211f;
   --accent: #1f6f63;
-  --card: #fbfdfc;
+  --accent-soft: #dcebe8;
+  --accent-strong: #15574d;
   --line: #d6e2df;
-  --muted: #6f8681;
   --glow: 31 111 99;
 }
 
 :root[data-mood="drained"] {
   --background: #f2f1f6;
-  --foreground: #1a1826;
   --accent: #4640b8;
-  --card: #fbfafe;
+  --accent-soft: #e4e2f4;
+  --accent-strong: #363093;
   --line: #dcd9e6;
-  --muted: #77748a;
   --glow: 70 64 184;
 }
 
 :root[data-mood="happy"] {
   --background: #fff6f9;
-  --foreground: #24121a;
   --accent: #c22268;
-  --card: #fffcfd;
+  --accent-soft: #f9dce8;
+  --accent-strong: #971a51;
   --line: #f2d8e3;
-  --muted: #8f7280;
   --glow: 194 34 104;
 }
 
@@ -63,9 +63,13 @@
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-strong: var(--accent-strong);
+  --color-ink: var(--ink);
   --color-card: var(--card);
   --color-line: var(--line);
   --color-muted: var(--muted);
+  --color-muted-soft: var(--muted-soft);
   --font-sans: var(--font-arabic);
   --font-latin: var(--font-latin);
 }
@@ -79,8 +83,6 @@ body {
     color 600ms ease;
 }
 
-/* الألوان كلها تتحرك بنعومة عند تبديل المزاج،
-   إلا لمن يفضّل تقليل الحركة */
 * {
   transition-property: background-color, border-color, color;
   transition-duration: 400ms;
@@ -95,33 +97,33 @@ body {
   }
 }
 
-/* هالة خفيفة خلف الصفحة بلون المزاج — تعطي إحساس موقع، مو بطاقة معلّقة */
-.mood-aura {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      60rem 60rem at 85% -10%,
-      rgb(var(--glow) / 0.14),
-      transparent 60%
-    ),
-    radial-gradient(
-      45rem 45rem at 5% 105%,
-      rgb(var(--glow) / 0.1),
-      transparent 60%
-    );
-  transition: background 700ms ease;
-}
-
-/* الليبلات اللاتينية الصغيرة (STEP 01, RUSHING, SCOREBOARD) */
+/* الليبلات اللاتينية الصغيرة */
 .tag {
   font-family: var(--font-latin), ui-monospace, monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--muted-soft);
   direction: ltr;
   unicode-bidi: isolate;
+}
+
+/* شريحة صغيرة بخلفية برتقالية فاتحة — تتكرر كثير في التصميم */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* ظل ناعم للبطاقات، مثل الموك أب */
+.card-shadow {
+  box-shadow:
+    0 1px 2px rgb(16 24 40 / 0.04),
+    0 12px 32px -12px rgb(16 24 40 / 0.12);
 }

@@ -10,11 +10,12 @@ import AuthPanel from "./components/AuthPanel";
 import Landing from "./components/Landing";
 import QuestionStep from "./components/QuestionStep";
 import RatingGrid from "./components/RatingGrid";
+import HistorySection from "./components/HistorySection";
 import Result from "./components/Result";
+import SiteNav from "./components/SiteNav";
 import Thinking from "./components/Thinking";
-import VoiceControls from "./components/VoiceControls";
 import VoiceMode from "./components/VoiceMode";
-import { Card, Choice } from "./components/ui";
+import { Card } from "./components/ui";
 
 // معرّفات ثابتة للخيارين الأوليين حتى لا يختلف الرندر بين الخادم والمتصفح
 const initialOptions = () => [
@@ -191,86 +192,32 @@ export default function Home() {
     setSaveState(null);
   };
 
+  const isLanding = step === "landing";
+
   return (
     <>
-      <div className="mood-aura" aria-hidden />
-
-      {/* شريط علوي ثابت — إحساس موقع، مو بطاقة معلّقة في الفراغ */}
-      <header className="sticky top-0 z-40 border-b border-line/70 bg-background/85 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <button
-            type="button"
-            onClick={restart}
-            className="flex items-center gap-3 text-start"
-            aria-label="احسم — الصفحة الرئيسية"
-          >
-            <span
-              className="flex h-10 w-10 -rotate-3 items-center justify-center rounded-2xl bg-accent text-xl font-bold text-accent-ink"
-              style={{ boxShadow: "0 3px 0 0 var(--foreground)" }}
-            >
-              حـ
-            </span>
-            <span>
-              <span className="block text-base font-bold leading-tight">
-                احسم
-              </span>
-              <span className="block text-xs text-muted">مساعد القرارات</span>
-            </span>
-          </button>
-
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            <VoiceControls onVoiceMode={() => setStep("voice")} />
-
-            {TONES.map((t) => (
-              <Choice
-                key={t.id}
-                selected={tone === t.id}
-                onClick={() => setTone(t.id)}
-                className="px-3 py-1 text-xs"
-              >
-                {t.label}
-              </Choice>
-            ))}
-
-            {user ? (
-              <Choice
-                onClick={signOut}
-                className="px-3 py-1 text-xs"
-                title={user.email}
-              >
-                خروج
-              </Choice>
-            ) : (
-              <Choice
-                onClick={() => setStep("auth")}
-                selected={step === "auth"}
-                className="px-3 py-1 text-xs"
-              >
-                دخول
-              </Choice>
-            )}
-          </div>
-        </div>
-      </header>
+      <SiteNav
+        onHome={restart}
+        onVoiceMode={() => setStep("voice")}
+        onSignIn={() => setStep("auth")}
+        onStart={() => {
+          setStep("landing");
+          document
+            .getElementById("main")
+            ?.scrollIntoView({ behavior: "smooth" });
+        }}
+      />
 
       <main
         id="main"
         className={
-          "mx-auto flex w-full flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12 " +
-          (step === "landing" ? "max-w-6xl" : "max-w-3xl")
+          "mx-auto flex w-full flex-1 flex-col gap-16 px-4 py-8 sm:px-6 sm:py-12 " +
+          (isLanding ? "max-w-6xl" : "max-w-3xl")
         }
       >
-        <Card>
-          {step === "auth" && <AuthPanel onDone={() => setStep("landing")} />}
-
-          {step === "voice" && (
-            <VoiceMode
-              onComplete={fromVoice}
-              onCancel={() => setStep("landing")}
-            />
-          )}
-
-          {step === "landing" && (
+        {/* شاشة الهبوط لها تخطيطها الخاص، وباقي الخطوات داخل بطاقة */}
+        {isLanding ? (
+          <>
             <Landing
               mood={mood}
               setMood={setMood}
@@ -281,49 +228,65 @@ export default function Home() {
               onStart={start}
               onVoiceMode={() => setStep("voice")}
             />
-          )}
 
-          {step === "questions" && category && (
-            <QuestionStep
-              category={category}
-              index={questionIndex}
-              answers={answers}
-              setAnswers={setAnswers}
-              onAnswer={nextQuestion}
-              onBack={backFromQuestion}
+            <HistorySection
+              onSignIn={() => setStep("auth")}
+              refreshKey={saveState?.status === "saved" ? "saved" : "idle"}
             />
-          )}
+          </>
+        ) : (
+          <Card>
+            {step === "auth" && <AuthPanel onDone={() => setStep("landing")} />}
 
-          {step === "ratings" && category && (
-            <RatingGrid
-              category={category}
-              options={filledOptions}
-              ratings={ratings}
-              setRatings={setRatings}
-              weights={weights}
-              onNext={() => decide()}
-              onBack={() => {
-                setQuestionIndex(category.questions.length - 1);
-                setStep("questions");
-              }}
-            />
-          )}
+            {step === "voice" && (
+              <VoiceMode
+                onComplete={fromVoice}
+                onCancel={() => setStep("landing")}
+              />
+            )}
 
-          {step === "thinking" && <Thinking />}
+            {step === "questions" && category && (
+              <QuestionStep
+                category={category}
+                index={questionIndex}
+                answers={answers}
+                setAnswers={setAnswers}
+                onAnswer={nextQuestion}
+                onBack={backFromQuestion}
+              />
+            )}
 
-          {step === "result" && scored.length > 0 && (
-            <Result
-              scored={scored}
-              recommendation={recommendation}
-              apiError={apiError}
-              saveState={saveState}
-              tone={tone}
-              onRestart={restart}
-              onBack={() => setStep("ratings")}
-              onRetry={decide}
-            />
-          )}
-        </Card>
+            {step === "ratings" && category && (
+              <RatingGrid
+                category={category}
+                options={filledOptions}
+                ratings={ratings}
+                setRatings={setRatings}
+                weights={weights}
+                onNext={() => decide()}
+                onBack={() => {
+                  setQuestionIndex(category.questions.length - 1);
+                  setStep("questions");
+                }}
+              />
+            )}
+
+            {step === "thinking" && <Thinking />}
+
+            {step === "result" && scored.length > 0 && (
+              <Result
+                scored={scored}
+                recommendation={recommendation}
+                apiError={apiError}
+                saveState={saveState}
+                tone={tone}
+                onRestart={restart}
+                onBack={() => setStep("ratings")}
+                onRetry={decide}
+              />
+            )}
+          </Card>
+        )}
       </main>
 
       <footer className="border-t border-line/70">
