@@ -42,7 +42,10 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
             <span className="text-lg font-semibold">احسم</span>
           </button>
 
-          <ul className="hidden items-center gap-1 md:flex">
+          {/* تظهر من lg وفوق. كانت md، وبعد ما صارت الروابط خمسة
+              ضاق الشريط عند 768 بالضبط: تنكسر الروابط على سطرين
+              ويتضاعف ارتفاع الهيدر. */}
+          <ul className="hidden items-center gap-1 lg:flex">
             {LINKS.map((l) => (
               <li key={l.href}>
                 <Link
