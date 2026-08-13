@@ -9,6 +9,8 @@ node_modules/
 .pnp.js
 
 # مخرجات البناء
+.next/
+next-env.d.ts
 dist/
 dist-ssr/
 build/
