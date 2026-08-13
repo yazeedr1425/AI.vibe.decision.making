@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCategory } from "@/lib/engine/categories";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
@@ -58,6 +58,20 @@ export default function Home() {
       active = false;
     };
   }, [user]);
+
+  // نقل التركيز لعنوان الخطوة الجديدة.
+  // بدونه، مستخدم قارئ الشاشة يضيع: الزر اللي كان مركّزاً عليه يختفي
+  // مع الشاشة السابقة فيرجع التركيز لأول الصفحة بدون أي إعلان.
+  // نتجاهل أول رندر حتى ما نخطف التركيز عند فتح الصفحة.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const heading = document.querySelector("[data-step-heading]");
+    heading?.focus();
+  }, [step, questionIndex]);
 
   // الثيم يتبع المزاج: نكتب data-mood على <html> فتتبدل متغيرات CSS كلها
   useEffect(() => {
@@ -187,16 +201,26 @@ export default function Home() {
     [filledOptions, answers, categoryId, weights, accessToken],
   );
 
-  // المحادثة الصوتية تعطينا كل شي دفعة واحدة، بدون مرحلة التقييم
+  // المحادثة الصوتية تعطينا كل شي دفعة واحدة — بما فيه التقييمات.
+  // الوكيل يرجّعها مفهرسة بنص الخيار، والمحرك يبيها بمعرّف الخيار.
   const fromVoice = useCallback(
     (payload) => {
+      const voiceOptions = payload.options.map((label, i) => ({
+        id: `voice-${i}`,
+        label,
+      }));
+
+      const byId = {};
+      for (const option of voiceOptions) {
+        const given = payload.ratings?.[option.label];
+        if (given) byId[option.id] = given;
+      }
+
       setCategoryId(payload.categoryId);
-      setOptions(
-        payload.options.map((label, i) => ({ id: `voice-${i}`, label })),
-      );
+      setOptions(voiceOptions);
       setAnswers(payload.answers);
-      setRatings({});
-      decide(payload);
+      setRatings(byId);
+      decide({ ...payload, ratings: byId });
     },
     [decide],
   );

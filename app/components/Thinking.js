@@ -24,17 +24,22 @@ export default function Thinking() {
       className="flex flex-col items-center gap-6 py-12"
       role="status"
       aria-live="polite"
+      aria-busy="true"
     >
       {/* عجلة الحظ */}
       <div className="relative h-28 w-28">
         <div className="absolute inset-0 animate-spin rounded-full border-4 border-dashed border-accent [animation-duration:2.4s]" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="animate-bounce text-4xl [animation-duration:1.2s]">🎲</span>
+          <span className="animate-bounce text-4xl [animation-duration:1.2s]">
+            🎲
+          </span>
         </div>
       </div>
 
       <div className="flex flex-col items-center gap-2">
-        <p className="text-lg font-semibold">{LINES[line]}</p>
+        <p tabIndex={-1} data-step-heading className="text-lg font-semibold">
+          {LINES[line]}
+        </p>
         <Tag>ahsem is thinking</Tag>
       </div>
 

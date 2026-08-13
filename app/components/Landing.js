@@ -185,7 +185,9 @@ export default function Landing({
         className="card-shadow rounded-3xl border border-line bg-card p-5 sm:p-7"
       >
         <div className="flex items-center justify-between gap-3">
-          <span className="tag">قرار جديد · ٠١</span>
+          <span lang="ar" dir="rtl" className="tag">
+            قرار جديد · ٠١
+          </span>
           <span className="pill">
             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
             جاهز أساعدك
@@ -229,6 +231,7 @@ export default function Landing({
                     key={c.id}
                     type="button"
                     onClick={() => setCategoryId(c.id)}
+                    aria-pressed={categoryId === c.id}
                     className={
                       "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
                       (categoryId === c.id
@@ -253,6 +256,7 @@ export default function Landing({
                     key={m.id}
                     type="button"
                     onClick={() => setMood(mood === m.id ? null : m.id)}
+                    aria-pressed={mood === m.id}
                     className={
                       "rounded-full border px-3 py-1.5 text-sm transition-colors " +
                       (mood === m.id
@@ -260,7 +264,7 @@ export default function Landing({
                         : "border-line hover:border-muted-soft")
                     }
                   >
-                    {m.emoji} {m.label}
+                    <span aria-hidden="true">{m.emoji}</span> {m.label}
                   </button>
                 ))}
               </div>

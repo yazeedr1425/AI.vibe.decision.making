@@ -2,8 +2,14 @@
 
 // عناصر مشتركة مبنية على لوحة التصميم الجديدة
 
-export function Tag({ children, className = "" }) {
-  return <span className={"tag " + className}>{children}</span>;
+// lang="en" مهم: قارئ الشاشة العربي ينطق "scoreboard" بحروف عربية
+// ويطلع كلام غير مفهوم. الوسم يخلّيه يبدّل الصوت للإنجليزي.
+export function Tag({ children, className = "", lang = "en" }) {
+  return (
+    <span lang={lang} className={"tag " + className}>
+      {children}
+    </span>
+  );
 }
 
 export function Choice({ selected, children, className = "", ...props }) {
@@ -72,11 +78,19 @@ export function Card({ children, className = "" }) {
 }
 
 // عنوان قسم: ليبل لاتيني صغير فوق عنوان عربي
+// العنوان يستقبل التركيز عند تغيّر الخطوة: بدونه يضيع مستخدم قارئ
+// الشاشة، لأن الزر اللي كان مركّزاً عليه يختفي مع الشاشة السابقة.
 export function SectionHeading({ tag, title, sub, className = "" }) {
   return (
     <header className={"flex flex-col gap-1.5 " + className}>
       {tag && <Tag>{tag}</Tag>}
-      <h2 className="text-2xl font-bold sm:text-3xl">{title}</h2>
+      <h2
+        tabIndex={-1}
+        data-step-heading
+        className="text-2xl font-bold sm:text-3xl"
+      >
+        {title}
+      </h2>
       {sub && <p className="text-sm text-muted">{sub}</p>}
     </header>
   );

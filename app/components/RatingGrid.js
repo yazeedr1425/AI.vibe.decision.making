@@ -22,7 +22,7 @@ export default function RatingGrid({
 
   // نعرض المعايير الأهم أولاً حسب أوزان إجابات المستخدم
   const criteria = [...category.criteria].sort(
-    (a, b) => weights[b.key] - weights[a.key]
+    (a, b) => weights[b.key] - weights[a.key],
   );
   const topWeight = Math.max(...Object.values(weights));
 
@@ -36,7 +36,10 @@ export default function RatingGrid({
 
       <div className="flex flex-col gap-4">
         {options.map((o) => (
-          <div key={o.id} className="rounded-2xl border border-line bg-card p-4">
+          <div
+            key={o.id}
+            className="rounded-2xl border border-line bg-card p-4"
+          >
             <h3 className="mb-3 font-semibold">{o.label}</h3>
             <div className="flex flex-col gap-3">
               {criteria.map((c) => (
@@ -52,19 +55,29 @@ export default function RatingGrid({
                       </Tag>
                     )}
                   </span>
-                  <div className="flex gap-1.5">
-                    {RATING_SCALE.map((r) => (
-                      <Choice
-                        key={r.value}
-                        selected={
-                          (ratings[o.id]?.[c.key] ?? DEFAULT_RATING) === r.value
-                        }
-                        onClick={() => set(o.id, c.key, r.value)}
-                        className="px-3 py-1 text-xs"
-                      >
-                        {r.label}
-                      </Choice>
-                    ))}
+                  {/* اختيار واحد من ثلاثة — دلالات radio تخلي قارئ
+                      الشاشة يقول "١ من ٣" بدل ثلاثة أزرار منفصلة */}
+                  <div
+                    role="radiogroup"
+                    aria-label={`${c.label} — ${o.label}`}
+                    className="flex gap-1.5"
+                  >
+                    {RATING_SCALE.map((r) => {
+                      const checked =
+                        (ratings[o.id]?.[c.key] ?? DEFAULT_RATING) === r.value;
+                      return (
+                        <Choice
+                          key={r.value}
+                          role="radio"
+                          aria-checked={checked}
+                          selected={checked}
+                          onClick={() => set(o.id, c.key, r.value)}
+                          className="px-3 py-1 text-xs"
+                        >
+                          {r.label}
+                        </Choice>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

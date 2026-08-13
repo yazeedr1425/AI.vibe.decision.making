@@ -64,11 +64,21 @@ export default function Result({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* القرار */}
+      {/* القرار — يُعلن ويستقبل التركيز أول ما تظهر النتيجة */}
       <header className="flex flex-col gap-2">
         <Tag>the call</Tag>
         <p className="text-sm text-muted">قرارك هو</p>
-        <h2 className="text-4xl font-bold sm:text-5xl">{chosen}</h2>
+        <h2
+          tabIndex={-1}
+          data-step-heading
+          className="text-4xl font-bold sm:text-5xl"
+        >
+          {chosen}
+        </h2>
+        {/* نص مكافئ للقارئ: النتيجة والسبب في جملة واحدة */}
+        <p className="sr-only">
+          قرارك هو {chosen}. {reason}
+        </p>
       </header>
 
       {/* فقاعة المحادثة */}
@@ -86,7 +96,10 @@ export default function Result({
       </div>
 
       {apiError && (
-        <p className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted">
+        <p
+          role="alert"
+          className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted"
+        >
           ⚠️ {apiError} — هذي نتيجة الحساب المحلي بالأوزان.
           {onRetry && (
             <button
@@ -102,8 +115,8 @@ export default function Result({
 
       {disagrees && (
         <p className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted">
-          🤔 حسابي بالأوزان يقول «{localWinner.label}»، بس شفت إن «{chosen}» أنسب
-          لك اليوم.
+          🤔 حسابي بالأوزان يقول «{localWinner.label}»، بس شفت إن «{chosen}»
+          أنسب لك اليوم.
         </p>
       )}
 
@@ -117,11 +130,15 @@ export default function Result({
         {scored.map((s, i) => (
           <div key={s.id} className="flex flex-col gap-1.5">
             <div className="flex items-baseline justify-between gap-3">
-              <span className={s.label === chosen ? "font-semibold" : "text-muted"}>
+              <span
+                className={s.label === chosen ? "font-semibold" : "text-muted"}
+              >
                 {s.label === chosen && "🏆 "}
                 {s.label}
               </span>
-              <span className="text-sm tabular-nums text-muted">{s.percent}٪</span>
+              <span className="text-sm tabular-nums text-muted">
+                {s.percent}٪
+              </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-line">
               <div
@@ -178,14 +195,15 @@ export default function Result({
             {spinning ? "…" : randomPick ? "مرة ثانية 🎲" : "🎲 أنا متردد جدًا"}
           </GhostButton>
           <span className="text-xs text-muted">
-            الحظوظ: {withChances.map((c) => `${c.label} ${c.chance}٪`).join(" · ")}
+            الحظوظ:{" "}
+            {withChances.map((c) => `${c.label} ${c.chance}٪`).join(" · ")}
           </span>
         </div>
       </section>
 
       {/* حالة الحفظ */}
       {saveState && (
-        <p className="text-sm text-muted">
+        <p role="status" className="text-sm text-muted">
           {saveState.status === "saving" && "… يحفظ في سجلك"}
           {saveState.status === "saved" && "✅ انحفظ في سجلك"}
           {saveState.status === "failed" && `💾 ${saveState.message}`}
