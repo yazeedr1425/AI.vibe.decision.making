@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCategory } from "@/lib/engine/categories";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
@@ -36,6 +36,16 @@ export default function Home() {
   const [apiError, setApiError] = useState(null);
   const [saveState, setSaveState] = useState(null);
 
+  // الثيم يتبع المزاج: نكتب data-mood على <html> فتتبدل متغيرات CSS كلها
+  useEffect(() => {
+    const root = document.documentElement;
+    if (mood) root.dataset.mood = mood;
+    else delete root.dataset.mood;
+    return () => {
+      delete root.dataset.mood;
+    };
+  }, [mood]);
+
   const category = categoryId ? getCategory(categoryId) : null;
 
   const filledOptions = useMemo(
@@ -43,12 +53,12 @@ export default function Home() {
       options
         .filter((o) => o.label.trim())
         .map((o) => ({ ...o, label: o.label.trim() })),
-    [options]
+    [options],
   );
 
   const weights = useMemo(
     () => (category ? weightsFor(category, answers, mood) : {}),
-    [category, answers, mood]
+    [category, answers, mood],
   );
 
   const scored = useMemo(
@@ -56,7 +66,7 @@ export default function Home() {
       category && filledOptions.length
         ? scoreOptions(category, filledOptions, ratings, weights)
         : [],
-    [category, filledOptions, ratings, weights]
+    [category, filledOptions, ratings, weights],
   );
 
   const start = () => {
@@ -82,85 +92,90 @@ export default function Home() {
   // نداء المحرك: التوصية تجي من /api/decide، والحساب المحلي يبقى
   // كخط رجعة لو النداء فشل حتى ما تنكسر الشاشة على المستخدم.
   // override يجي من وضع المحادثة الصوتية، لأن الحالة ما تكون تحدّثت بعد
-  const decide = useCallback(async (override) => {
-    setStep("thinking");
-    setApiError(null);
-    setRecommendation(null);
-    setSaveState(null);
+  const decide = useCallback(
+    async (override) => {
+      setStep("thinking");
+      setApiError(null);
+      setRecommendation(null);
+      setSaveState(null);
 
-    const labels = override?.options ?? filledOptions.map((o) => o.label);
-    const finalAnswers = override?.answers ?? answers;
-    const finalCategory = override?.categoryId ?? categoryId;
-    let result = null;
+      const labels = override?.options ?? filledOptions.map((o) => o.label);
+      const finalAnswers = override?.answers ?? answers;
+      const finalCategory = override?.categoryId ?? categoryId;
+      let result = null;
 
-    try {
-      // التوكن هو الهوية — أوثق من إرسال userId في الـ body
-      const token = await accessToken();
-      const res = await fetch("/api/decide", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          options: labels,
-          answers: finalAnswers,
-          categoryId: finalCategory,
-        }),
-      });
-
-      const payload = await res.json().catch(() => null);
-
-      if (!res.ok || !payload?.ok) {
-        setApiError(payload?.error ?? `تعذر الوصول للمحرك (${res.status})`);
-      } else {
-        result = {
-          selected_option: payload.selected_option,
-          funny_reason: payload.funny_reason,
-        };
-        setRecommendation(result);
-      }
-    } catch (err) {
-      console.error("[decide] request failed:", err);
-      setApiError("ما قدرنا نوصل للمحرك — تأكد من اتصالك.");
-    }
-
-    setStep("result");
-
-    // الحفظ بعد ما تظهر النتيجة — ما نخلي المستخدم ينتظره
-    if (result) {
-      setSaveState({ status: "saving" });
       try {
-        const saved = await decisionService.saveDecision({
-          categoryId: finalCategory,
-          options: labels,
-          chosen: result.selected_option,
-          reason: result.funny_reason,
-          answers: finalAnswers,
-          weights,
+        // التوكن هو الهوية — أوثق من إرسال userId في الـ body
+        const token = await accessToken();
+        const res = await fetch("/api/decide", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            options: labels,
+            answers: finalAnswers,
+            categoryId: finalCategory,
+          }),
         });
-        setSaveState(
-          saved.ok
-            ? { status: "saved" }
-            : { status: "failed", message: saved.message }
-        );
+
+        const payload = await res.json().catch(() => null);
+
+        if (!res.ok || !payload?.ok) {
+          setApiError(payload?.error ?? `تعذر الوصول للمحرك (${res.status})`);
+        } else {
+          result = {
+            selected_option: payload.selected_option,
+            funny_reason: payload.funny_reason,
+          };
+          setRecommendation(result);
+        }
       } catch (err) {
-        console.error("[decide] save failed:", err);
-        setSaveState({ status: "failed", message: "تعذر الحفظ في السجل." });
+        console.error("[decide] request failed:", err);
+        setApiError("ما قدرنا نوصل للمحرك — تأكد من اتصالك.");
       }
-    }
-  }, [filledOptions, answers, categoryId, weights, accessToken]);
+
+      setStep("result");
+
+      // الحفظ بعد ما تظهر النتيجة — ما نخلي المستخدم ينتظره
+      if (result) {
+        setSaveState({ status: "saving" });
+        try {
+          const saved = await decisionService.saveDecision({
+            categoryId: finalCategory,
+            options: labels,
+            chosen: result.selected_option,
+            reason: result.funny_reason,
+            answers: finalAnswers,
+            weights,
+          });
+          setSaveState(
+            saved.ok
+              ? { status: "saved" }
+              : { status: "failed", message: saved.message },
+          );
+        } catch (err) {
+          console.error("[decide] save failed:", err);
+          setSaveState({ status: "failed", message: "تعذر الحفظ في السجل." });
+        }
+      }
+    },
+    [filledOptions, answers, categoryId, weights, accessToken],
+  );
 
   // المحادثة الصوتية تعطينا كل شي دفعة واحدة، بدون مرحلة التقييم
   const fromVoice = useCallback(
     (payload) => {
       setCategoryId(payload.categoryId);
-      setOptions(payload.options.map((label, i) => ({ id: `voice-${i}`, label })));
+      setOptions(
+        payload.options.map((label, i) => ({ id: `voice-${i}`, label })),
+      );
       setAnswers(payload.answers);
       setRatings({});
       decide(payload);
     },
-    [decide]
+    [decide],
   );
 
   const restart = () => {
@@ -177,119 +192,146 @@ export default function Home() {
   };
 
   return (
-    <main
-      id="main"
-      className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-10 sm:py-16"
-    >
-      <header className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span
-            className="flex h-11 w-11 -rotate-3 items-center justify-center rounded-2xl bg-accent text-2xl font-bold text-accent-ink"
-            style={{ boxShadow: "0 3px 0 0 var(--foreground)" }}
+    <>
+      <div className="mood-aura" aria-hidden />
+
+      {/* شريط علوي ثابت — إحساس موقع، مو بطاقة معلّقة في الفراغ */}
+      <header className="sticky top-0 z-40 border-b border-line/70 bg-background/85 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <button
+            type="button"
+            onClick={restart}
+            className="flex items-center gap-3 text-start"
+            aria-label="احسم — الصفحة الرئيسية"
           >
-            حـ
-          </span>
-          <div>
-            <h1 className="text-lg font-bold">احسم</h1>
-            <p className="text-xs text-muted">مساعد القرارات</p>
+            <span
+              className="flex h-10 w-10 -rotate-3 items-center justify-center rounded-2xl bg-accent text-xl font-bold text-accent-ink"
+              style={{ boxShadow: "0 3px 0 0 var(--foreground)" }}
+            >
+              حـ
+            </span>
+            <span>
+              <span className="block text-base font-bold leading-tight">
+                احسم
+              </span>
+              <span className="block text-xs text-muted">مساعد القرارات</span>
+            </span>
+          </button>
+
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <VoiceControls onVoiceMode={() => setStep("voice")} />
+
+            {TONES.map((t) => (
+              <Choice
+                key={t.id}
+                selected={tone === t.id}
+                onClick={() => setTone(t.id)}
+                className="px-3 py-1 text-xs"
+              >
+                {t.label}
+              </Choice>
+            ))}
+
+            {user ? (
+              <Choice
+                onClick={signOut}
+                className="px-3 py-1 text-xs"
+                title={user.email}
+              >
+                خروج
+              </Choice>
+            ) : (
+              <Choice
+                onClick={() => setStep("auth")}
+                selected={step === "auth"}
+                className="px-3 py-1 text-xs"
+              >
+                دخول
+              </Choice>
+            )}
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-end gap-1.5">
-          <VoiceControls onVoiceMode={() => setStep("voice")} />
-
-          {TONES.map((t) => (
-            <Choice
-              key={t.id}
-              selected={tone === t.id}
-              onClick={() => setTone(t.id)}
-              className="px-3 py-1 text-xs"
-            >
-              {t.label}
-            </Choice>
-          ))}
-
-          {user ? (
-            <Choice
-              onClick={signOut}
-              className="px-3 py-1 text-xs"
-              title={user.email}
-            >
-              خروج
-            </Choice>
-          ) : (
-            <Choice
-              onClick={() => setStep("auth")}
-              selected={step === "auth"}
-              className="px-3 py-1 text-xs"
-            >
-              دخول
-            </Choice>
-          )}
         </div>
       </header>
 
-      <Card>
-        {step === "auth" && <AuthPanel onDone={() => setStep("landing")} />}
+      <main
+        id="main"
+        className={
+          "mx-auto flex w-full flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12 " +
+          (step === "landing" ? "max-w-6xl" : "max-w-3xl")
+        }
+      >
+        <Card>
+          {step === "auth" && <AuthPanel onDone={() => setStep("landing")} />}
 
-        {step === "voice" && (
-          <VoiceMode onComplete={fromVoice} onCancel={() => setStep("landing")} />
-        )}
+          {step === "voice" && (
+            <VoiceMode
+              onComplete={fromVoice}
+              onCancel={() => setStep("landing")}
+            />
+          )}
 
-        {step === "landing" && (
-          <Landing
-            mood={mood}
-            setMood={setMood}
-            categoryId={categoryId}
-            setCategoryId={setCategoryId}
-            options={options}
-            setOptions={setOptions}
-            onStart={start}
-            onVoiceMode={() => setStep("voice")}
-          />
-        )}
+          {step === "landing" && (
+            <Landing
+              mood={mood}
+              setMood={setMood}
+              categoryId={categoryId}
+              setCategoryId={setCategoryId}
+              options={options}
+              setOptions={setOptions}
+              onStart={start}
+              onVoiceMode={() => setStep("voice")}
+            />
+          )}
 
-        {step === "questions" && category && (
-          <QuestionStep
-            category={category}
-            index={questionIndex}
-            answers={answers}
-            setAnswers={setAnswers}
-            onAnswer={nextQuestion}
-            onBack={backFromQuestion}
-          />
-        )}
+          {step === "questions" && category && (
+            <QuestionStep
+              category={category}
+              index={questionIndex}
+              answers={answers}
+              setAnswers={setAnswers}
+              onAnswer={nextQuestion}
+              onBack={backFromQuestion}
+            />
+          )}
 
-        {step === "ratings" && category && (
-          <RatingGrid
-            category={category}
-            options={filledOptions}
-            ratings={ratings}
-            setRatings={setRatings}
-            weights={weights}
-            onNext={() => decide()}
-            onBack={() => {
-              setQuestionIndex(category.questions.length - 1);
-              setStep("questions");
-            }}
-          />
-        )}
+          {step === "ratings" && category && (
+            <RatingGrid
+              category={category}
+              options={filledOptions}
+              ratings={ratings}
+              setRatings={setRatings}
+              weights={weights}
+              onNext={() => decide()}
+              onBack={() => {
+                setQuestionIndex(category.questions.length - 1);
+                setStep("questions");
+              }}
+            />
+          )}
 
-        {step === "thinking" && <Thinking />}
+          {step === "thinking" && <Thinking />}
 
-        {step === "result" && scored.length > 0 && (
-          <Result
-            scored={scored}
-            recommendation={recommendation}
-            apiError={apiError}
-            saveState={saveState}
-            tone={tone}
-            onRestart={restart}
-            onBack={() => setStep("ratings")}
-            onRetry={decide}
-          />
-        )}
-      </Card>
-    </main>
+          {step === "result" && scored.length > 0 && (
+            <Result
+              scored={scored}
+              recommendation={recommendation}
+              apiError={apiError}
+              saveState={saveState}
+              tone={tone}
+              onRestart={restart}
+              onBack={() => setStep("ratings")}
+              onRetry={decide}
+            />
+          )}
+        </Card>
+      </main>
+
+      <footer className="border-t border-line/70">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-xs text-muted sm:px-6">
+          <p>احسم — يساعدك تحسم قراراتك اليومية بسرعة، مع السبب.</p>
+          <p className="tag">made for the indecisive</p>
+        </div>
+      </footer>
+    </>
   );
 }

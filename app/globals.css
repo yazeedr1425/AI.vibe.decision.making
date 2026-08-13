@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* لوحة الألوان من ملف التصميم — تصميم فاتح فقط.
+/* لوحة الألوان الأساسية من ملف التصميم — تصميم فاتح فقط.
    ما فيه وضع غامق في الموك أب، فما اخترعنا واحد. */
 :root {
   --background: #faf6ef;
@@ -10,6 +10,52 @@
   --card: #fffdf9;
   --line: #e4dbcd;
   --muted: #8a8072;
+  --glow: 232 93 47; /* نفس الأكسنت بصيغة RGB للتدرجات */
+}
+
+/* ---------------------------------------------------------------
+   الثيم يتبع المزاج. يُضبط data-mood على <html> من الصفحة،
+   فيتغيّر لون الخلفية والأكسنت والحواف بالكامل.
+   --------------------------------------------------------------- */
+
+:root[data-mood="hyped"] {
+  --background: #fff3e9;
+  --foreground: #23150f;
+  --accent: #d93f27;
+  --card: #fffbf6;
+  --line: #f0d9c8;
+  --muted: #8c7466;
+  --glow: 217 63 39;
+}
+
+:root[data-mood="calm"] {
+  --background: #f1f5f4;
+  --foreground: #13211f;
+  --accent: #1f6f63;
+  --card: #fbfdfc;
+  --line: #d6e2df;
+  --muted: #6f8681;
+  --glow: 31 111 99;
+}
+
+:root[data-mood="drained"] {
+  --background: #f2f1f6;
+  --foreground: #1a1826;
+  --accent: #4640b8;
+  --card: #fbfafe;
+  --line: #dcd9e6;
+  --muted: #77748a;
+  --glow: 70 64 184;
+}
+
+:root[data-mood="happy"] {
+  --background: #fff6f9;
+  --foreground: #24121a;
+  --accent: #c22268;
+  --card: #fffcfd;
+  --line: #f2d8e3;
+  --muted: #8f7280;
+  --glow: 194 34 104;
 }
 
 @theme inline {
@@ -28,6 +74,45 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-arabic), system-ui, sans-serif;
+  transition:
+    background-color 600ms ease,
+    color 600ms ease;
+}
+
+/* الألوان كلها تتحرك بنعومة عند تبديل المزاج،
+   إلا لمن يفضّل تقليل الحركة */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 400ms;
+  transition-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  body {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* هالة خفيفة خلف الصفحة بلون المزاج — تعطي إحساس موقع، مو بطاقة معلّقة */
+.mood-aura {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      60rem 60rem at 85% -10%,
+      rgb(var(--glow) / 0.14),
+      transparent 60%
+    ),
+    radial-gradient(
+      45rem 45rem at 5% 105%,
+      rgb(var(--glow) / 0.1),
+      transparent 60%
+    );
+  transition: background 700ms ease;
 }
 
 /* الليبلات اللاتينية الصغيرة (STEP 01, RUSHING, SCOREBOARD) */
