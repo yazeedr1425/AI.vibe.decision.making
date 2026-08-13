@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MOODS } from "@/lib/engine/mood";
 import { TONES } from "@/lib/engine/tone";
 import { profileService } from "@/lib/services/profile";
+import { useMoodTheme } from "@/lib/theme/useMoodTheme";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useVoice } from "@/lib/voice/VoiceProvider";
 import SiteNav from "../components/SiteNav";
@@ -76,6 +77,10 @@ export default function SettingsPage() {
       });
     }
   };
+
+  // معاينة حيّة: أول ما تختار مزاجاً يتلوّن الموقع كله، قبل الحفظ.
+  // بدونها كنت تختار وما يتغير شي، فتحس إن الإعداد ما اشتغل.
+  useMoodTheme(form?.default_mood ?? null);
 
   const ready = user && form && loaded?.userId === user.id;
 

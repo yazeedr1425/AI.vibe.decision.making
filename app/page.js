@@ -7,6 +7,7 @@ import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
 import { profileService } from "@/lib/services/profile";
+import { useMoodTheme } from "@/lib/theme/useMoodTheme";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Landing from "./components/Landing";
 import QuestionStep from "./components/QuestionStep";
@@ -73,15 +74,8 @@ export default function Home() {
     heading?.focus();
   }, [step, questionIndex]);
 
-  // الثيم يتبع المزاج: نكتب data-mood على <html> فتتبدل متغيرات CSS كلها
-  useEffect(() => {
-    const root = document.documentElement;
-    if (mood) root.dataset.mood = mood;
-    else delete root.dataset.mood;
-    return () => {
-      delete root.dataset.mood;
-    };
-  }, [mood]);
+  // الثيم يتبع المزاج — نفس الـ hook المستخدم في الإعدادات
+  useMoodTheme(mood);
 
   const category = categoryId ? getCategory(categoryId) : null;
 
