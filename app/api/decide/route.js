@@ -18,7 +18,14 @@ const SYSTEM_INSTRUCTION =
   "Your job is to choose ONE option from the user's list based on their current answers " +
   "and past decision history. Weigh their current answers heavily. Look at their past " +
   "decisions to spot habits. Provide a short, witty, and fun reason in Arabic explaining " +
-  "WHY you chose this. Act like a close friend, not a robotic assistant.";
+  "WHY you chose this. Act like a close friend, not a robotic assistant.\n\n" +
+  "You also write one plain Arabic sentence per criterion for a 'why this?' panel. " +
+  "Each sentence must say what that criterion actually DID to the result: how much it " +
+  "weighed today, which option came out ahead on it, and whether that changed anything. " +
+  "Write like a person explaining, never a template — avoid shapes like " +
+  "'كان مهم — أفضل من X هنا'. When a criterion mattered a lot but the winner scored " +
+  "LOWER on it, say that plainly and name what outweighed it; that is exactly the case " +
+  "a reader cannot work out on their own, and skipping it makes the result look arbitrary.";
 
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -31,9 +38,30 @@ const RESPONSE_SCHEMA = {
       type: Type.STRING,
       description: "One or two witty sentences in Arabic explaining the choice.",
     },
+    criteria_notes: {
+      type: Type.ARRAY,
+      description:
+        "One entry per criterion, explaining in Arabic what that criterion did to the outcome.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          key: {
+            type: Type.STRING,
+            description: "Copied verbatim from the criterion key given.",
+          },
+          note: {
+            type: Type.STRING,
+            description:
+              "One short Arabic sentence: how much it mattered, who was better, and whether it changed the result.",
+          },
+        },
+        required: ["key", "note"],
+        propertyOrdering: ["key", "note"],
+      },
+    },
   },
-  required: ["selected_option", "funny_reason"],
-  propertyOrdering: ["selected_option", "funny_reason"],
+  required: ["selected_option", "funny_reason", "criteria_notes"],
+  propertyOrdering: ["selected_option", "funny_reason", "criteria_notes"],
 };
 
 function fail(status, message, extra) {
@@ -49,7 +77,7 @@ function validate(body) {
     return { ok: false, message: "الطلب لازم يكون كائن JSON." };
   }
 
-  const { options, answers, userId, categoryId, rubric } = body;
+  const { options, answers, userId, categoryId, rubric, scored } = body;
 
   if (!Array.isArray(options)) {
     return { ok: false, message: "options لازم تكون مصفوفة." };
@@ -122,6 +150,26 @@ function validate(body) {
       userId: userId ?? null,
       categoryId: category?.id ?? null,
       questions,
+      // الحساب المحلي — يدخل البرومبت فقط ليكتب النموذج شروح المعايير.
+      // لا يدخل أي حساب هنا، فيكفي فحص الشكل وتجاهل ما لا يطابقه.
+      scored: Array.isArray(scored)
+        ? scored
+            .filter((s) => s && typeof s.label === "string")
+            .map((s) => ({
+              label: s.label,
+              percent: Number(s.percent) || 0,
+              breakdown: Array.isArray(s.breakdown)
+                ? s.breakdown
+                    .filter((b) => b && typeof b.key === "string")
+                    .map((b) => ({
+                      key: b.key,
+                      label: String(b.label ?? b.key),
+                      rating: Number(b.rating) || 0,
+                      weight: Number(b.weight) || 0,
+                    }))
+                : [],
+            }))
+        : [],
     },
   };
 }
@@ -224,7 +272,25 @@ function describeHistory(history) {
     .join("\n");
 }
 
-function buildPrompt({ options, answers, category, history }) {
+// حساب الأوزان: أي معيار وزنه اليوم، وكيف قيّم المستخدم كل خيار فيه.
+// بدونه يكتب النموذج تفسيراً عاماً لأنه ما يشوف الأرقام أصلاً.
+function describeScores(scored) {
+  if (!scored?.length) return "لا يوجد تفصيل محسوب.";
+
+  return scored
+    .map((s) => {
+      const rows = (s.breakdown ?? [])
+        .map(
+          (b) =>
+            `    · [${b.key}] ${b.label}: تقييم ${b.rating}/3 × وزن ${b.weight}`,
+        )
+        .join("\n");
+      return `  «${s.label}» — المجموع ${s.percent}٪\n${rows}`;
+    })
+    .join("\n");
+}
+
+function buildPrompt({ options, answers, category, history, scored }) {
   return [
     category
       ? `نوع القرار: ${category.label} (${category.en})`
@@ -238,6 +304,9 @@ function buildPrompt({ options, answers, category, history }) {
     "",
     `آخر ${HISTORY_LIMIT} قرارات له (للعادات فقط، لا تغلّبها على إجاباته الحالية):`,
     describeHistory(history),
+    "",
+    "حساب الأوزان (اكتب لكل معيار جملة في criteria_notes بمفتاحه):",
+    describeScores(scored),
   ].join("\n");
 }
 
@@ -255,7 +324,7 @@ function matchOption(selected, options) {
   return options.find((o) => normalize(o) === normalize(selected)) ?? null;
 }
 
-async function askGemini({ options, answers, category, history }) {
+async function askGemini({ options, answers, category, history, scored }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     const err = new Error("GEMINI_API_KEY is not set");
@@ -271,7 +340,7 @@ async function askGemini({ options, answers, category, history }) {
   try {
     response = await ai.models.generateContent({
       model: MODEL,
-      contents: buildPrompt({ options, answers, category, history }),
+      contents: buildPrompt({ options, answers, category, history, scored }),
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -314,10 +383,22 @@ async function askGemini({ options, answers, category, history }) {
     throw err;
   }
 
+  // الشروح إضافة على النتيجة لا شرط لها: لو رجعت ناقصة أو بمفاتيح
+  // مخترعة تسقط الواجهة للنص المحسوب محلياً بدل ما نفشّل القرار كله
+  const notes = {};
+  if (Array.isArray(parsed.criteria_notes)) {
+    for (const n of parsed.criteria_notes) {
+      const key = typeof n?.key === "string" ? n.key.trim() : null;
+      const note = typeof n?.note === "string" ? n.note.trim() : null;
+      if (key && note) notes[key] = note.slice(0, 220);
+    }
+  }
+
   // نرجّع النص الأصلي للخيار حتى يطابق ما كتبه المستخدم بالضبط
   return {
     selected_option: matched,
     funny_reason: parsed.funny_reason.trim(),
+    criteria_notes: notes,
   };
 }
 
@@ -342,6 +423,7 @@ export async function POST(request) {
     userId: bodyUserId,
     categoryId,
     questions,
+    scored,
   } = parsed.value;
 
   // الأسئلة المولّدة تسبق القالب: هي اللي جاوب عليها المستخدم فعلاً.
@@ -379,6 +461,7 @@ export async function POST(request) {
       answers,
       category,
       history,
+      scored,
     });
   } catch (err) {
     console.error(`[api/decide] gemini failed (${err.code ?? "UNKNOWN"}):`, err);

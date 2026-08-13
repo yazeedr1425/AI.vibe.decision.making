@@ -191,6 +191,18 @@ export default function Home() {
             rubric: category
               ? { criteria: category.criteria, questions: category.questions }
               : null,
+            // الحساب المحلي: بدونه يكتب النموذج شرحاً عاماً لأنه ما
+            // يشوف الأوزان ولا التقييمات اللي طلعت هذي النتيجة
+            scored: scored.map((s) => ({
+              label: s.label,
+              percent: s.percent,
+              breakdown: s.breakdown.map((b) => ({
+                key: b.key,
+                label: b.label,
+                rating: b.rating,
+                weight: b.weight,
+              })),
+            })),
           }),
         });
 
@@ -202,6 +214,7 @@ export default function Home() {
           result = {
             selected_option: payload.selected_option,
             funny_reason: payload.funny_reason,
+            criteria_notes: payload.criteria_notes ?? {},
           };
           setRecommendation(result);
         }
@@ -236,7 +249,7 @@ export default function Home() {
         }
       }
     },
-    [filledOptions, answers, categoryId, weights, accessToken, category],
+    [filledOptions, answers, categoryId, weights, accessToken, category, scored],
   );
 
   // المحادثة الصوتية تعطينا كل شي دفعة واحدة — بما فيه التقييمات.

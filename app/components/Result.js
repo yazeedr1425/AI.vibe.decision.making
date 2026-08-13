@@ -30,6 +30,9 @@ export default function Result({
   onRetry,
 }) {
   const [showDetails, setShowDetails] = useState(false);
+
+  // شروح المعايير من النموذج، بمفتاح المعيار
+  const notes = recommendation?.criteria_notes ?? null;
   const [spinning, setSpinning] = useState(false);
   const [flash, setFlash] = useState(null);
   const [randomPick, setRandomPick] = useState(null);
@@ -181,8 +184,12 @@ export default function Result({
             {detailedBreakdown(scored).map((d) => (
               <li key={d.key} className="flex flex-col gap-0.5">
                 <span className="font-medium">{d.label}</span>
-                <span className="text-muted">
-                  {d.importance} — {d.verdict}
+                {/* شرح النموذج يسبق النص المحسوب: "كان مهم — أقل من
+                    «بروست» هنا" صحيح لكنه يترك أهم سؤال بلا جواب —
+                    إذا كان المعيار مهماً والفائز أضعف فيه، ليش فاز؟
+                    والنص المحسوب يبقى خط رجعة لو ما رجع شرح. */}
+                <span className="leading-relaxed text-muted">
+                  {notes?.[d.key] ?? `${d.importance} — ${d.verdict}`}
                 </span>
               </li>
             ))}
