@@ -140,6 +140,74 @@ export function Headphones(props) {
   );
 }
 
+export function MapPin(props) {
+  return (
+    <Icon {...props}>
+      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+      <circle cx="12" cy="10" r="3" />
+    </Icon>
+  );
+}
+
+export function Clock(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </Icon>
+  );
+}
+
+export function Car(props) {
+  return (
+    <Icon {...props}>
+      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+      <circle cx="7" cy="17" r="2" />
+      <path d="M9 17h6" />
+      <circle cx="17" cy="17" r="2" />
+    </Icon>
+  );
+}
+
+export function RefreshCw(props) {
+  return (
+    <Icon {...props}>
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16H3v5" />
+    </Icon>
+  );
+}
+
+export function Shuffle(props) {
+  return (
+    <Icon {...props}>
+      <path d="m18 14 4 4-4 4" />
+      <path d="m18 2 4 4-4 4" />
+      <path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" />
+      <path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" />
+      <path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" />
+    </Icon>
+  );
+}
+
+export function Sun(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </Icon>
+  );
+}
+
 // أيقونة كل فئة حسب ما ورد في التصميم
 export const CATEGORY_ICONS = {
   food: Utensils,
