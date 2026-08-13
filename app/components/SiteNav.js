@@ -7,6 +7,7 @@ import VoiceControls from "./VoiceControls";
 
 const LINKS = [
   { href: "/how", label: "كيف يعمل" },
+  { href: "/analyze", label: "تحليل المخاطر" },
   { href: "/#examples", label: "أمثلة" },
   { href: "/#history", label: "سجل القرارات" },
 ];
