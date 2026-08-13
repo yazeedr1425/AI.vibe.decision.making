@@ -49,7 +49,7 @@ function validate(body) {
     return { ok: false, message: "الطلب لازم يكون كائن JSON." };
   }
 
-  const { options, answers, userId, categoryId } = body;
+  const { options, answers, userId, categoryId, rubric } = body;
 
   if (!Array.isArray(options)) {
     return { ok: false, message: "options لازم تكون مصفوفة." };
@@ -99,6 +99,21 @@ function validate(body) {
     }
   }
 
+  // الأسئلة المولّدة لهذا القرار. تُستخدم لوصف الإجابات في البرومبت
+  // فقط — لا تدخل أي حساب ولا تُحفظ من هنا، فيكفي فحص الشكل.
+  // شكل غير متوقع يُتجاهل بصمت ونكمل بالقالب الثابت.
+  let questions = null;
+  if (Array.isArray(rubric?.questions)) {
+    const shaped = rubric.questions.filter(
+      (q) =>
+        q &&
+        typeof q.key === "string" &&
+        typeof q.label === "string" &&
+        Array.isArray(q.choices),
+    );
+    if (shaped.length) questions = shaped;
+  }
+
   return {
     ok: true,
     value: {
@@ -106,6 +121,7 @@ function validate(body) {
       answers,
       userId: userId ?? null,
       categoryId: category?.id ?? null,
+      questions,
     },
   };
 }
@@ -174,10 +190,13 @@ async function fetchRecentDecisions(userId) {
 
 // إجابات المستخدم تجي كمفاتيح خام مثل { time: "rush" }.
 // نحولها لجُمل مفهومة حتى يقدر النموذج يستخدمها فعلاً.
+// category هنا قد يكون القالب الثابت أو المولّد لهذا القرار — الاثنان
+// بنفس الشكل. الأسئلة المولّدة مفاتيحها خاصة بتلك المفاضلة، فبدون
+// تمريرها تسقط الدالة لسطر "key: value" ويقرأ النموذج رموزاً.
 function describeAnswers(category, answers) {
   const entries = Object.entries(answers);
   if (!entries.length) return "لم يجب على أي سؤال.";
-  if (!category) {
+  if (!category?.questions) {
     return entries.map(([k, v]) => `- ${k}: ${v}`).join("\n");
   }
 
@@ -317,7 +336,17 @@ export async function POST(request) {
   const parsed = validate(body);
   if (!parsed.ok) return fail(400, parsed.message);
 
-  const { options, answers, userId: bodyUserId, categoryId } = parsed.value;
+  const {
+    options,
+    answers,
+    userId: bodyUserId,
+    categoryId,
+    questions,
+  } = parsed.value;
+
+  // الأسئلة المولّدة تسبق القالب: هي اللي جاوب عليها المستخدم فعلاً.
+  const base = categoryId ? getCategory(categoryId) : null;
+  const category = questions ? { ...(base ?? {}), questions } : base;
 
   let identity;
   try {
@@ -348,7 +377,7 @@ export async function POST(request) {
     recommendation = await askGemini({
       options,
       answers,
-      category: categoryId ? getCategory(categoryId) : null,
+      category,
       history,
     });
   } catch (err) {

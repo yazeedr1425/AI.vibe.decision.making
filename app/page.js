@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { getCategory } from "@/lib/engine/categories";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
+import { criteriaService } from "@/lib/services/criteria";
 import { decisionService } from "@/lib/services/decisions";
 import { profileService } from "@/lib/services/profile";
 import { useMoodTheme } from "@/lib/theme/useMoodTheme";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Landing from "./components/Landing";
+import QuestionSkeleton from "./components/QuestionSkeleton";
 import QuestionStep from "./components/QuestionStep";
 import RatingGrid from "./components/RatingGrid";
 import HistorySection from "./components/HistorySection";
@@ -40,6 +42,14 @@ export default function Home() {
   const [recommendation, setRecommendation] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [saveState, setSaveState] = useState(null);
+
+  // المعايير والأسئلة لهذا القرار تحديداً — مولّدة من الخيارين، أو
+  // القالب الثابت لو فشل التوليد. تبقى null أثناء التوليد فيظهر
+  // الهيكل بدلها.
+  const [rubric, setRubric] = useState(null);
+  const rubricAbort = useRef(null);
+
+  useEffect(() => () => rubricAbort.current?.abort(), []);
 
   // تفضيلات البروفايل تسبق الحالة المحلية عند تسجيل الدخول،
   // عشان اللي يحفظه المستخدم في الإعدادات يكون له أثر فعلي هنا
@@ -77,7 +87,9 @@ export default function Home() {
   // الثيم يتبع المزاج — نفس الـ hook المستخدم في الإعدادات
   useMoodTheme(mood);
 
-  const category = categoryId ? getCategory(categoryId) : null;
+  // المحرك ما يعرف من وين جا القالب: weightsFor و scoreOptions
+  // تستقبلان category كوسيط. فالمولّد يحلّ محلّ الثابت بلا تعديل فيه.
+  const category = rubric;
 
   const filledOptions = useMemo(
     () =>
@@ -100,12 +112,38 @@ export default function Home() {
     [category, filledOptions, ratings, weights],
   );
 
-  const start = () => {
+  // ننتقل لشاشة الأسئلة فوراً ونولّد خلفها. التوليد نداء حاجز، لكن
+  // إبقاء المستخدم على شاشة الهبوط ينتظر يخليه يظن إن الزر ما اشتغل.
+  const start = useCallback(() => {
     setAnswers({});
     setRatings({});
     setQuestionIndex(0);
+    setRubric(null);
     setStep("questions");
-  };
+
+    rubricAbort.current?.abort();
+    const controller = new AbortController();
+    rubricAbort.current = controller;
+
+    criteriaService
+      .forOptions({
+        categoryId,
+        options: filledOptions.map((o) => o.label),
+        signal: controller.signal,
+      })
+      .then(({ rubric: generated, source }) => {
+        if (controller.signal.aborted) return;
+        console.info(`[criteria] source: ${source}`);
+        setRubric(generated);
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        // الخدمة نفسها ما ترمي إلا عند الإلغاء، لكن لو صار المستحيل
+        // نرجع للقالب بدل ما نترك المستخدم أمام هيكل ما ينتهي
+        console.error("[criteria] unexpected failure:", err);
+        setRubric(getCategory(categoryId));
+      });
+  }, [categoryId, filledOptions]);
 
   const nextQuestion = () => {
     if (questionIndex + 1 < category.questions.length) {
@@ -148,6 +186,11 @@ export default function Home() {
             options: labels,
             answers: finalAnswers,
             categoryId: finalCategory,
+            // بدونه يبحث المسار عن الأسئلة في القالب الثابت وما
+            // يلقاها، فيسقط لسطر "key: value" ويقرأ النموذج رموزاً
+            rubric: category
+              ? { criteria: category.criteria, questions: category.questions }
+              : null,
           }),
         });
 
@@ -180,6 +223,7 @@ export default function Home() {
             reason: result.funny_reason,
             answers: finalAnswers,
             weights,
+            rubric: category,
           });
           setSaveState(
             saved.ok
@@ -192,7 +236,7 @@ export default function Home() {
         }
       }
     },
-    [filledOptions, answers, categoryId, weights, accessToken],
+    [filledOptions, answers, categoryId, weights, accessToken, category],
   );
 
   // المحادثة الصوتية تعطينا كل شي دفعة واحدة — بما فيه التقييمات.
@@ -214,12 +258,18 @@ export default function Home() {
       setOptions(voiceOptions);
       setAnswers(payload.answers);
       setRatings(byId);
+      // وضع المحادثة يبقى على القالب الثابت: /api/assist يسأل أسئلة
+      // القالب نفسها ويرجّع إجاباتها بمفاتيحها. بدون ضبطه هنا يبقى
+      // rubric فارغاً فتطلع شاشة نتيجة بلا ترتيب — المحرك يحتاج
+      // category ليحسب أصلاً.
+      setRubric(getCategory(payload.categoryId));
       decide({ ...payload, ratings: byId });
     },
     [decide],
   );
 
   const restart = () => {
+    rubricAbort.current?.abort();
     setStep("landing");
     setQuestionIndex(0);
     setCategoryId(null);
@@ -227,6 +277,7 @@ export default function Home() {
     setOptions(initialOptions());
     setAnswers({});
     setRatings({});
+    setRubric(null);
     setRecommendation(null);
     setApiError(null);
     setSaveState(null);
@@ -282,6 +333,9 @@ export default function Home() {
                 onCancel={() => setStep("landing")}
               />
             )}
+
+            {/* الهيكل يحجز نفس تخطيط السؤال أثناء التوليد */}
+            {step === "questions" && !category && <QuestionSkeleton />}
 
             {step === "questions" && category && (
               <QuestionStep
