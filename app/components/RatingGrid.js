@@ -1,6 +1,24 @@
 "use client";
 
 import { DEFAULT_RATING, RATING_SCALE } from "@/lib/engine/score";
+
+// سلّم التقييم لكل معيار على حدة.
+//
+// كانت الشبكة تعرض ضعيف/متوسط/ممتاز لكل المعايير، وهذا مقياس جودة
+// ما ينطبق إلا على بعضها. "الدسامة: ضعيف/ممتاز" بلا معنى — دسم ليس
+// جودة، هو طرف. والمعيار أصلاً يحمل طرفيه (low و high)، فالشبكة
+// كانت تتجاهل ما تحتاجه بالضبط.
+//
+// الترتيب ١←٣ يبقى كما هو: الأعلى دائماً هو الطرف المرغوب حين يهم
+// المعيار، وعليه يقوم حساب scoreOptions.
+function scaleFor(criterion) {
+  if (!criterion.low || !criterion.high) return RATING_SCALE;
+  return [
+    { value: 1, label: criterion.low },
+    { value: 2, label: criterion.mid ?? "وسط" },
+    { value: 3, label: criterion.high },
+  ];
+}
 import { Choice, GhostButton, PrimaryButton, SectionHeading, Tag } from "./ui";
 import { ArrowLeft, ArrowRight } from "./icons";
 
@@ -63,7 +81,7 @@ export default function RatingGrid({
                     aria-label={`${c.label} — ${o.label}`}
                     className="flex gap-1.5"
                   >
-                    {RATING_SCALE.map((r) => {
+                    {scaleFor(c).map((r) => {
                       const checked =
                         (ratings[o.id]?.[c.key] ?? DEFAULT_RATING) === r.value;
                       return (

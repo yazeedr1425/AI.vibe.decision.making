@@ -30,11 +30,21 @@ const RESPONSE_SCHEMA = {
         properties: {
           key: { type: Type.STRING, description: "lowercase slug identifier" },
           label: { type: Type.STRING, description: "Arabic, short" },
-          low: { type: Type.STRING, description: "Arabic, the weak end" },
-          high: { type: Type.STRING, description: "Arabic, the strong end" },
+          low: {
+            type: Type.STRING,
+            description: "Arabic rating button, 1-2 words, the lesser end",
+          },
+          mid: {
+            type: Type.STRING,
+            description: "Arabic rating button, 1-2 words, the middle",
+          },
+          high: {
+            type: Type.STRING,
+            description: "Arabic rating button, 1-2 words, the greater end",
+          },
         },
-        required: ["key", "label", "low", "high"],
-        propertyOrdering: ["key", "label", "low", "high"],
+        required: ["key", "label", "low", "mid", "high"],
+        propertyOrdering: ["key", "label", "low", "mid", "high"],
       },
     },
     questions: {

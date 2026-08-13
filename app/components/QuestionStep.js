@@ -16,6 +16,11 @@ export default function QuestionStep({
   const question = category.questions[index];
   const total = category.questions.length;
 
+  // السؤال بلا سياق يبان اعتباطياً: المستخدم يشوف "وش خاطرك اليوم؟"
+  // وما يدري ليش انسأل ولا وش يسوّي بجوابه. كل سؤال وظيفته واحدة —
+  // يحدد وزن معيار واحد — فنقولها صراحة تحته.
+  const affected = category.criteria.find((c) => c.key === question.affects);
+
   useScreenAnnounce(
     `${question.label} ${question.choices.map((c) => c.label).join("، أو ")}`,
   );
@@ -29,7 +34,13 @@ export default function QuestionStep({
     <div className="flex flex-col gap-8">
       <Progress current={index + 1} total={total} />
 
-      <SectionHeading tag={question.en} title={question.label} />
+      <SectionHeading
+        tag={question.en}
+        title={question.label}
+        sub={
+          affected ? `جوابك يحدد كم يهمّك «${affected.label}» في هذا القرار` : undefined
+        }
+      />
 
       <div
         role="radiogroup"
