@@ -1,0 +1,305 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { fetchCandidates, resolveLocation } from "@/lib/places/client";
+import { prepareCandidates } from "@/lib/places/trim";
+import { travelLegs } from "@/lib/routing/travel";
+import { buildUserPrompt, SYSTEM_PROMPT } from "@/lib/plan/prompt";
+import { parsePlan } from "@/lib/plan/parse";
+import {
+  budget,
+  DEFAULT_RADIUS_KM,
+  group,
+  MAX_CANDIDATES,
+  MAX_DURATION_HOURS,
+  MAX_RADIUS_KM,
+  MIN_DURATION_HOURS,
+  MIN_RADIUS_KM,
+  minutesOfDay,
+  vibe,
+} from "@/lib/plan/config";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const MODEL = "claude-sonnet-4-6";
+const MAX_TOKENS = 8000;
+const CLAUDE_TIMEOUT_MS = 45000; // بالميلي ثانية — SDK الـ JS يقيسها كذا
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function fail(status, message, extra) {
+  return Response.json({ ok: false, error: message, ...extra }, { status });
+}
+
+// ---------------------------------------------------------------
+// التحقق من المدخلات
+// ---------------------------------------------------------------
+
+function validate(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { ok: false, message: "الطلب لازم يكون كائن JSON." };
+  }
+
+  const hasCoords =
+    Number.isFinite(body.lat) &&
+    Number.isFinite(body.lng) &&
+    Math.abs(body.lat) <= 90 &&
+    Math.abs(body.lng) <= 180;
+
+  const query =
+    typeof body.locationQuery === "string" ? body.locationQuery.trim() : "";
+
+  if (!hasCoords && !query) {
+    return { ok: false, message: "نحتاج موقعك — فعّل تحديد الموقع أو اكتب المدينة." };
+  }
+  if (query.length > 120) {
+    return { ok: false, message: "اسم المكان طويل — اختصره." };
+  }
+
+  const startMinutes = minutesOfDay(body.startTime);
+  if (startMinutes === null) {
+    return { ok: false, message: "وقت البداية لازم يكون بصيغة HH:MM." };
+  }
+
+  const durationHours = Number(body.durationHours);
+  if (
+    !Number.isFinite(durationHours) ||
+    durationHours < MIN_DURATION_HOURS ||
+    durationHours > MAX_DURATION_HOURS
+  ) {
+    return {
+      ok: false,
+      message: `المدة لازم تكون بين ${MIN_DURATION_HOURS} و${MAX_DURATION_HOURS} ساعات.`,
+    };
+  }
+
+  if (typeof body.date !== "string" || !DATE.test(body.date)) {
+    return { ok: false, message: "التاريخ لازم يكون بصيغة YYYY-MM-DD." };
+  }
+  // "2026-08-13" ينقرأ كمنتصف ليل UTC، و getUTCDay يعطي اليوم نفسه
+  // مهما كانت منطقة الخادم الزمنية — مهم لأن Vercel يشتغل على UTC.
+  const parsedDate = new Date(`${body.date}T00:00:00Z`);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return { ok: false, message: "التاريخ غير صالح." };
+  }
+
+  if (!vibe(body.vibe)) return { ok: false, message: "المزاج غير معروف." };
+  if (!group(body.group)) return { ok: false, message: "نوع المجموعة غير معروف." };
+  if (!budget(body.budget)) return { ok: false, message: "الميزانية غير معروفة." };
+
+  let radiusKm = Number(body.radiusKm ?? DEFAULT_RADIUS_KM);
+  if (!Number.isFinite(radiusKm)) radiusKm = DEFAULT_RADIUS_KM;
+  radiusKm = Math.min(MAX_RADIUS_KM, Math.max(MIN_RADIUS_KM, Math.round(radiusKm)));
+
+  const exclude = Array.isArray(body.excludePlaceIds)
+    ? body.excludePlaceIds.filter((id) => typeof id === "string").slice(0, 20)
+    : [];
+
+  return {
+    ok: true,
+    value: {
+      lat: hasCoords ? body.lat : null,
+      lng: hasCoords ? body.lng : null,
+      locationQuery: query || null,
+      startMinutes,
+      durationHours,
+      weekday: parsedDate.getUTCDay(), // 0 = الأحد، نفس ترقيم Places
+      vibeId: body.vibe,
+      groupId: body.group,
+      budgetId: body.budget,
+      radiusKm,
+      exclude,
+    },
+  };
+}
+
+// ---------------------------------------------------------------
+// نداء Claude
+// ---------------------------------------------------------------
+
+function textOf(message) {
+  return (message.content ?? [])
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("")
+    .trim();
+}
+
+async function askClaude(input) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    const err = new Error("ANTHROPIC_API_KEY is not set");
+    err.code = "NO_API_KEY";
+    throw err;
+  }
+
+  const client = new Anthropic({ apiKey });
+
+  let userPrompt = buildUserPrompt(input);
+  if (input.exclude.length) {
+    userPrompt += `\n\nDo NOT use these place_ids — the user rejected them: ${input.exclude.join(", ")}`;
+  }
+
+  const message = await client.messages.create(
+    {
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: SYSTEM_PROMPT,
+      // الترتيب لتقليل التنقّل داخل نافذة زمنية = استدلال حقيقي،
+      // مو استخراج. التفكير التكيّفي يحسّن الترتيب بوضوح.
+      thinking: { type: "adaptive" },
+      output_config: { effort: "medium" },
+      messages: [{ role: "user", content: userPrompt }],
+    },
+    { timeout: CLAUDE_TIMEOUT_MS },
+  );
+
+  if (message.stop_reason === "refusal") {
+    const err = new Error("Claude refused the request");
+    err.code = "REFUSED";
+    throw err;
+  }
+
+  const raw = textOf(message);
+  if (!raw) {
+    const err = new Error(`Claude returned no text (stop: ${message.stop_reason})`);
+    err.code = message.stop_reason === "max_tokens" ? "TRUNCATED" : "EMPTY";
+    throw err;
+  }
+
+  return raw;
+}
+
+// ---------------------------------------------------------------
+// POST /api/plan
+// ---------------------------------------------------------------
+
+export async function POST(request) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return fail(400, "ما قدرنا نقرأ الطلب — لازم يكون JSON صالح.");
+  }
+
+  const parsed = validate(body);
+  if (!parsed.ok) return fail(400, parsed.message);
+
+  const input = parsed.value;
+
+  // ١ — الموقع، ثم المرشّحون من Places
+  let origin;
+  let candidates;
+
+  try {
+    origin = input.lat != null
+      ? { lat: input.lat, lng: input.lng, label: input.locationQuery ?? "موقعك الحالي" }
+      : await resolveLocation(input.locationQuery);
+
+    if (!origin) {
+      return fail(400, `ما لقينا "${input.locationQuery}" — جرب اسماً أوضح.`);
+    }
+
+    const raw = await fetchCandidates({
+      lat: origin.lat,
+      lng: origin.lng,
+      radiusKm: input.radiusKm,
+      types: vibe(input.vibeId).types,
+    });
+
+    // ٢ و٣ — التقليم ثم استبعاد المغلق في نافذة الخروج
+    candidates = prepareCandidates(
+      raw,
+      {
+        weekday: input.weekday,
+        startMinutes: input.startMinutes,
+        durationMinutes: input.durationHours * 60,
+      },
+      MAX_CANDIDATES,
+    ).filter((place) => !input.exclude.includes(place.id));
+  } catch (err) {
+    console.error(`[api/plan] places failed (${err.code ?? "UNKNOWN"}):`, err);
+    if (err.code === "NO_MAPS_KEY") {
+      return fail(503, "خدمة الأماكن غير مهيأة — GOOGLE_MAPS_API_KEY مفقود.");
+    }
+    if (err.name === "AbortError") {
+      return fail(504, "خدمة الأماكن تأخرت بالرد، جرب مرة ثانية.");
+    }
+    return fail(502, "ما قدرنا نجيب أماكن قريبة منك الحين.");
+  }
+
+  if (candidates.length === 0) {
+    return Response.json({
+      ok: true,
+      empty: true,
+      message:
+        "ما لقينا أماكن مفتوحة في هذا الوقت حولك. جرّب توسّع النطاق، أو غيّر الوقت أو المزاج.",
+      origin: { label: origin.label },
+      candidateCount: 0,
+    });
+  }
+
+  // ٤ — الخطة من النموذج
+  let raw;
+  try {
+    raw = await askClaude({ ...input, candidates, locationLabel: origin.label });
+  } catch (err) {
+    console.error(`[api/plan] claude failed (${err.code ?? "UNKNOWN"}):`, err);
+
+    if (err.code === "NO_API_KEY") {
+      return fail(503, "مولّد الخطة غير مهيأ — ANTHROPIC_API_KEY مفقود.");
+    }
+    if (err.name === "AbortError" || err.status === 408) {
+      return fail(504, "مولّد الخطة تأخر بالرد، جرب مرة ثانية.");
+    }
+    if (err.status === 429) {
+      return fail(502, "الضغط عالي على مولّد الخطة — انتظر شوي وجرب.");
+    }
+    return fail(502, "ما قدرنا نبني الخطة الحين، جرب مرة ثانية.");
+  }
+
+  const result = parsePlan(raw, candidates);
+  if (!result.ok) {
+    console.error(`[api/plan] parse failed (${result.reason}):`, result.sample);
+    return fail(502, "رد المولّد جاء بشكل غير متوقع — جرب مرة ثانية.");
+  }
+
+  const { plan, dropped } = result;
+
+  if (plan.stops.length === 0) {
+    return Response.json({
+      ok: true,
+      empty: true,
+      message:
+        "المولّد ما طلع بخطة تناسب وقتك وميزانيتك. جرّب توسّع النطاق أو تزيد المدة.",
+      origin: { label: origin.label },
+      candidateCount: candidates.length,
+    });
+  }
+
+  // ٥ — أزمنة التنقّل الحقيقية بين المحطات المختارة، بترتيبها
+  let legs = [];
+  try {
+    legs = await travelLegs(plan.stops);
+  } catch (err) {
+    // الخطة صالحة بدونها — نعرضها بلا أزمنة تنقّل
+    console.error("[api/plan] travel legs failed:", err);
+    legs = plan.stops.slice(1).map(() => null);
+  }
+
+  // ٦ — الرد
+  return Response.json({
+    ok: true,
+    empty: false,
+    origin: { label: origin.label, lat: origin.lat, lng: origin.lng },
+    plan: {
+      ...plan,
+      stops: plan.stops.map((stop, i) => ({
+        ...stop,
+        travel_to_next: i < legs.length ? legs[i] : null,
+      })),
+    },
+    candidateCount: candidates.length,
+    droppedStops: dropped,
+    model: MODEL,
+  });
+}
