@@ -97,6 +97,23 @@ body {
   }
 }
 
+/* ---------------------------------------------------------------
+   مؤشر التركيز — Tailwind preflight يشيل حلقة المتصفح الافتراضية،
+   وما كان فيه بديل، فالتنقّل بالكيبورد كان أعمى تماماً.
+   نستخدم focus-visible حتى ما تظهر الحلقة عند النقر بالفأرة.
+   --------------------------------------------------------------- */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* العناصر اللي تستقبل التركيز برمجياً عند تغيّر الخطوة —
+   ما نبي حلقة حولها لأن المستخدم ما نقلها بنفسه */
+[data-step-heading]:focus {
+  outline: none;
+}
+
 /* الليبلات اللاتينية الصغيرة */
 .tag {
   font-family: var(--font-latin), ui-monospace, monospace;

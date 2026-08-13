@@ -4,12 +4,19 @@ import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
 import { GhostButton, Progress, SectionHeading } from "./ui";
 
 // سؤال واحد في كل شاشة، مثل ملف التصميم
-export default function QuestionStep({ category, index, answers, setAnswers, onAnswer, onBack }) {
+export default function QuestionStep({
+  category,
+  index,
+  answers,
+  setAnswers,
+  onAnswer,
+  onBack,
+}) {
   const question = category.questions[index];
   const total = category.questions.length;
 
   useScreenAnnounce(
-    `${question.label} ${question.choices.map((c) => c.label).join("، أو ")}`
+    `${question.label} ${question.choices.map((c) => c.label).join("، أو ")}`,
   );
 
   const pick = (value) => {
@@ -23,11 +30,17 @@ export default function QuestionStep({ category, index, answers, setAnswers, onA
 
       <SectionHeading tag={question.en} title={question.label} />
 
-      <div className="flex flex-col gap-2">
+      <div
+        role="radiogroup"
+        aria-label={question.label}
+        className="flex flex-col gap-2"
+      >
         {question.choices.map((c) => (
           <button
             key={c.value}
             type="button"
+            role="radio"
+            aria-checked={answers[question.key] === c.value}
             onClick={() => pick(c.value)}
             className={
               "flex items-center justify-between gap-4 rounded-2xl border px-5 py-4 text-start transition-all " +

@@ -79,7 +79,7 @@ export default function HowItWorks() {
                     <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-soft text-accent-strong">
                       <Icon size={18} />
                     </span>
-                    <span className="tag">{`step 0${i + 1}`}</span>
+                    <span lang="en" className="tag">{`step 0${i + 1}`}</span>
                   </div>
                   <h3 className="text-lg font-semibold">{step.title}</h3>
                   <p className="text-sm leading-relaxed text-muted">
@@ -93,7 +93,9 @@ export default function HowItWorks() {
 
         {/* ليش سؤالين مختلفين */}
         <section className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-6 sm:p-8">
-          <span className="tag">the math, briefly</span>
+          <span lang="en" className="tag">
+            the math, briefly
+          </span>
           <h2 className="text-2xl font-semibold">
             ليش نسألك مرتين — أسئلة وتقييم؟
           </h2>
