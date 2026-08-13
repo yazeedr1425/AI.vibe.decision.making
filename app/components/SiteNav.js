@@ -25,20 +25,22 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-background/85 backdrop-blur">
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        {/* الشعار — يمين في الاتجاه العربي */}
-        <button
-          type="button"
-          onClick={goHome}
-          className="flex items-center gap-2.5"
-          aria-label="احسم — الصفحة الرئيسية"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-lg font-bold text-accent-ink">
-            حـ
-          </span>
-          <span className="text-lg font-semibold">احسم</span>
-        </button>
+        {/* الشعار والروابط يبدآن من اليمين ويتدفقان لليسار.
+            كانت الروابط مجمّعة مع الأزرار فتنطّ لأقصى اليسار،
+            ويطلع فراغ كبير بعد الشعار مباشرة. */}
+        <div className="flex items-center gap-2 sm:gap-6">
+          <button
+            type="button"
+            onClick={goHome}
+            className="flex items-center gap-2.5"
+            aria-label="احسم — الصفحة الرئيسية"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-lg font-bold text-accent-ink">
+              حـ
+            </span>
+            <span className="text-lg font-semibold">احسم</span>
+          </button>
 
-        <div className="flex items-center gap-1 sm:gap-2">
           <ul className="hidden items-center gap-1 md:flex">
             {LINKS.map((l) => (
               <li key={l.href}>
@@ -51,7 +53,10 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
               </li>
             ))}
           </ul>
+        </div>
 
+        {/* الأدوات والحساب في الطرف المقابل */}
+        <div className="flex items-center gap-1 sm:gap-2">
           <VoiceControls onVoiceMode={openVoice} />
 
           {user ? (
