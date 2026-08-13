@@ -55,14 +55,22 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
           <VoiceControls onVoiceMode={openVoice} />
 
           {user ? (
-            <button
-              type="button"
-              onClick={signOut}
-              title={user.email}
-              className="rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
-            >
-              خروج
-            </button>
+            <>
+              <Link
+                href="/settings"
+                className="hidden rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft sm:inline-flex"
+              >
+                الإعدادات
+              </Link>
+              <button
+                type="button"
+                onClick={signOut}
+                title={user.email}
+                className="rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
+              >
+                خروج
+              </button>
+            </>
           ) : (
             <button
               type="button"

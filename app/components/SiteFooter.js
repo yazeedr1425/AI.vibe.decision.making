@@ -15,6 +15,12 @@ export default function SiteFooter() {
           >
             سجل القرارات
           </Link>
+          <Link
+            href="/settings"
+            className="transition-colors hover:text-foreground"
+          >
+            الإعدادات
+          </Link>
         </nav>
       </div>
     </footer>
