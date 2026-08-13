@@ -1,13 +1,40 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CATEGORIES } from "@/lib/engine/categories";
+import { CATEGORIES, getCategory } from "@/lib/engine/categories";
 import { MOODS, getMood } from "@/lib/engine/mood";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { listenOnce } from "@/lib/voice/speech";
 import { parseSpokenOptions } from "@/lib/voice/match";
 import { useVoice } from "@/lib/voice/VoiceProvider";
-import { GhostButton, PrimaryButton, Tag } from "./ui";
+
+// أمثلة الواجهة — كل واحد يعبّي الفئة والخيارات مباشرة
+const EXAMPLES = [
+  {
+    icon: "🍽️",
+    label: "أطلب ولا أطبخ؟",
+    categoryId: "food",
+    options: ["أطلب من مطعم", "أطبخ بالبيت"],
+  },
+  {
+    icon: "🛍️",
+    label: "أشتري أو أنتظر؟",
+    categoryId: "shopping",
+    options: ["أشتري الآن", "أنتظر التخفيض"],
+  },
+  {
+    icon: "💼",
+    label: "أكمّل أو أغيّر؟",
+    categoryId: "life",
+    options: ["أكمّل بمكاني", "أغيّر مساري"],
+  },
+  {
+    icon: "💡",
+    label: "أفكّر أو أبدأ؟",
+    categoryId: "time",
+    options: ["أفكّر أكثر", "أبدأ الحين"],
+  },
+];
 
 export default function Landing({
   mood,
@@ -20,13 +47,16 @@ export default function Landing({
   onVoiceMode,
 }) {
   const { stt } = useVoice();
+  const [editingTopic, setEditingTopic] = useState(false);
   const [dictating, setDictating] = useState(false);
   const [dictationError, setDictationError] = useState(null);
   const stopRef = useRef(() => {});
 
   useEffect(() => () => stopRef.current?.(), []);
+
   const filled = options.filter((o) => o.label.trim()).length;
   const ready = filled >= MIN_OPTIONS && categoryId;
+  const category = categoryId ? getCategory(categoryId) : null;
   const activeMood = getMood(mood);
 
   const update = (id, label) =>
@@ -44,7 +74,12 @@ export default function Landing({
       prev.length <= MIN_OPTIONS ? prev : prev.filter((o) => o.id !== id),
     );
 
-  // إملاء الخيارات بالصوت: "برجر أو سوشي ولا أطبخ بالبيت"
+  const applyExample = (example) => {
+    setCategoryId(example.categoryId);
+    setOptions(example.options.map((label, i) => ({ id: `ex-${i}`, label })));
+    setEditingTopic(false);
+  };
+
   const dictate = useCallback(() => {
     if (!stt || dictating) return;
     setDictationError(null);
@@ -97,190 +132,211 @@ export default function Landing({
   }, [dictate]);
 
   return (
-    <div className="flex flex-col gap-10">
-      {/* الواجهة الترحيبية */}
-      <section className="flex flex-col items-start gap-4 border-b border-line pb-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
-        <div className="flex flex-col gap-3">
-          <Tag>step 01 — what&apos;s the call?</Tag>
-          <h1 className="text-3xl font-bold leading-tight sm:text-5xl">
-            وش نقرر اليوم؟
-          </h1>
-          <p className="max-w-xl text-base text-muted sm:text-lg">
-            اكتب خياراتك، جاوب أسئلة سريعة، وأنا أحسمها لك — مع السبب.
-          </p>
+    <div className="grid items-start gap-8 md:grid-cols-2 md:gap-8 lg:gap-14">
+      {/* ------------ العمود التعريفي ------------ */}
+      <section className="flex flex-col gap-6" id="examples">
+        <span className="pill self-start">✨ مساعد قرارك اليومي</span>
+
+        <h1 className="text-4xl font-semibold leading-[1.15] sm:text-5xl lg:text-[3.25rem]">
+          خلّ الحيرة تنتهي عندك.
+        </h1>
+
+        <p className="max-w-xl text-base leading-relaxed text-muted sm:text-lg">
+          أضف خياراتك، جاوب على أسئلة خفيفة، وخذ ترشيحًا واضحًا مبنيًا على وقتك
+          ومزاجك وأولوياتك.
+        </p>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {EXAMPLES.map((ex) => (
+            <button
+              key={ex.label}
+              type="button"
+              onClick={() => applyExample(ex)}
+              className="card-shadow flex flex-col items-start gap-2 rounded-2xl border border-line bg-card p-4 text-start transition-transform hover:-translate-y-0.5"
+            >
+              <span className="text-xl">{ex.icon}</span>
+              <span className="font-medium">{ex.label}</span>
+            </button>
+          ))}
         </div>
 
-        <div className="flex w-full flex-col gap-3 rounded-2xl border border-dashed border-line bg-card p-5 lg:max-w-sm">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-semibold">وضع المحادثة الصوتية</h2>
-            <Tag>talk to ehsim</Tag>
-          </div>
-          <p className="text-sm text-muted">
-            كلّمني وأنا أعبّي الخيارات وأسألك وأحسمها. ولو الميكروفون ممنوع،
-            بيظهر لك مربع كتابة ونكمل نفس المحادثة.
-          </p>
-          <PrimaryButton
-            onClick={onVoiceMode}
-            aria-label="وضع المحادثة الصوتية — اختصار حرف V"
-            className="self-start"
-          >
-            🎧 ابدأ المحادثة الصوتية
-          </PrimaryButton>
+        {/* الشريط الرمادي */}
+        <div className="mt-2 rounded-2xl border border-line bg-[color:var(--line)]/40 p-5">
+          <p className="font-medium">يومك فيه قرارات أكثر مما تتوقع.</p>
+          <p className="text-sm text-muted">رتّبها على كيفك، والباقي علينا.</p>
         </div>
       </section>
 
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-        {/* العمود الأول: المزاج والفئة */}
-        <div className="flex flex-col gap-10">
-          {/* المزاج */}
-          <section className="flex flex-col gap-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="font-semibold">كيف مزاجك الحين؟</h3>
-              <Tag>mood sets the mood</Tag>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {MOODS.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setMood(mood === m.id ? null : m.id)}
-                  className={
-                    "flex flex-col items-center gap-1 rounded-2xl border px-3 py-3 transition-all " +
-                    (mood === m.id
-                      ? "border-foreground bg-accent text-accent-ink"
-                      : "border-line bg-card hover:border-foreground/40")
-                  }
-                >
-                  <span className="text-2xl">{m.emoji}</span>
-                  <span className="text-sm font-medium">{m.label}</span>
-                </button>
-              ))}
-            </div>
-            {activeMood && (
-              <p className="text-sm text-muted">{activeMood.line}</p>
-            )}
-          </section>
-
-          {/* الفئة */}
-          <section className="flex flex-col gap-3">
-            <h3 className="font-semibold">نوع القرار</h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setCategoryId(c.id)}
-                  className={
-                    "flex flex-col items-start gap-1 rounded-2xl border px-4 py-3 text-start transition-all " +
-                    (categoryId === c.id
-                      ? "border-foreground bg-accent text-accent-ink"
-                      : "border-line bg-card hover:border-foreground/40")
-                  }
-                >
-                  <span className="text-2xl">{c.emoji}</span>
-                  <span className="font-medium">{c.label}</span>
-                  <span
-                    className={
-                      categoryId === c.id ? "tag !text-accent-ink/70" : "tag"
-                    }
-                  >
-                    {c.en}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
+      {/* ------------ بطاقة القرار ------------ */}
+      <section
+        id="how"
+        className="card-shadow rounded-3xl border border-line bg-card p-5 sm:p-7"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <span className="tag">قرار جديد · ٠١</span>
+          <span className="pill">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            جاهز أساعدك
+          </span>
         </div>
 
-        {/* العمود الثاني: الخيارات والبدء */}
-        <div className="flex flex-col gap-10">
-          {/* الخيارات */}
-          <section className="flex flex-col gap-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="font-semibold">الخيارات</h3>
-              <Tag>
-                your options · {MIN_OPTIONS}–{MAX_OPTIONS}
-              </Tag>
+        <h2 className="mt-4 text-2xl font-semibold sm:text-[1.7rem]">
+          وش القرار اللي محتار فيه؟
+        </h2>
+
+        {/* الموضوع + غيّر */}
+        <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-background px-4 py-3">
+          <span className="flex items-center gap-2 font-medium">
+            <span>{category?.emoji ?? "🧭"}</span>
+            {category?.label ?? "اختر نوع القرار"}
+            {activeMood && (
+              <span className="text-sm text-muted">· {activeMood.label}</span>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={() => setEditingTopic((v) => !v)}
+            aria-expanded={editingTopic}
+            className="rounded-full px-3 py-1 text-sm text-accent-strong transition-colors hover:bg-accent-soft"
+          >
+            {editingTopic ? "تم" : "غيّر"}
+          </button>
+        </div>
+
+        {editingTopic && (
+          <div className="mt-3 flex flex-col gap-4 rounded-2xl border border-dashed border-line p-4">
+            <div className="flex flex-col gap-2">
+              <span className="text-sm text-muted">نوع القرار</span>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCategoryId(c.id)}
+                    className={
+                      "rounded-full border px-3 py-1.5 text-sm transition-colors " +
+                      (categoryId === c.id
+                        ? "border-accent bg-accent text-accent-ink"
+                        : "border-line hover:border-muted-soft")
+                    }
+                  >
+                    {c.emoji} {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              {options.map((o, i) => (
-                <div key={o.id} className="flex items-center gap-2">
-                  <span className="w-5 shrink-0 text-center text-sm text-muted">
-                    {i + 1}
-                  </span>
-                  <input
-                    value={o.label}
-                    onChange={(e) => update(o.id, e.target.value)}
-                    placeholder={`الخيار ${i + 1}`}
-                    maxLength={60}
-                    className="w-full rounded-xl border border-line bg-card px-4 py-3 outline-none transition-colors focus:border-accent"
-                  />
-                  {options.length > MIN_OPTIONS && (
-                    <button
-                      type="button"
-                      onClick={() => remove(o.id)}
-                      aria-label={`احذف الخيار ${i + 1}`}
-                      className="shrink-0 rounded-full px-2 text-lg text-muted transition-colors hover:text-foreground"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              {stt && (
-                <GhostButton
-                  onClick={dictate}
-                  disabled={dictating}
-                  aria-label="أملِ خياراتك بالصوت — اختصار حرف M"
-                >
-                  🎙️ {dictating ? "أسمعك…" : "تكلم + أضف خيار"}
-                </GhostButton>
+              <span className="text-sm text-muted">
+                مزاجك — يغيّر لون الصفحة ووزن معيار واحد
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {MOODS.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setMood(mood === m.id ? null : m.id)}
+                    className={
+                      "rounded-full border px-3 py-1.5 text-sm transition-colors " +
+                      (mood === m.id
+                        ? "border-accent bg-accent text-accent-ink"
+                        : "border-line hover:border-muted-soft")
+                    }
+                  >
+                    {m.emoji} {m.label}
+                  </button>
+                ))}
+              </div>
+              {activeMood && (
+                <p className="text-sm text-muted">{activeMood.line}</p>
               )}
-              {options.length < MAX_OPTIONS && (
+            </div>
+          </div>
+        )}
+
+        {/* الخيارات */}
+        <ul className="mt-3 flex flex-col gap-2">
+          {options.map((o, i) => (
+            <li key={o.id} className="flex items-center gap-2">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-medium text-white">
+                {i + 1}
+              </span>
+              <input
+                value={o.label}
+                onChange={(e) => update(o.id, e.target.value)}
+                placeholder={`الخيار ${i + 1}`}
+                aria-label={`الخيار رقم ${i + 1}`}
+                maxLength={60}
+                className="w-full rounded-2xl border border-line bg-background px-4 py-3 outline-none transition-colors focus:border-accent"
+              />
+              {options.length > MIN_OPTIONS && (
                 <button
                   type="button"
-                  onClick={add}
-                  className="text-sm text-muted transition-colors hover:text-foreground"
+                  onClick={() => remove(o.id)}
+                  aria-label={`احذف الخيار رقم ${i + 1}`}
+                  className="shrink-0 rounded-full px-2 text-lg text-muted-soft transition-colors hover:text-foreground"
                 >
-                  + أضف خيار
+                  ×
                 </button>
               )}
-            </div>
+            </li>
+          ))}
+        </ul>
 
-            {dictationError && (
-              <p role="status" className="text-sm text-muted">
-                ⚠️ {dictationError}
-              </p>
-            )}
-          </section>
-
-          <section className="flex flex-col gap-3 border-t border-line pt-6">
-            <Tag>ready?</Tag>
-            <p className="text-sm text-muted">
-              {ready
-                ? "تمام، خلنا نبدأ."
-                : !categoryId
-                  ? "اختر نوع القرار أول."
-                  : `اكتب ${MIN_OPTIONS} خيارات على الأقل وأبدأ معك.`}
-            </p>
-            <PrimaryButton
-              onClick={onStart}
-              disabled={!ready}
-              className="self-start"
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          {options.length < MAX_OPTIONS && (
+            <button
+              type="button"
+              onClick={add}
+              className="text-sm text-muted transition-colors hover:text-foreground"
             >
-              احسمها لي ←
-            </PrimaryButton>
-            <p className="text-xs text-muted">
-              ٣ أسئلة فقط · نتيجة مع السبب · وإذا ما اقتنعت، عجلة الحظ الموزونة
-              تنتظرك 🎲
-            </p>
-          </section>
+              + أضف خيارًا {options.length === 2 ? "ثالثًا" : "آخر"}
+            </button>
+          )}
+          {stt && (
+            <button
+              type="button"
+              onClick={dictate}
+              disabled={dictating}
+              aria-label="أملِ خياراتك بالصوت — اختصار حرف M"
+              className="text-sm text-muted transition-colors hover:text-foreground disabled:opacity-50"
+            >
+              🎙️ {dictating ? "أسمعك…" : "أملِ بالصوت"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onVoiceMode}
+            aria-label="وضع المحادثة الصوتية — اختصار حرف V"
+            className="text-sm text-muted transition-colors hover:text-foreground"
+          >
+            🎧 محادثة صوتية
+          </button>
         </div>
-      </div>
+
+        {dictationError && (
+          <p role="status" className="mt-2 text-sm text-muted">
+            ⚠️ {dictationError}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={onStart}
+          disabled={!ready}
+          className="mt-5 w-full rounded-2xl bg-accent px-6 py-4 text-lg font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          احسمها لي ←
+        </button>
+
+        <p className="mt-3 text-center text-xs text-muted-soft">
+          {ready
+            ? "ما نحفظ قرارك إلا إذا طلبت. القرار لك دائمًا."
+            : !categoryId
+              ? "اختر نوع القرار من «غيّر» أول."
+              : `اكتب ${MIN_OPTIONS} خيارات على الأقل.`}
+        </p>
+      </section>
     </div>
   );
 }
