@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getCategory } from "@/lib/engine/categories";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
 import { profileService } from "@/lib/services/profile";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import AuthPanel from "./components/AuthPanel";
 import Landing from "./components/Landing";
 import QuestionStep from "./components/QuestionStep";
 import RatingGrid from "./components/RatingGrid";
@@ -27,6 +27,7 @@ const initialOptions = () => [
 
 export default function Home() {
   const { user, signOut, accessToken } = useAuth();
+  const router = useRouter();
   const [step, setStep] = useState("landing");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [categoryId, setCategoryId] = useState(null);
@@ -220,7 +221,7 @@ export default function Home() {
       <SiteNav
         onHome={restart}
         onVoiceMode={() => setStep("voice")}
-        onSignIn={() => setStep("auth")}
+        onSignIn={() => router.push("/login")}
         onStart={() => {
           setStep("landing");
           document
@@ -251,14 +252,12 @@ export default function Home() {
             />
 
             <HistorySection
-              onSignIn={() => setStep("auth")}
+              onSignIn={() => router.push("/login")}
               refreshKey={saveState?.status === "saved" ? "saved" : "idle"}
             />
           </>
         ) : (
           <Card>
-            {step === "auth" && <AuthPanel onDone={() => setStep("landing")} />}
-
             {step === "voice" && (
               <VoiceMode
                 onComplete={fromVoice}

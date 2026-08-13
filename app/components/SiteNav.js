@@ -19,7 +19,7 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
 
   const goHome = onHome ?? (() => router.push("/"));
   const startDeciding = onStart ?? (() => router.push("/"));
-  const signIn = onSignIn ?? (() => router.push("/"));
+  const signIn = onSignIn ?? (() => router.push("/login"));
   const openVoice = onVoiceMode ?? (() => router.push("/"));
 
   return (
