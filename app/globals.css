@@ -1,61 +1,61 @@
 @import "tailwindcss";
 
-/* لوحة الألوان من تصميم Framer الجديد:
-   رمادي بارد فاتح بدل الكريمي، وبرتقالي أوضح. */
+/* لوحة الألوان الدافئة من التصميم القديم: كريمي وبرتقالي.
+   التخطيط من Framer، لكن الألوان رجعت للأصل. */
 :root {
-  --background: #f5f6f8;
-  --foreground: #27282d;
-  --accent: #ff5a36;
-  --accent-ink: #ffffff;
-  --accent-soft: #fff0ec;
-  --accent-strong: #d84425;
-  --ink: #151515;
-  --card: #ffffff;
-  --line: #eceef1;
-  --muted: #686b72;
-  --muted-soft: #8b8d94;
-  --glow: 255 90 54;
+  --background: #faf6ef;
+  --foreground: #1f1b16;
+  --accent: #e85d2f;
+  --accent-ink: #fff8f0;
+  --accent-soft: #fbe7db;
+  --accent-strong: #b8461d;
+  --ink: #1f1b16;
+  --card: #fffdf9;
+  --line: #e4dbcd;
+  --muted: #8a8072;
+  --muted-soft: #a2988a;
+  --glow: 232 93 47;
 }
 
 /* ---------------------------------------------------------------
-   الثيم يتبع المزاج. التصميم الجديد ما فيه منتقي مزاج ظاهر،
-   فخلّيناه داخل "غيّر" — والدرجات معدّلة على الأساس الرمادي الجديد.
+   الثيم يتبع المزاج — الدرجات معايرة على الأساس الكريمي.
+   المنتقي داخل زر "غيّر" في بطاقة القرار.
    --------------------------------------------------------------- */
 
 :root[data-mood="hyped"] {
-  --background: #fff6f3;
-  --accent: #f2441f;
-  --accent-soft: #ffe9e3;
-  --accent-strong: #c93a1b;
-  --line: #f6e2db;
-  --glow: 242 68 31;
+  --background: #fff3e9;
+  --accent: #d93f27;
+  --accent-soft: #fbe0d7;
+  --accent-strong: #a83318;
+  --line: #f0d9c8;
+  --glow: 217 63 39;
 }
 
 :root[data-mood="calm"] {
-  --background: #f2f6f6;
-  --accent: #12796c;
-  --accent-soft: #e2f0ed;
-  --accent-strong: #0f6255;
-  --line: #dfe9e7;
-  --glow: 18 121 108;
+  --background: #f1f5f4;
+  --accent: #1f6f63;
+  --accent-soft: #dcebe8;
+  --accent-strong: #15574d;
+  --line: #d6e2df;
+  --glow: 31 111 99;
 }
 
 :root[data-mood="drained"] {
-  --background: #f4f4f9;
-  --accent: #4a44c4;
-  --accent-soft: #e9e8f8;
-  --accent-strong: #3b36a3;
-  --line: #e3e1ee;
-  --glow: 74 68 196;
+  --background: #f2f1f6;
+  --accent: #4640b8;
+  --accent-soft: #e4e2f4;
+  --accent-strong: #363093;
+  --line: #dcd9e6;
+  --glow: 70 64 184;
 }
 
 :root[data-mood="happy"] {
-  --background: #fdf4f8;
-  --accent: #cf2570;
-  --accent-soft: #fbe4ee;
-  --accent-strong: #a91d5b;
-  --line: #f2dee8;
-  --glow: 207 37 112;
+  --background: #fff6f9;
+  --accent: #c22268;
+  --accent-soft: #f9dce8;
+  --accent-strong: #971a51;
+  --line: #f2d8e3;
+  --glow: 194 34 104;
 }
 
 @theme inline {
