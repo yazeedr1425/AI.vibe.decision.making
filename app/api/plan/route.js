@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { fetchCandidates, resolveLocation } from "@/lib/places/client";
 import { prepareCandidates } from "@/lib/places/trim";
 import { travelLegs } from "@/lib/routing/travel";
+import { fetchWeather } from "@/lib/weather/client";
 import { buildUserPrompt, SYSTEM_PROMPT } from "@/lib/plan/prompt";
 import { parsePlan } from "@/lib/plan/parse";
 import {
@@ -156,6 +157,7 @@ function validate(body) {
       locationQuery: query || null,
       startMinutes,
       durationHours,
+      date: body.date, // خام كما وصل — Open-Meteo يبيه بصيغة YYYY-MM-DD
       weekday: parsedDate.getUTCDay(), // 0 = الأحد، نفس ترقيم Places
       vibeId: body.vibe,
       groupId: body.group,
@@ -294,10 +296,31 @@ export async function POST(request) {
     });
   }
 
-  // ٤ — الخطة من النموذج
+  // ٤ — الطقس. اختياري تماماً: فشله أو خروج التاريخ عن مدى التوقّع
+  // يكمل بخطة عادية بلا وعي بالجو، نفس معاملة travelLegs تحت.
+  // fetchWeather يبتلع أخطاءه ويرجّع null، والـ catch هنا للطارئ.
+  let weather = null;
+  try {
+    weather = await fetchWeather({
+      lat: origin.lat,
+      lng: origin.lng,
+      date: input.date,
+      startMinutes: input.startMinutes,
+      durationMinutes: input.durationHours * 60,
+    });
+  } catch (err) {
+    console.error("[api/plan] weather failed:", err);
+  }
+
+  // ٥ — الخطة من النموذج
   let raw;
   try {
-    raw = await askGemini({ ...input, candidates, locationLabel: origin.label });
+    raw = await askGemini({
+      ...input,
+      candidates,
+      locationLabel: origin.label,
+      weather,
+    });
   } catch (err) {
     console.error(`[api/plan] gemini failed (${err.code ?? "UNKNOWN"}):`, err);
 
@@ -332,7 +355,7 @@ export async function POST(request) {
     });
   }
 
-  // ٥ — أزمنة التنقّل الحقيقية بين المحطات المختارة، بترتيبها
+  // ٦ — أزمنة التنقّل الحقيقية بين المحطات المختارة، بترتيبها
   let legs = [];
   try {
     legs = await travelLegs(plan.stops);
@@ -342,11 +365,22 @@ export async function POST(request) {
     legs = plan.stops.slice(1).map(() => null);
   }
 
-  // ٦ — الرد
+  // ٧ — الرد
   return Response.json({
     ok: true,
     empty: false,
     origin: { label: origin.label, lat: origin.lat, lng: origin.lng },
+    // ملخّص فقط لا الساعات كاملة: الشريط يعرض المدى واحتمال المطر،
+    // وإرسال ٦ صفوف لكل طلب حشو في الرد بلا فائدة للواجهة.
+    // null هنا يعني "بلا طقس" والواجهة تخفي الشريط كلياً.
+    weather: weather && {
+      minFeels: weather.minFeels,
+      maxFeels: weather.maxFeels,
+      maxRain: weather.maxRain,
+      unit: weather.unit,
+      hottest: weather.hottest,
+      coolest: weather.coolest,
+    },
     plan: {
       ...plan,
       stops: plan.stops.map((stop, i) => ({

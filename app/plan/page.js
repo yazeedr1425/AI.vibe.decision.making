@@ -390,7 +390,12 @@ export default function PlanPage() {
               </Card>
             ) : (
               <>
-                <PlanTimeline plan={result.plan} onSwap={swap} busy={loading} />
+                <PlanTimeline
+                  plan={result.plan}
+                  weather={result.weather}
+                  onSwap={swap}
+                  busy={loading}
+                />
 
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <GhostButton
