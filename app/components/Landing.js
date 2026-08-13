@@ -7,29 +7,34 @@ import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { listenOnce } from "@/lib/voice/speech";
 import { parseSpokenOptions } from "@/lib/voice/match";
 import { useVoice } from "@/lib/voice/VoiceProvider";
+import {
+  ArrowLeft,
+  CategoryIcon,
+  Headphones,
+  Mic,
+  Plus,
+  Sparkles,
+} from "./icons";
 
-// أمثلة الواجهة — كل واحد يعبّي الفئة والخيارات مباشرة
+// أمثلة الواجهة — كل واحد يعبّي الفئة والخيارات مباشرة.
+// الأيقونة تُشتق من الفئة، مثل التصميم.
 const EXAMPLES = [
   {
-    icon: "🍽️",
     label: "أطلب ولا أطبخ؟",
     categoryId: "food",
     options: ["أطلب من مطعم", "أطبخ بالبيت"],
   },
   {
-    icon: "🛍️",
     label: "أشتري أو أنتظر؟",
     categoryId: "shopping",
     options: ["أشتري الآن", "أنتظر التخفيض"],
   },
   {
-    icon: "💼",
     label: "أكمّل أو أغيّر؟",
     categoryId: "life",
     options: ["أكمّل بمكاني", "أغيّر مساري"],
   },
   {
-    icon: "💡",
     label: "أفكّر أو أبدأ؟",
     categoryId: "time",
     options: ["أفكّر أكثر", "أبدأ الحين"],
@@ -135,7 +140,10 @@ export default function Landing({
     <div className="grid items-start gap-8 md:grid-cols-2 md:gap-8 lg:gap-14">
       {/* ------------ العمود التعريفي ------------ */}
       <section className="flex flex-col gap-6" id="examples">
-        <span className="pill self-start">✨ مساعد قرارك اليومي</span>
+        <span className="pill self-start">
+          <Sparkles size={14} />
+          مساعد قرارك اليومي
+        </span>
 
         <h1 className="text-4xl font-semibold leading-[1.15] sm:text-5xl lg:text-[3.25rem]">
           خلّ الحيرة تنتهي عندك.
@@ -154,7 +162,11 @@ export default function Landing({
               onClick={() => applyExample(ex)}
               className="card-shadow flex flex-col items-start gap-2 rounded-2xl border border-line bg-card p-4 text-start transition-transform hover:-translate-y-0.5"
             >
-              <span className="text-xl">{ex.icon}</span>
+              <CategoryIcon
+                categoryId={ex.categoryId}
+                size={22}
+                className="text-accent"
+              />
               <span className="font-medium">{ex.label}</span>
             </button>
           ))}
@@ -187,7 +199,11 @@ export default function Landing({
         {/* الموضوع + غيّر */}
         <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-background px-4 py-3">
           <span className="flex items-center gap-2 font-medium">
-            <span>{category?.emoji ?? "🧭"}</span>
+            <CategoryIcon
+              categoryId={categoryId}
+              size={20}
+              className="text-accent"
+            />
             {category?.label ?? "اختر نوع القرار"}
             {activeMood && (
               <span className="text-sm text-muted">· {activeMood.label}</span>
@@ -214,13 +230,14 @@ export default function Landing({
                     type="button"
                     onClick={() => setCategoryId(c.id)}
                     className={
-                      "rounded-full border px-3 py-1.5 text-sm transition-colors " +
+                      "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
                       (categoryId === c.id
                         ? "border-accent bg-accent text-accent-ink"
                         : "border-line hover:border-muted-soft")
                     }
                   >
-                    {c.emoji} {c.label}
+                    <CategoryIcon categoryId={c.id} size={16} />
+                    {c.label}
                   </button>
                 ))}
               </div>
@@ -288,9 +305,10 @@ export default function Landing({
             <button
               type="button"
               onClick={add}
-              className="text-sm text-muted transition-colors hover:text-foreground"
+              className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
             >
-              + أضف خيارًا {options.length === 2 ? "ثالثًا" : "آخر"}
+              <Plus size={16} />
+              أضف خيارًا {options.length === 2 ? "ثالثًا" : "آخر"}
             </button>
           )}
           {stt && (
@@ -299,18 +317,20 @@ export default function Landing({
               onClick={dictate}
               disabled={dictating}
               aria-label="أملِ خياراتك بالصوت — اختصار حرف M"
-              className="text-sm text-muted transition-colors hover:text-foreground disabled:opacity-50"
+              className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground disabled:opacity-50"
             >
-              🎙️ {dictating ? "أسمعك…" : "أملِ بالصوت"}
+              <Mic size={16} />
+              {dictating ? "أسمعك…" : "أملِ بالصوت"}
             </button>
           )}
           <button
             type="button"
             onClick={onVoiceMode}
             aria-label="وضع المحادثة الصوتية — اختصار حرف V"
-            className="text-sm text-muted transition-colors hover:text-foreground"
+            className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
           >
-            🎧 محادثة صوتية
+            <Headphones size={16} />
+            محادثة صوتية
           </button>
         </div>
 
@@ -324,9 +344,10 @@ export default function Landing({
           type="button"
           onClick={onStart}
           disabled={!ready}
-          className="mt-5 w-full rounded-2xl bg-accent px-6 py-4 text-lg font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-6 py-4 text-lg font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          احسمها لي ←
+          احسمها لي
+          <ArrowLeft size={20} />
         </button>
 
         <p className="mt-3 text-center text-xs text-muted-soft">

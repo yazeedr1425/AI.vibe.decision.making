@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getCategory } from "@/lib/engine/categories";
 import { decisionService } from "@/lib/services/decisions";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { ArrowLeft, CircleCheck } from "./icons";
 
 const rtf = new Intl.RelativeTimeFormat("ar", { numeric: "auto" });
 
@@ -61,9 +62,10 @@ export default function HistorySection({ onSignIn, refreshKey }) {
         {state.status === "ready" && state.decisions.length > 0 && (
           <button
             type="button"
-            className="rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
+            className="flex items-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
           >
-            ← عرض السجل كامل
+            <ArrowLeft size={16} />
+            عرض السجل كامل
           </button>
         )}
       </div>
@@ -130,7 +132,7 @@ export default function HistorySection({ onSignIn, refreshKey }) {
 
                 {d.chosen && (
                   <p className="flex items-center gap-2 rounded-xl bg-background px-3 py-2 text-sm">
-                    <span className="text-accent">✓</span>
+                    <CircleCheck size={18} className="shrink-0 text-accent" />
                     {d.chosen}
                   </p>
                 )}
