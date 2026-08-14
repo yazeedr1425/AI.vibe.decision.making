@@ -7,6 +7,7 @@ import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { listenOnce } from "@/lib/voice/speech";
 import { parseSpokenOptions } from "@/lib/voice/match";
 import { useVoice } from "@/lib/voice/VoiceProvider";
+import PhotoCapture from "./PhotoCapture";
 import ThirdOptionHint from "./ThirdOptionHint";
 import {
   ArrowLeft,
@@ -99,6 +100,11 @@ export default function Landing({
     setCategoryId(example.categoryId);
     setOptions(example.options.map((label, i) => ({ id: `ex-${i}`, label })));
   };
+
+  // خيارات الصورة تستبدل المكتوب كله — من صوّر منيو اختار يبدأ منه،
+  // ودمجها مع نص قديم يطلع خليطاً لا هو المنيو ولا هو اللي كتبه
+  const fromPhoto = (labels) =>
+    setOptions(labels.map((label, i) => ({ id: `photo-${i}`, label })));
 
   const dictate = useCallback(() => {
     if (!stt || dictating) return;
@@ -348,6 +354,7 @@ export default function Landing({
             <Headphones size={16} />
             محادثة صوتية
           </button>
+          <PhotoCapture onOptions={fromPhoto} />
         </div>
 
         {dictationError && (
