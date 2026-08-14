@@ -6,6 +6,7 @@ import { getCategory } from "@/lib/engine/categories";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
+import { groupService } from "@/lib/services/group";
 import { profileService } from "@/lib/services/profile";
 import { useMoodTheme } from "@/lib/theme/useMoodTheme";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -106,6 +107,29 @@ export default function Home() {
     setRatings({});
     setQuestionIndex(0);
     setStep("questions");
+  };
+
+  // القرار الجماعي: ينشئ ويوجه لصفحة التصويت — المنشئ يشارك الرابط
+  // من هناك. يحتاج دخولاً لأن القرار يُملك، والضيوف يصوتون بلا حساب.
+  const [groupBusy, setGroupBusy] = useState(false);
+  const createGroup = async () => {
+    if (groupBusy) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    setGroupBusy(true);
+    const result = await groupService.createGroup({
+      categoryId,
+      options: filledOptions.map((o) => o.label),
+    });
+    if (!result.ok) {
+      setGroupBusy(false);
+      if (result.reason === "unauthenticated") router.push("/login");
+      else setApiError(result.message ?? "ما قدرنا ننشئ التصويت.");
+      return;
+    }
+    router.push(`/vote/${result.code}`);
   };
 
   const nextQuestion = () => {
@@ -269,6 +293,8 @@ export default function Home() {
               onStart={start}
               onVoiceMode={() => setStep("voice")}
               onBreakdown={() => setStep("breakdown")}
+              onGroup={createGroup}
+              groupBusy={groupBusy}
             />
 
             <HistorySection
