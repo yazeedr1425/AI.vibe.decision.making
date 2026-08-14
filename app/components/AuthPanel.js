@@ -143,12 +143,12 @@ export default function AuthPanel({ mode = "signin" }) {
               <span
                 lang="en"
                 dir="ltr"
-                className="w-full text-left text-xs font-medium uppercase tracking-[0.2em]"
+                className="w-full text-left text-sm font-medium uppercase tracking-[0.2em]"
                 style={{ color: "#a89e90" }}
               >
                 why sign in
               </span>
-              <h2 className="text-3xl font-bold leading-snug sm:text-4xl">
+              <h2 className="text-4xl font-bold leading-snug sm:text-5xl sm:leading-snug">
                 حسابك هو ذاكرة قراراتك.
               </h2>
             </div>
@@ -157,15 +157,15 @@ export default function AuthPanel({ mode = "signin" }) {
               {BENEFITS.map((b) => {
                 const Icon = b.icon;
                 return (
-                  <li key={b.title} className="flex items-start gap-3">
+                  <li key={b.title} className="flex items-start gap-3.5">
                     <Icon
-                      size={20}
+                      size={24}
                       className="mt-1 shrink-0"
                       style={{ color: ACCENT }}
                     />
                     <div>
-                      <p className="font-semibold">{b.title}</p>
-                      <p className="text-sm leading-relaxed" style={{ color: "#bdb3a4" }}>
+                      <p className="text-xl font-semibold">{b.title}</p>
+                      <p className="mt-0.5 text-base leading-relaxed" style={{ color: "#bdb3a4" }}>
                         {b.sub}
                       </p>
                     </div>
@@ -176,7 +176,7 @@ export default function AuthPanel({ mode = "signin" }) {
           </div>
 
           <p
-            className="border-t pt-6 text-sm leading-relaxed"
+            className="border-t pt-6 text-base leading-relaxed"
             style={{ borderColor: "#3a352c", color: "#a89e90" }}
           >
             تقدر تستخدم احسم بدون حساب. الحساب للحفظ فقط — وما نشارك
