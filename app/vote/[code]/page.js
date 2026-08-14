@@ -277,7 +277,7 @@ export default function VotePage() {
   return (
     <Shell>
       <div className="flex items-center justify-between gap-3">
-        <Tag>{closed ? "the verdict" : "group vote"}</Tag>
+        <Tag lang="ar">{closed ? "النتيجة" : "تصويت جماعي"}</Tag>
         {present > 0 && (
           <span className="flex items-center gap-1.5 text-sm text-muted">
             <Users size={15} />

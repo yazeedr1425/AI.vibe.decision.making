@@ -51,7 +51,6 @@ export default function RatingGrid({
   return (
     <div className="flex flex-col gap-8">
       <SectionHeading
-        tag="quick ratings"
         title="قيّم كل خيار بسرعة"
         sub="كل شي على «متوسط» — غيّر اللي تحس فيه فرق وبس."
       />
@@ -72,8 +71,8 @@ export default function RatingGrid({
                   <span className="flex items-center gap-2 text-sm text-muted">
                     {c.label}
                     {weights[c.key] === topWeight && (
-                      <Tag className="rounded-full bg-accent/10 px-2 py-0.5 !text-accent">
-                        top
+                      <Tag lang="ar" className="rounded-full bg-accent/10 px-2 py-0.5 !text-accent">
+                        الأهم
                       </Tag>
                     )}
                   </span>

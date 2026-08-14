@@ -21,7 +21,7 @@ export function Recommendation({ recommendation }) {
   return (
     <section className="rounded-3xl border-2 border-accent bg-card p-6 sm:p-8">
       <header className="flex flex-wrap items-center gap-2">
-        <Tag>VERDICT</Tag>
+        <Tag lang="ar">الخلاصة</Tag>
         <span className="pill">{CONFIDENCE[r.confidence] ?? "ثقة متوسطة"}</span>
       </header>
 
@@ -33,7 +33,7 @@ export function Recommendation({ recommendation }) {
 
       {r.answering_objections && (
         <div className="mt-5 rounded-2xl bg-background/70 p-4">
-          <Tag>ON THE OBJECTIONS</Tag>
+          <Tag lang="ar">رد على الاعتراضات</Tag>
           <p className="mt-1.5 text-sm leading-relaxed">{r.answering_objections}</p>
         </div>
       )}
@@ -81,7 +81,6 @@ export function Critique({ challenges, skipped }) {
         role="alert"
         className="rounded-3xl border-2 border-accent-strong bg-accent-soft p-6"
       >
-        <Tag>CRITIQUE — SKIPPED</Tag>
         <h3 className="mt-1 text-lg font-semibold text-accent-strong">
           المراجعة النقدية ما اكتملت
         </h3>
@@ -101,7 +100,6 @@ export function Critique({ challenges, skipped }) {
   return (
     <section className="rounded-3xl border border-line bg-card p-6">
       <header className="flex flex-col gap-1">
-        <Tag>CRITIQUE</Tag>
         <h3 className="text-lg font-semibold">اعتراضات على التحليل</h3>
         <p className="text-sm text-muted">
           وكيل مستقل مهمته يراجع ما بناه بقية الوكلاء ويهاجمه — بدونه التحليل
@@ -150,7 +148,6 @@ export function Sources({ sources, findings }) {
   return (
     <section className="rounded-3xl border border-line bg-card p-6">
       <header className="flex flex-col gap-1">
-        <Tag>SOURCES</Tag>
         <h3 className="text-lg font-semibold">
           المصادر {list.length > 0 && `(${list.length})`}
         </h3>

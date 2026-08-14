@@ -100,7 +100,7 @@ function Path({ path, index, recommended, defaultOpen }) {
       {open && (
         <div className="border-t border-line px-5 py-4">
           {/* الفرعان — هنا تظهر تكلفة المسار الحقيقية */}
-          <Tag>BRANCHES</Tag>
+          <Tag lang="ar">الفروع</Tag>
           <ul className="mt-2 flex flex-col gap-2">
             {(path.branches ?? []).map((b, i) => (
               <li
@@ -121,7 +121,7 @@ function Path({ path, index, recommended, defaultOpen }) {
 
           {path.assumptions?.length > 0 && (
             <>
-              <Tag className="mt-4 block">ASSUMPTIONS</Tag>
+              <Tag lang="ar" className="mt-4 block">الافتراضات</Tag>
               <ul className="mt-2 list-disc space-y-1 pr-5 text-sm text-muted">
                 {path.assumptions.map((a, i) => (
                   <li key={i}>{a}</li>

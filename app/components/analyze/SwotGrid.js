@@ -31,7 +31,6 @@ export default function SwotGrid({ swot }) {
             <header className="mb-3 flex items-center justify-between gap-2">
               <div className="flex flex-col gap-0.5">
                 <h3 className="font-semibold">{q.label}</h3>
-                <Tag>{q.en}</Tag>
               </div>
               {/* داخلي/خارجي: الفرق اللي يخلي التحليل مفيداً بدل زينة */}
               <span className="shrink-0 text-xs text-muted">

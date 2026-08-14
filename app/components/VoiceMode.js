@@ -213,7 +213,6 @@ export default function VoiceMode({ onComplete, onCancel }) {
     return (
       <div className="flex flex-col gap-5">
         <SectionHeading
-          tag="talk to ehsim"
           title="وضع المحادثة الصوتية"
           sub={INTRO}
         />
@@ -239,7 +238,7 @@ export default function VoiceMode({ onComplete, onCancel }) {
         <h2 tabIndex={-1} data-step-heading className="text-xl font-bold">
           المحادثة
         </h2>
-        <Tag>{`${filledCount} / 3 filled`}</Tag>
+        <Tag lang="ar">{`اكتمل ${filledCount} من ٣`}</Tag>
       </div>
 
       {/* السجل منطقة حيّة: قارئ الشاشة يقرأ كل رد جديد */}

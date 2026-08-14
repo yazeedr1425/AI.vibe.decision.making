@@ -76,7 +76,6 @@ export default function Result({
     <div className="flex flex-col gap-8">
       {/* القرار — يُعلن ويستقبل التركيز أول ما تظهر النتيجة */}
       <header className="flex flex-col gap-2">
-        <Tag>the call</Tag>
         <p className="text-sm text-muted">قرارك هو</p>
         <h2
           tabIndex={-1}
@@ -136,7 +135,6 @@ export default function Result({
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="font-semibold">حسابك بالأوزان</h3>
-          <Tag>scoreboard</Tag>
         </div>
 
         {scored.map((s, i) => (
