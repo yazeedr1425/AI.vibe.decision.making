@@ -24,19 +24,27 @@ HARD RULES:
 1. EACH QUESTION IS ONE DIMENSION, AND THE OPTIONS MUST DIFFER ON IT.
    Before keeping a question, ask: would someone plausibly answer it with different options? If both options are the obvious same answer, the question decides nothing — drop it and find another.
    For "شاورما ولا بروست": "ايش مشتهي؟" is good. "أيهما أكل؟" is not — both are.
-   Pick three DIFFERENT dimensions. Do not ask the same thing three ways.
 
-2. SHORT AND SPOKEN.
+2. THE THREE DIMENSIONS MUST BE GENUINELY DIFFERENT FROM EACH OTHER.
+   This is the rule most often broken. Two questions that are the same axis in different words give the user three taps but only two real decisions, and silently double that axis's weight in the result.
+   For "شاي ولا أخرج للحديقة": "تبغى دفى ولا هوا؟" and "تبغى جو برا ولا جوا؟" are THE SAME AXIS (indoors vs outdoors) asked twice. Keep one, and make the others something else entirely — effort, mood, time, who you are with, how you will feel after.
+   Write the three dimensions down before phrasing them, and check no two overlap.
+
+3. DO NOT PUT THE CHOICE INSIDE THE QUESTION.
+   The options appear as buttons right below, so phrasing like "تبغى دفى ولا هوا؟" or "برا ولا جوا؟" repeats them and boxes the user into your framing. Ask the dimension openly and let the buttons carry the alternatives: "وش ناقصك الحين؟" · "ايش أنشط؟" · "تبي تتحرك ولا تهدأ؟" — the last only if movement is genuinely the axis.
+   Never write "ولا" between two alternatives in the question text.
+
+4. LET THE OPTIONS DECIDE THE ANGLES, NOT A FIXED RECIPE.
+   Do not reach for the same three angles every time. Two foods are separated by craving and heaviness; a drink versus going outside is separated by energy, effort and what the evening should feel like; two purchases by need and timing. Read what these particular options are and ask what actually settles THEM.
+
+5. SHORT AND SPOKEN.
    Write how a friend talks. Two to five words where possible: "ايش مشتهي؟" not "وش نوع الأكل اللي تشتهيه اليوم؟". Cut padding like "اليوم", "الحين", "برأيك".
 
-3. THE QUESTION MUST BE ANSWERABLE BY NAMING ONE OPTION.
+6. THE QUESTION MUST BE ANSWERABLE BY NAMING ONE OPTION.
    The user answers by tapping one of the options, so the question has to make sense that way. "ايش مشتهي؟" → they tap شاورما. "كم عندك وقت؟" does NOT work here, because the answer is not one of the options.
    This is the opposite of a survey question — every question is a head-to-head.
 
-4. COVER DIFFERENT ANGLES.
-   Between the three, try to span what people actually weigh: desire, practicality, and how they will feel afterwards. Adapt to what these particular options are.
-
-5. KEYS.
+7. KEYS.
    "key" is a lowercase English slug — a program identifier, not user text. "label" is Arabic. "en" is a very short uppercase Latin caption for decoration.`;
 
 const RESPONSE_SCHEMA = {
@@ -65,7 +73,8 @@ const RESPONSE_SCHEMA = {
 };
 
 // ---------- كاش بمفتاح الخيارات بعد التطبيع ----------
-const VERSION = "v1";
+// ترفع مع أي تغيير في البرومبت وإلا خُدمت مدخلات مولّدة بالقديم
+const VERSION = "v2-distinct";
 const TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_ENTRIES = 300;
 const store = new Map();
