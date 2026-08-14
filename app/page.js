@@ -18,7 +18,7 @@ import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import Thinking from "./components/Thinking";
 import VoiceMode from "./components/VoiceMode";
-import { Card } from "./components/ui";
+import { Card, GhostButton, PrimaryButton } from "./components/ui";
 
 // معرّفات ثابتة للخيارين الأوليين حتى لا يختلف الرندر بين الخادم والمتصفح
 const initialOptions = () => [
@@ -42,6 +42,7 @@ export default function Home() {
   // أسئلة هذي المفاضلة، مولّدة من الخيارات. تبقى null أثناء التوليد
   // فيظهر الهيكل بدلها.
   const [questions, setQuestions] = useState(null);
+  const [questionsError, setQuestionsError] = useState(null);
   const askAbort = useRef(null);
 
   useEffect(() => () => askAbort.current?.abort(), []);
@@ -105,6 +106,7 @@ export default function Home() {
     setAnswers({});
     setQuestionIndex(0);
     setQuestions(null);
+    setQuestionsError(null);
     setStep("questions");
 
     askAbort.current?.abort();
@@ -122,7 +124,11 @@ export default function Home() {
         setQuestions(next);
       })
       .catch((err) => {
-        if (err.name !== "AbortError") console.error("[duel] failed:", err);
+        if (err.name === "AbortError") return;
+        // ما فيه أسئلة احتياطية: نقول الحقيقة ونعطي زر إعادة بدل ما
+        // نعرض أسئلة عامة تتظاهر بأنها تفهم خياراته
+        console.error("[duel] failed:", err);
+        setQuestionsError(err.userMessage ?? "تعذر تجهيز الأسئلة.");
       });
   }, [filledOptions]);
 
@@ -247,6 +253,7 @@ export default function Home() {
     setOptions(initialOptions());
     setAnswers({});
     setQuestions(null);
+    setQuestionsError(null);
     setRecommendation(null);
     setApiError(null);
     setSaveState(null);
@@ -302,7 +309,23 @@ export default function Home() {
             )}
 
             {/* الهيكل يحجز نفس تخطيط السؤال أثناء التوليد */}
-            {step === "questions" && !questions && <QuestionSkeleton />}
+            {step === "questions" && !questions && !questionsError && (
+              <QuestionSkeleton />
+            )}
+
+            {step === "questions" && questionsError && (
+              <div className="flex flex-col items-start gap-4">
+                <p role="alert" className="text-muted">
+                  {questionsError}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <PrimaryButton onClick={start}>جرب مرة ثانية</PrimaryButton>
+                  <GhostButton onClick={() => setStep("landing")}>
+                    عدّل خياراتك
+                  </GhostButton>
+                </div>
+              </div>
+            )}
 
             {step === "questions" && questions?.[questionIndex] && (
               <DuelStep

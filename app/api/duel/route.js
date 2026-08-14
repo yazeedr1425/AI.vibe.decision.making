@@ -25,10 +25,11 @@ HARD RULES:
    Before keeping a question, ask: would someone plausibly answer it with different options? If both options are the obvious same answer, the question decides nothing — drop it and find another.
    For "شاورما ولا بروست": "ايش مشتهي؟" is good. "أيهما أكل؟" is not — both are.
 
-2. THE THREE DIMENSIONS MUST BE GENUINELY DIFFERENT FROM EACH OTHER.
-   This is the rule most often broken. Two questions that are the same axis in different words give the user three taps but only two real decisions, and silently double that axis's weight in the result.
-   For "شاي ولا أخرج للحديقة": "تبغى دفى ولا هوا؟" and "تبغى جو برا ولا جوا؟" are THE SAME AXIS (indoors vs outdoors) asked twice. Keep one, and make the others something else entirely — effort, mood, time, who you are with, how you will feel after.
-   Write the three dimensions down before phrasing them, and check no two overlap.
+2. NAME THE AXIS FIRST, THEN PHRASE THE QUESTION.
+   Every question carries an "axis": two or three English words naming the dimension it measures (e.g. "energy level", "effort required", "how filling", "social vs alone", "cost", "novelty"). Decide all three axes BEFORE writing any Arabic, and make sure no two describe the same underlying thing.
+   This is the rule most often broken. Two questions on the same axis in different words give the user three taps but only two real decisions, and silently double that axis's weight in the result.
+   For "شاي ولا أخرج للحديقة": "تبغى دفى ولا هوا؟" and "تبغى جو برا ولا جوا؟" are BOTH the axis "indoors vs outdoors" — one of them must be replaced by a different axis entirely.
+   Reject your own draft if two axes are synonyms, opposites of each other, or two ends of one scale ("what wakes you up" and "what relaxes you" are ONE axis, not two).
 
 3. DO NOT PUT THE CHOICE INSIDE THE QUESTION.
    The options appear as buttons right below, so phrasing like "تبغى دفى ولا هوا؟" or "برا ولا جوا؟" repeats them and boxes the user into your framing. Ask the dimension openly and let the buttons carry the alternatives: "وش ناقصك الحين؟" · "ايش أنشط؟" · "تبي تتحرك ولا تهدأ؟" — the last only if movement is genuinely the axis.
@@ -57,14 +58,19 @@ const RESPONSE_SCHEMA = {
         type: Type.OBJECT,
         properties: {
           key: { type: Type.STRING, description: "lowercase slug" },
+          axis: {
+            type: Type.STRING,
+            description:
+              "Two or three English words naming the dimension. Must differ from the other two.",
+          },
           label: {
             type: Type.STRING,
             description: "Arabic, short and spoken, answerable by naming one option",
           },
           en: { type: Type.STRING, description: "Short uppercase Latin caption" },
         },
-        required: ["key", "label", "en"],
-        propertyOrdering: ["key", "label", "en"],
+        required: ["key", "axis", "label", "en"],
+        propertyOrdering: ["key", "axis", "label", "en"],
       },
     },
   },
@@ -112,17 +118,6 @@ function writeCache(key, value) {
   store.set(key, { at: Date.now(), value });
 }
 
-// ---------- احتياطي عام ----------
-// بلا فئات ما عاد فيه قالب جاهز، فنبني واحداً محايداً من الخيارات.
-// يشتغل مع أي مفاضلة لأنه ما يفترض شيئاً عن نوعها.
-function fallbackQuestions() {
-  return [
-    { key: "want", label: "ايش نفسك فيه؟", en: "CRAVING" },
-    { key: "fits", label: "ايش يناسب وضعك الحين؟", en: "FITS NOW" },
-    { key: "after", label: "ايش بترتاح له بعدين؟", en: "NO REGRETS" },
-  ];
-}
-
 const fail = (status, message) =>
   Response.json({ ok: false, error: message }, { status });
 
@@ -164,12 +159,25 @@ function shape(raw) {
     return null;
   }
   const seen = new Set();
+  const axes = new Set();
   const out = [];
 
   for (const q of raw.questions) {
     const key = typeof q?.key === "string" ? q.key.trim() : "";
     const label = typeof q?.label === "string" ? q.label.trim() : "";
     if (!key || !SLUG.test(key) || seen.has(key) || !label) return null;
+
+    // محوران متطابقان نصاً = سؤالان يقيسان نفس الشي، فيتضاعف وزنه
+    // بلا ما يبان. التطابق النصي ما يمسك المترادفات، لكنه يمسك
+    // الحالة الشائعة بلا تكلفة.
+    const axis = (typeof q?.axis === "string" ? q.axis.trim() : "").toLowerCase();
+    if (axis && axes.has(axis)) return null;
+    if (axis) axes.add(axis);
+
+    // "ولا" داخل نص السؤال يكرّر الأزرار تحته ويحصر المستخدم في
+    // تأطير النموذج بدل ما تحمل الأزرار البدائل
+    if (/\sولا\s/.test(label)) return null;
+
     seen.add(key);
     out.push({
       key,
@@ -247,20 +255,34 @@ export async function POST(request) {
   const cached = readCache(key);
   if (cached) return Response.json({ ok: true, questions: cached, source: "cache" });
 
+  // محاولتان: الرفض غالباً محوران متطابقان أو "ولا" في النص، وهذي
+  // تتصلّح بإعادة التوليد. ما نستبدلها بأسئلة جاهزة — سؤال قالبي
+  // يبان ذكياً وهو ما يعرف شي عن خيارات المستخدم، وهذا بالضبط اللي
+  // نتخلص منه. الفشل الصريح أصدق من قالب متنكّر.
   let questions = null;
-  try {
-    questions = shape(await generate(options));
-    if (!questions) console.warn("[api/duel] rejected the generated shape");
-  } catch (err) {
-    console.error(`[api/duel] generation failed (${err.code ?? "?"}):`, err);
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= 2 && !questions; attempt += 1) {
+    try {
+      questions = shape(await generate(options));
+      if (!questions) {
+        console.warn(`[api/duel] rejected the generated shape (attempt ${attempt})`);
+      }
+    } catch (err) {
+      lastError = err;
+      console.error(`[api/duel] attempt ${attempt} failed (${err.code ?? "?"}):`, err);
+      if (err.code === "NO_API_KEY") break;
+    }
   }
 
   if (!questions) {
-    return Response.json({
-      ok: true,
-      questions: fallbackQuestions(),
-      source: "fallback",
-    });
+    if (lastError?.code === "NO_API_KEY") {
+      return fail(503, "مولّد الأسئلة غير مهيأ — GEMINI_API_KEY مفقود.");
+    }
+    if (lastError?.name === "AbortError") {
+      return fail(504, "المولّد تأخر بالرد، جرب مرة ثانية.");
+    }
+    return fail(502, "ما قدرنا نجهّز أسئلة لخياراتك، جرب مرة ثانية.");
   }
 
   writeCache(key, questions);
