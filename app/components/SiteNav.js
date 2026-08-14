@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import VoiceShortcuts from "./VoiceShortcuts";
+import { Users } from "./icons";
 
 // صفحات فقط. «سجل القرارات» و«أمثلة» انحذفا لأنهما مرساتان داخل
 // الرئيسية لا وجهتان: القفز لوسط صفحة أخرى ليس تنقّلاً، والخلط
@@ -20,7 +21,7 @@ const LINKS = [
 
 // المعالجات اختيارية: الصفحة الرئيسية تمرّرها لأنها تدير حالة الخطوات،
 // وأي صفحة أخرى تكتفي بالتنقّل للرئيسية.
-export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
+export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart, onGroup }) {
   const { user, signOut } = useAuth();
   const router = useRouter();
 
@@ -28,6 +29,8 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
   const startDeciding = onStart ?? (() => router.push("/"));
   const signIn = onSignIn ?? (() => router.push("/login"));
   const openVoice = onVoiceMode ?? (() => router.push("/"));
+  // من صفحة ثانية: للرئيسية مع علامة تسلّط الضوء على زر الجماعي
+  const openGroup = onGroup ?? (() => router.push("/?group=1"));
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-background/85 backdrop-blur">
@@ -96,6 +99,16 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
               دخول
             </button>
           )}
+
+          {/* مخفي تحت sm — الشريط ضيق على الجوال، وزر البطاقة يغطي */}
+          <button
+            type="button"
+            onClick={openGroup}
+            className="hidden items-center gap-1.5 rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft sm:flex"
+          >
+            <Users size={15} />
+            قرار جماعي
+          </button>
 
           <button
             type="button"

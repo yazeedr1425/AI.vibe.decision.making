@@ -59,6 +59,7 @@ export default function Landing({
   onBreakdown,
   onGroup,
   groupBusy,
+  groupHighlight,
 }) {
   const { stt } = useVoice();
   const [dictating, setDictating] = useState(false);
@@ -67,6 +68,22 @@ export default function Landing({
   // البانر لأن القرار صار غيره
   const [dismissedKey, setDismissedKey] = useState(null);
   const stopRef = useRef(() => {});
+  const groupBtnRef = useRef(null);
+
+  // زر «قرار جماعي» في الشريط العلوي يوصل هنا: تمرير للزر وحلقة
+  // ضوء مؤقتة. تلاعب DOM مباشر عمداً — هذا مؤثر بصري عابر لا حالة.
+  useEffect(() => {
+    if (!groupHighlight) return;
+    const el = groupBtnRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-accent", "ring-offset-2");
+    const timer = setTimeout(
+      () => el.classList.remove("ring-2", "ring-accent", "ring-offset-2"),
+      2600,
+    );
+    return () => clearTimeout(timer);
+  }, [groupHighlight]);
 
   useEffect(() => () => stopRef.current?.(), []);
 
@@ -415,10 +432,11 @@ export default function Landing({
         {/* الحيرة الجماعية أعوص من الفردية — "وين نتعشى" عطّلت
             سهرات أكثر من أي قرار فردي. الرابط للقروب والكل يصوت. */}
         <button
+          ref={groupBtnRef}
           type="button"
           onClick={onGroup}
           disabled={!ready || groupBusy}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-line bg-card px-6 py-3 font-medium transition-colors hover:border-muted-soft disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-line bg-card px-6 py-3 font-medium transition-all hover:border-muted-soft disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Users size={18} />
           {groupBusy ? "… نجهز الرابط" : "خلّه جماعي — القروب يصوت"}
