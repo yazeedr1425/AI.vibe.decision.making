@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CATEGORIES, getCategory } from "@/lib/engine/categories";
 import { MOODS, getMood } from "@/lib/engine/mood";
+import { looksOversized } from "@/lib/engine/oversized";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { listenOnce } from "@/lib/voice/speech";
 import { parseSpokenOptions } from "@/lib/voice/match";
@@ -15,6 +16,7 @@ import {
   Mic,
   MoodIcon,
   Plus,
+  Scale,
   Sparkles,
   TriangleAlert,
 } from "./icons";
@@ -53,10 +55,14 @@ export default function Landing({
   setOptions,
   onStart,
   onVoiceMode,
+  onBreakdown,
 }) {
   const { stt } = useVoice();
   const [dictating, setDictating] = useState(false);
   const [dictationError, setDictationError] = useState(null);
+  // مفتاح الرفض هو نص الخيارات وقت الرفض — تغيير الخيارات يرجّع
+  // البانر لأن القرار صار غيره
+  const [dismissedKey, setDismissedKey] = useState(null);
   const stopRef = useRef(() => {});
 
   useEffect(() => () => stopRef.current?.(), []);
@@ -68,6 +74,13 @@ export default function Landing({
   const ready = filled >= MIN_OPTIONS && categoryId;
   const category = categoryId ? getCategory(categoryId) : null;
   const activeMood = getMood(mood);
+
+  // بانر التفكيك: كشف محلي بلا نداء، والدخول بيد المستخدم دائماً
+  const oversizedKey = filledLabels.join("|");
+  const showBreakdown =
+    filled >= MIN_OPTIONS &&
+    dismissedKey !== oversizedKey &&
+    looksOversized(filledLabels, categoryId);
 
   const update = (id, label) =>
     setOptions((prev) => prev.map((o) => (o.id === id ? { ...o, label } : o)));
@@ -358,6 +371,32 @@ export default function Landing({
             <TriangleAlert size={15} />
             {dictationError}
           </p>
+        )}
+
+        {showBreakdown && (
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-dashed border-accent/50 bg-accent-soft/40 p-4">
+            <p className="flex items-start gap-2 text-sm leading-relaxed">
+              <Scale size={17} className="mt-0.5 shrink-0 text-accent" />
+              هذا يشبه قرارات المصير — ما ينحسم بمزاج اليوم. نفكه لك
+              لفحوصات صغيرة لها جواب، وبعدها الحكم؟
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={onBreakdown}
+                className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90"
+              >
+                فكّه أول
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissedKey(oversizedKey)}
+                className="rounded-full border border-line px-4 py-2 text-sm text-muted transition-colors hover:border-muted-soft"
+              >
+                لا، كمّل عادي
+              </button>
+            </div>
+          </div>
         )}
 
         <button
