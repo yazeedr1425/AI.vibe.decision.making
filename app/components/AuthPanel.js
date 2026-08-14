@@ -138,7 +138,10 @@ export default function AuthPanel({ mode = "signin" }) {
           {/* الكتلة الوسطى تتوسط عمودياً بين الشعار والتذييل،
               والوسم اللاتيني على الحافة اليسرى عمداً — مقابلة
               الاتجاهين من التصميم نفسه */}
-          <div className="my-auto flex flex-col gap-8">
+          {/* فوق المنتصف بقليل — المنتصف الهندسي يبان نازلاً للعين.
+              الإزاحة على الشاشات الكبيرة فقط: في الرصّة العمودية ما
+              فيه فراغ يسمح بها */}
+          <div className="my-auto flex flex-col gap-8 lg:-translate-y-8">
             <div className="flex flex-col gap-4">
               <span
                 lang="en"
