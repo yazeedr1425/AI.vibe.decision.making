@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { getCategory } from "@/lib/engine/categories";
 import { decisionService } from "@/lib/services/decisions";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import OutcomeAsk from "./OutcomeAsk";
+import PatternsCard from "./PatternsCard";
 import { ArrowLeft, CircleCheck, TriangleAlert } from "./icons";
+
+// كان معروضاً ٣، وقراءة الأنماط تحتاج ٥ مقيَّمة — فما كان للمستخدم
+// طريق يوصل فيه للعدد أصلاً. الزر يوسّع لباقي السجل.
+const COMPACT_LIMIT = 6;
+const FULL_LIMIT = 24;
 
 const rtf = new Intl.RelativeTimeFormat("ar", { numeric: "auto" });
 
@@ -22,12 +29,13 @@ export default function HistorySection({ onSignIn, refreshKey }) {
   const { user } = useAuth();
   // النتيجة موسومة بصاحبها حتى نشتق الحالة بدل ما نضبطها داخل effect
   const [fetched, setFetched] = useState(null);
+  const [limit, setLimit] = useState(COMPACT_LIMIT);
 
   useEffect(() => {
     if (!user) return;
 
     let active = true;
-    decisionService.recentDecisions(3).then((result) => {
+    decisionService.recentDecisions(limit).then((result) => {
       if (!active) return;
       setFetched(
         result.ok
@@ -44,7 +52,21 @@ export default function HistorySection({ onSignIn, refreshKey }) {
     return () => {
       active = false;
     };
-  }, [user, refreshKey]);
+  }, [user, refreshKey, limit]);
+
+  // تحديث محلي بعد تسجيل النتيجة — إعادة الجلب من الشبكة تومض البطاقات
+  // كلها لأجل رقم واحد تغيّر
+  const noteOutcome = (decisionId, satisfaction) =>
+    setFetched((prev) =>
+      prev
+        ? {
+            ...prev,
+            decisions: prev.decisions.map((d) =>
+              d.id === decisionId ? { ...d, satisfaction } : d,
+            ),
+          }
+        : prev,
+    );
 
   const state = !user
     ? { status: "anonymous", decisions: [] }
@@ -59,15 +81,19 @@ export default function HistorySection({ onSignIn, refreshKey }) {
           <p className="text-sm text-accent-strong">ارجع لها وقت ما تحتاج</p>
           <h2 className="text-2xl font-semibold sm:text-3xl">سجل القرارات</h2>
         </div>
-        {state.status === "ready" && state.decisions.length > 0 && (
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
-          >
-            <ArrowLeft size={16} />
-            عرض السجل كامل
-          </button>
-        )}
+        {state.status === "ready" &&
+          state.decisions.length >= COMPACT_LIMIT && (
+            <button
+              type="button"
+              onClick={() =>
+                setLimit((l) => (l === COMPACT_LIMIT ? FULL_LIMIT : COMPACT_LIMIT))
+              }
+              className="flex items-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
+            >
+              <ArrowLeft size={16} />
+              {limit === COMPACT_LIMIT ? "عرض السجل كامل" : "اعرض أقل"}
+            </button>
+          )}
       </div>
 
       {state.status === "anonymous" && (
@@ -137,10 +163,20 @@ export default function HistorySection({ onSignIn, refreshKey }) {
                     {d.chosen}
                   </p>
                 )}
+
+                <OutcomeAsk
+                  decisionId={d.id}
+                  satisfaction={d.satisfaction}
+                  onRecorded={noteOutcome}
+                />
               </article>
             );
           })}
         </div>
+      )}
+
+      {state.status === "ready" && state.decisions.length > 0 && (
+        <PatternsCard />
       )}
     </section>
   );
