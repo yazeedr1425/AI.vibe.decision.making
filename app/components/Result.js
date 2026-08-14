@@ -5,6 +5,7 @@ import { chancesFor, weightedRandomPick } from "@/lib/engine/score";
 import { detailedBreakdown, reasonPhrase } from "@/lib/engine/explain";
 import { voice } from "@/lib/engine/tone";
 import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
+import DevilsAdvocate from "./DevilsAdvocate";
 import { GhostButton, PrimaryButton, Tag } from "./ui";
 import {
   ArrowRight,
@@ -25,6 +26,8 @@ export default function Result({
   apiError,
   saveState,
   tone,
+  categoryId,
+  answers,
   onRestart,
   onBack,
   onRetry,
@@ -49,6 +52,10 @@ export default function Result({
   const reason = recommendation?.funny_reason ?? `${reasonPhrase(scored)}.`;
   const disagrees =
     recommendation && recommendation.selected_option !== localWinner.label;
+
+  // موكّل المحامي: أقوى الخاسرين — القائمة مرتبة تنازلياً، فأول
+  // خيار غير المختار هو صاحب أقرب قضية
+  const challenger = scored.find((s) => s.label !== chosen)?.label ?? null;
 
   // تُقرأ تلقائياً لو المستخدم مفعّل القراءة، ويعيدها زر R
   useScreenAnnounce(`قرارك هو ${chosen}. ${reason}`);
@@ -130,6 +137,20 @@ export default function Result({
           حسابي بالأوزان يقول «{localWinner.label}»، بس شفت إن «{chosen}» أنسب
           لك اليوم.
         </p>
+      )}
+
+      {/* محامي الخاسر — المفتاح يصفّر المرافعة لو تغيّر القرار
+          بعد «جرب مرة ثانية» */}
+      {challenger && (
+        <DevilsAdvocate
+          key={`${chosen}|${challenger}`}
+          options={scored.map((s) => s.label)}
+          chosen={chosen}
+          challenger={challenger}
+          categoryId={categoryId}
+          answers={answers}
+          reason={reason}
+        />
       )}
 
       {/* الترتيب حسب الأوزان */}

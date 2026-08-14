@@ -318,6 +318,8 @@ export default function Home() {
                 apiError={apiError}
                 saveState={saveState}
                 tone={tone}
+                categoryId={categoryId}
+                answers={answers}
                 onRestart={restart}
                 onBack={() => setStep("ratings")}
                 onRetry={decide}
