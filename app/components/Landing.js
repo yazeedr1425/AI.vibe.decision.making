@@ -23,22 +23,18 @@ import {
 const EXAMPLES = [
   {
     label: "أطلب ولا أطبخ؟",
-    categoryId: "food",
     options: ["أطلب من مطعم", "أطبخ بالبيت"],
   },
   {
     label: "أشتري أو أنتظر؟",
-    categoryId: "shopping",
     options: ["أشتري الآن", "أنتظر التخفيض"],
   },
   {
     label: "أكمّل أو أغيّر؟",
-    categoryId: "life",
     options: ["أكمّل بمكاني", "أغيّر مساري"],
   },
   {
     label: "أفكّر أو أبدأ؟",
-    categoryId: "time",
     options: ["أفكّر أكثر", "أبدأ الحين"],
   },
 ];
@@ -61,8 +57,9 @@ export default function Landing({
   useEffect(() => () => stopRef.current?.(), []);
 
   const filled = options.filter((o) => o.label.trim()).length;
-  const ready = filled >= MIN_OPTIONS && categoryId;
-  const category = categoryId ? getCategory(categoryId) : null;
+  // الفئة انحذفت: الأسئلة تُولّد من الخيارات نفسها، فما بقي شرط
+  // إلا وجود خيارين.
+  const ready = filled >= MIN_OPTIONS;
   const activeMood = getMood(mood);
 
   const update = (id, label) =>
@@ -81,7 +78,6 @@ export default function Landing({
     );
 
   const applyExample = (example) => {
-    setCategoryId(example.categoryId);
     setOptions(example.options.map((label, i) => ({ id: `ex-${i}`, label })));
   };
 
@@ -162,11 +158,7 @@ export default function Landing({
               onClick={() => applyExample(ex)}
               className="card-shadow flex flex-col items-start gap-2 rounded-2xl border border-line bg-card p-4 text-start transition-transform hover:-translate-y-0.5"
             >
-              <CategoryIcon
-                categoryId={ex.categoryId}
-                size={22}
-                className="text-accent"
-              />
+              <Sparkles size={22} className="text-accent" />
               <span className="font-medium">{ex.label}</span>
             </button>
           ))}
@@ -198,76 +190,32 @@ export default function Landing({
           وش القرار اللي محتار فيه؟
         </h2>
 
-        {/* سطر يلخّص اختيارك — الفئة والمزاج معاً، ويتحدث فوراً
-            مع الضغط على الشرائح تحته */}
-        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-line bg-background px-4 py-3">
-          <span className="flex items-center gap-2 font-medium">
-            <CategoryIcon
-              categoryId={categoryId}
-              size={20}
-              className="text-accent"
-            />
-            {category?.label ?? "اختر نوع القرار"}
-            {activeMood && (
-              <span className="text-sm text-muted">· {activeMood.label}</span>
-            )}
+        {/* المزاج يغيّر لون الصفحة ووزن لا شي — بقي بعد حذف
+            الفئات لأن أثره على الثيم مستقل عن المعايير */}
+        <div className="mt-5 flex flex-col gap-2 rounded-2xl border border-line p-4">
+          <span className="text-sm text-muted">
+            مزاجك — يغيّر لون الصفحة
           </span>
-        </div>
-
-        {/* مفتوح دائماً. كان خلف زر «غيّر» فتُفتح بضغطة إضافية، ونوع
-            القرار مطلوب أصلاً قبل «احسمها لي» — إخفاء خطوة إجبارية
-            خلف زر يخلي المستخدم يدوّر على شي ما يعرف إنه موجود. */}
-        <div className="mt-3 flex flex-col gap-4 rounded-2xl border border-line p-4">
-          <div className="flex flex-col gap-2">
-            <span className="text-sm text-muted">نوع القرار</span>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setCategoryId(c.id)}
-                  aria-pressed={categoryId === c.id}
-                  className={
-                    "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
-                    (categoryId === c.id
-                      ? "border-accent bg-accent text-accent-ink"
-                      : "border-line hover:border-muted-soft")
-                  }
-                >
-                  <CategoryIcon categoryId={c.id} size={16} />
-                  {c.label}
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {MOODS.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setMood(mood === m.id ? null : m.id)}
+                aria-pressed={mood === m.id}
+                className={
+                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
+                  (mood === m.id
+                    ? "border-accent bg-accent text-accent-ink"
+                    : "border-line hover:border-muted-soft")
+                }
+              >
+                <MoodIcon moodId={m.id} size={16} />
+                {m.label}
+              </button>
+            ))}
           </div>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-sm text-muted">
-              مزاجك — يغيّر لون الصفحة ووزن معيار واحد
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {MOODS.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setMood(mood === m.id ? null : m.id)}
-                  aria-pressed={mood === m.id}
-                  className={
-                    "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
-                    (mood === m.id
-                      ? "border-accent bg-accent text-accent-ink"
-                      : "border-line hover:border-muted-soft")
-                  }
-                >
-                  <MoodIcon moodId={m.id} size={16} />
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            {activeMood && (
-              <p className="text-sm text-muted">{activeMood.line}</p>
-            )}
-          </div>
+          {activeMood && <p className="text-sm text-muted">{activeMood.line}</p>}
         </div>
 
         {/* الخيارات */}
@@ -356,9 +304,7 @@ export default function Landing({
         <p className="mt-3 text-center text-xs text-muted-soft">
           {ready
             ? "ما نحفظ قرارك إلا إذا طلبت. القرار لك دائمًا."
-            : !categoryId
-              ? "اختر نوع القرار فوق أول."
-              : `اكتب ${MIN_OPTIONS} خيارات على الأقل.`}
+            : `اكتب ${MIN_OPTIONS} خيارات على الأقل.`}
         </p>
       </section>
     </div>

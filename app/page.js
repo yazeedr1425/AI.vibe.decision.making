@@ -2,16 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCategory } from "@/lib/engine/categories";
-import { scoreOptions, weightsFor } from "@/lib/engine/score";
+import { tallyOptions } from "@/lib/engine/duel";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
+import { duelService } from "@/lib/services/duel";
 import { profileService } from "@/lib/services/profile";
 import { useMoodTheme } from "@/lib/theme/useMoodTheme";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Landing from "./components/Landing";
-import QuestionStep from "./components/QuestionStep";
-import RatingGrid from "./components/RatingGrid";
+import DuelStep from "./components/DuelStep";
+import QuestionSkeleton from "./components/QuestionSkeleton";
 import HistorySection from "./components/HistorySection";
 import Result from "./components/Result";
 import SiteFooter from "./components/SiteFooter";
@@ -31,15 +31,20 @@ export default function Home() {
   const router = useRouter();
   const [step, setStep] = useState("landing");
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [categoryId, setCategoryId] = useState(null);
   const [mood, setMood] = useState(null);
   const [options, setOptions] = useState(initialOptions);
   const [answers, setAnswers] = useState({});
-  const [ratings, setRatings] = useState({});
   const [tone, setTone] = useState(DEFAULT_TONE);
   const [recommendation, setRecommendation] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [saveState, setSaveState] = useState(null);
+
+  // أسئلة هذي المفاضلة، مولّدة من الخيارات. تبقى null أثناء التوليد
+  // فيظهر الهيكل بدلها.
+  const [questions, setQuestions] = useState(null);
+  const askAbort = useRef(null);
+
+  useEffect(() => () => askAbort.current?.abort(), []);
 
   // تفضيلات البروفايل تسبق الحالة المحلية عند تسجيل الدخول،
   // عشان اللي يحفظه المستخدم في الإعدادات يكون له أثر فعلي هنا
@@ -77,8 +82,6 @@ export default function Home() {
   // الثيم يتبع المزاج — نفس الـ hook المستخدم في الإعدادات
   useMoodTheme(mood);
 
-  const category = categoryId ? getCategory(categoryId) : null;
-
   const filledOptions = useMemo(
     () =>
       options
@@ -87,38 +90,57 @@ export default function Home() {
     [options],
   );
 
-  const weights = useMemo(
-    () => (category ? weightsFor(category, answers, mood) : {}),
-    [category, answers, mood],
-  );
-
+  // كل سؤال بُعد، وجوابه الخيار اللي يكسبه. اللي يكسب أكثر أبعاد يفوز.
   const scored = useMemo(
     () =>
-      category && filledOptions.length
-        ? scoreOptions(category, filledOptions, ratings, weights)
+      questions && filledOptions.length
+        ? tallyOptions(questions, filledOptions, answers)
         : [],
-    [category, filledOptions, ratings, weights],
+    [questions, filledOptions, answers],
   );
 
-  const start = () => {
+  // ننتقل لشاشة الأسئلة فوراً ونولّد خلفها — إبقاء المستخدم على شاشة
+  // الهبوط ينتظر يخليه يظن إن الزر ما اشتغل.
+  const start = useCallback(() => {
     setAnswers({});
-    setRatings({});
     setQuestionIndex(0);
+    setQuestions(null);
     setStep("questions");
-  };
 
+    askAbort.current?.abort();
+    const controller = new AbortController();
+    askAbort.current = controller;
+
+    duelService
+      .questionsFor({
+        options: filledOptions.map((o) => o.label),
+        signal: controller.signal,
+      })
+      .then(({ questions: next, source }) => {
+        if (controller.signal.aborted) return;
+        console.info("[duel] source:", source);
+        setQuestions(next);
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") console.error("[duel] failed:", err);
+      });
+  }, [filledOptions]);
+
+  // آخر سؤال يحسم مباشرة: السؤال نفسه صار هو التقييم، فما بقي
+  // بينه وبين النتيجة خطوة.
   const nextQuestion = () => {
-    if (questionIndex + 1 < category.questions.length) {
-      setQuestionIndex((i) => i + 1);
-    } else {
-      setStep("ratings");
-    }
+    if (questionIndex + 1 < questions.length) setQuestionIndex((i) => i + 1);
+    else decideRef.current?.();
   };
 
   const backFromQuestion = () => {
     if (questionIndex === 0) setStep("landing");
     else setQuestionIndex((i) => i - 1);
   };
+
+  // nextQuestion معرّفة قبل decide، فنمرّرها عبر مرجع بدل ما نعيد
+  // ترتيب الملف كله.
+  const decideRef = useRef(null);
 
   // نداء المحرك: التوصية تجي من /api/decide، والحساب المحلي يبقى
   // كخط رجعة لو النداء فشل حتى ما تنكسر الشاشة على المستخدم.
@@ -132,7 +154,6 @@ export default function Home() {
 
       const labels = override?.options ?? filledOptions.map((o) => o.label);
       const finalAnswers = override?.answers ?? answers;
-      const finalCategory = override?.categoryId ?? categoryId;
       let result = null;
 
       try {
@@ -147,7 +168,6 @@ export default function Home() {
           body: JSON.stringify({
             options: labels,
             answers: finalAnswers,
-            categoryId: finalCategory,
           }),
         });
 
@@ -174,12 +194,11 @@ export default function Home() {
         setSaveState({ status: "saving" });
         try {
           const saved = await decisionService.saveDecision({
-            categoryId: finalCategory,
+            categoryId: null,
             options: labels,
             chosen: result.selected_option,
             reason: result.funny_reason,
             answers: finalAnswers,
-            weights,
           });
           setSaveState(
             saved.ok
@@ -192,8 +211,14 @@ export default function Home() {
         }
       }
     },
-    [filledOptions, answers, categoryId, weights, accessToken],
+    [filledOptions, answers, accessToken],
   );
+
+  // الإسناد داخل أثر لا أثناء الرندر: الكتابة على ref وقت الرندر
+  // تكسر قواعد React وتخلي القيمة غير متوقعة عند إعادة الرندر.
+  useEffect(() => {
+    decideRef.current = decide;
+  }, [decide]);
 
   // المحادثة الصوتية تعطينا كل شي دفعة واحدة — بما فيه التقييمات.
   // الوكيل يرجّعها مفهرسة بنص الخيار، والمحرك يبيها بمعرّف الخيار.
@@ -204,29 +229,24 @@ export default function Home() {
         label,
       }));
 
-      const byId = {};
-      for (const option of voiceOptions) {
-        const given = payload.ratings?.[option.label];
-        if (given) byId[option.id] = given;
-      }
-
-      setCategoryId(payload.categoryId);
       setOptions(voiceOptions);
-      setAnswers(payload.answers);
-      setRatings(byId);
-      decide({ ...payload, ratings: byId });
+      setAnswers({});
+      // وضع المحادثة يحسم مباشرة: وكيله يجمع كل شي بنفسه، وما يمرّ
+      // على أسئلة المواجهة أصلاً.
+      setQuestions([]);
+      decide(payload);
     },
     [decide],
   );
 
   const restart = () => {
+    askAbort.current?.abort();
     setStep("landing");
     setQuestionIndex(0);
-    setCategoryId(null);
     setMood(null);
     setOptions(initialOptions());
     setAnswers({});
-    setRatings({});
+    setQuestions(null);
     setRecommendation(null);
     setApiError(null);
     setSaveState(null);
@@ -261,8 +281,6 @@ export default function Home() {
             <Landing
               mood={mood}
               setMood={setMood}
-              categoryId={categoryId}
-              setCategoryId={setCategoryId}
               options={options}
               setOptions={setOptions}
               onStart={start}
@@ -283,29 +301,19 @@ export default function Home() {
               />
             )}
 
-            {step === "questions" && category && (
-              <QuestionStep
-                category={category}
+            {/* الهيكل يحجز نفس تخطيط السؤال أثناء التوليد */}
+            {step === "questions" && !questions && <QuestionSkeleton />}
+
+            {step === "questions" && questions?.[questionIndex] && (
+              <DuelStep
+                question={questions[questionIndex]}
                 index={questionIndex}
+                total={questions.length}
+                options={filledOptions}
                 answers={answers}
                 setAnswers={setAnswers}
                 onAnswer={nextQuestion}
                 onBack={backFromQuestion}
-              />
-            )}
-
-            {step === "ratings" && category && (
-              <RatingGrid
-                category={category}
-                options={filledOptions}
-                ratings={ratings}
-                setRatings={setRatings}
-                weights={weights}
-                onNext={() => decide()}
-                onBack={() => {
-                  setQuestionIndex(category.questions.length - 1);
-                  setStep("questions");
-                }}
               />
             )}
 
@@ -319,7 +327,10 @@ export default function Home() {
                 saveState={saveState}
                 tone={tone}
                 onRestart={restart}
-                onBack={() => setStep("ratings")}
+                onBack={() => {
+                  setQuestionIndex(questions.length - 1);
+                  setStep("questions");
+                }}
                 onRetry={decide}
               />
             )}
