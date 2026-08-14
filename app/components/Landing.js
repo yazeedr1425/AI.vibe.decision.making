@@ -7,6 +7,7 @@ import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { listenOnce } from "@/lib/voice/speech";
 import { parseSpokenOptions } from "@/lib/voice/match";
 import { useVoice } from "@/lib/voice/VoiceProvider";
+import ThirdOptionHint from "./ThirdOptionHint";
 import {
   ArrowLeft,
   CategoryIcon,
@@ -60,7 +61,10 @@ export default function Landing({
 
   useEffect(() => () => stopRef.current?.(), []);
 
-  const filled = options.filter((o) => o.label.trim()).length;
+  const filledLabels = options
+    .map((o) => o.label.trim())
+    .filter(Boolean);
+  const filled = filledLabels.length;
   const ready = filled >= MIN_OPTIONS && categoryId;
   const category = categoryId ? getCategory(categoryId) : null;
   const activeMood = getMood(mood);
@@ -79,6 +83,17 @@ export default function Landing({
     setOptions((prev) =>
       prev.length <= MIN_OPTIONS ? prev : prev.filter((o) => o.id !== id),
     );
+
+  // الاقتراح يعبّي أول خانة فاضية إن وجدت، وإلا يضيف صفاً — نفس
+  // سلوك الإملاء الصوتي، حتى ما يفاجأ المستخدم بترتيب مختلف
+  const addWithLabel = (label) =>
+    setOptions((prev) => {
+      if (prev.length >= MAX_OPTIONS) return prev;
+      const empty = prev.findIndex((o) => !o.label.trim());
+      if (empty !== -1)
+        return prev.map((o, i) => (i === empty ? { ...o, label } : o));
+      return [...prev, { id: crypto.randomUUID(), label }];
+    });
 
   const applyExample = (example) => {
     setCategoryId(example.categoryId);
@@ -298,6 +313,8 @@ export default function Landing({
             </li>
           ))}
         </ul>
+
+        <ThirdOptionHint options={filledLabels} onPick={addWithLabel} />
 
         <div className="mt-3 flex flex-wrap items-center gap-4">
           {options.length < MAX_OPTIONS && (
