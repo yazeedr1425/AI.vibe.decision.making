@@ -1,0 +1,207 @@
+import { supabaseAdmin } from "@/lib/supabase-server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// دخول برابط لمرة واحدة — بلا كلمة مرور تُتذكر.
+//
+// نفس معمارية التسجيل: admin.generateLink يولّد الرابط بلا إرسال،
+// ونرسله نحن بقالبنا العربي عبر Mailtrap. لو تركناها لـ Supabase
+// أرسل قالبه الإنجليزي من مرسله المحدود (٣-٤ رسائل بالساعة).
+//
+// الرسالة هنا HTML مضمّن لا قالب Mailtrap مخزّن: نص الدخول قصير
+// وثابت، وقالب ثانٍ في لوحة خارجية = معرّف ثانٍ ينكسر بصمت لو
+// أُعيد إنشاؤه. التصميم نفس لغة رسالة التحقق.
+const MAILTRAP_SEND_URL = "https://send.api.mailtrap.io/api/send";
+const FROM_EMAIL = process.env.MAILTRAP_FROM_EMAIL ?? "no-reply@yazeed.store";
+const FROM_NAME = "احسم";
+const SEND_TIMEOUT_MS = 15000;
+
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 5;
+const hits = new Map();
+
+function allowed(ip) {
+  const now = Date.now();
+  const seen = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
+  seen.push(now);
+  hits.set(ip, seen);
+  if (hits.size > 1000) {
+    for (const [key, times] of hits) {
+      if (!times.some((t) => now - t < RATE_WINDOW_MS)) hits.delete(key);
+    }
+  }
+  return seen.length <= RATE_MAX;
+}
+
+const fail = (status, message) =>
+  Response.json({ ok: false, error: message }, { status });
+
+// نفس بنية رسالة التحقق: جداول وأنماط مضمّنة وخط النظام —
+// عملاء البريد ما يفهمون غيرها
+function emailHtml(actionLink) {
+  return `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
+  <title>رابط دخولك — احسم</title>
+</head>
+<body style="margin:0; padding:0; background-color:#faf6ef;" bgcolor="#faf6ef">
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">ضغطة وحدة وأنت داخل.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#faf6ef" style="background-color:#faf6ef;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%;">
+          <tr>
+            <td align="right" style="padding:0 8px 20px 8px;" dir="rtl">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" dir="rtl">
+                <tr>
+                  <td width="44" height="44" align="center" valign="middle" bgcolor="#e85d2f" style="background-color:#e85d2f; border-radius:14px; width:44px; height:44px;">
+                    <span style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:20px; font-weight:bold; color:#fff8f0; line-height:44px;">حـ</span>
+                  </td>
+                  <td style="padding-right:12px;">
+                    <span style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:22px; font-weight:bold; color:#1f1b16;">احسم</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#ffffff" style="background-color:#ffffff; border:1px solid #e4dbcd; border-radius:24px; padding:40px 32px;" dir="rtl">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl">
+                <tr>
+                  <td align="right" style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; color:#1f1b16;">
+                    <h1 style="margin:0 0 12px 0; font-size:26px; line-height:1.35; font-weight:bold;">رابط دخولك جاهز</h1>
+                    <p style="margin:0 0 24px 0; font-size:16px; line-height:1.8; color:#6b6257;">
+                      اضغط الزر وأنت داخل — بلا كلمة مرور. الرابط يفتح مرة
+                      واحدة، فلو ما اشتغل اطلب رابطاً جديداً من صفحة الدخول.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding:4px 0 28px 0;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#e85d2f" style="background-color:#e85d2f; border-radius:16px;">
+                          <a href="${actionLink}" style="display:inline-block; padding:15px 44px; font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:17px; font-weight:bold; color:#fff8f0; text-decoration:none; border-radius:16px;">ادخل لاحسم</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right" style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; border-top:1px solid #e4dbcd; padding-top:20px;">
+                    <p style="margin:0 0 8px 0; font-size:13px; line-height:1.7; color:#6b6257;">الزر ما اشتغل؟ انسخ الرابط والصقه في متصفحك:</p>
+                    <p style="margin:0; font-size:12px; line-height:1.7; word-break:break-all;" dir="ltr" align="left">
+                      <a href="${actionLink}" style="color:#b8461d; text-decoration:underline;">${actionLink}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="right" style="padding:20px 8px 0 8px; font-family:Tahoma, 'Segoe UI', Arial, sans-serif;" dir="rtl">
+              <p style="margin:0; font-size:12px; line-height:1.7; color:#a89e90;">
+                ما طلبت الدخول؟ تجاهل هذي الرسالة وما راح يدخل أحد —
+                الرابط ما يوصل إلا لبريدك.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function POST(request) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return fail(400, "ما قدرنا نقرأ الطلب.");
+  }
+
+  const email = typeof body?.email === "string" ? body.email.trim() : "";
+  if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return fail(400, "اكتب إيميلاً صالحاً.");
+  }
+
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  if (!allowed(ip)) return fail(429, "محاولات كثيرة — انتظر دقيقة.");
+
+  const token = process.env.MAILTRAP_API_TOKEN;
+  if (!token) return fail(503, "الإرسال غير مهيأ — MAILTRAP_API_TOKEN مفقود.");
+
+  // النوع recovery وليس magiclink عمداً: مُختبَر — magiclink لإيميل
+  // غير موجود «ينجح» بإنشاء حساب شبح بصمت، فيصير طلب رابط الدخول
+  // باباً لتسجيل حسابات بأي إيميل. recovery يشترط وجود المستخدم ولا
+  // ينشئ أبداً، وجلسة الاستعادة دخولٌ كامل — نفس النتيجة للمستخدم.
+  //
+  // ونقول «مو مسجل» بصراحة بدل الغموض: التطبيق ما فيه حساسية تبرر
+  // إخفاء وجود الحساب، والوضوح أنفع.
+  const admin = supabaseAdmin();
+  let link;
+  try {
+    // redirectTo لأصل الطلب نفسه: بدونه يرجع الرابط لـ Site URL
+    // (الدومين الإنتاجي) حتى لو طلبته من بيئة تطوير. Supabase ما
+    // يقبله إلا لو كان في قائمة Redirect URLs المسموحة — وإلا سقط
+    // للـ Site URL بصمت، فالتمرير آمن في الحالتين.
+    link = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: new URL(request.url).origin },
+    });
+  } catch (err) {
+    console.error("[api/magic-link] generateLink threw:", err);
+    return fail(502, "تعذر تجهيز الرابط — جرب مرة ثانية.");
+  }
+
+  if (link.error) {
+    if (/not.*found/i.test(link.error.message) || link.error.code === "user_not_found") {
+      return fail(404, "هذا الإيميل مو مسجل عندنا — أنشئ حساباً أول.");
+    }
+    console.error("[api/magic-link] generateLink failed:", link.error);
+    return fail(502, "تعذر تجهيز الرابط — جرب مرة ثانية.");
+  }
+
+  const actionLink = link.data?.properties?.action_link;
+  if (!actionLink) return fail(502, "تعذر تجهيز الرابط.");
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+  try {
+    const res = await fetch(MAILTRAP_SEND_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        from: { email: FROM_EMAIL, name: FROM_NAME },
+        to: [{ email }],
+        subject: "رابط دخولك — ضغطة وحدة وأنت داخل",
+        html: emailHtml(actionLink),
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Mailtrap ${res.status}: ${text.slice(0, 200)}`);
+    }
+  } catch (err) {
+    console.error("[api/magic-link] send failed:", err);
+    if (err.name === "AbortError") return fail(504, "الإرسال تأخر — جرب مرة ثانية.");
+    return fail(502, "ما قدرنا نرسل الرابط — جرب مرة ثانية.");
+  } finally {
+    clearTimeout(timer);
+  }
+
+  return Response.json({ ok: true });
+}
