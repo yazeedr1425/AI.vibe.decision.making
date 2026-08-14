@@ -168,9 +168,12 @@ export default function PatternsCard() {
             {state.reading.advice}
           </p>
 
+          {/* بصيغة "على ٦ قرار" ينكسر العدد المعدود — الصحيح "قرارات"
+              للثلاثة حتى العشرة و"قرارًا" فوقها. نتفادى التمييز أصلاً
+              بدل ما نبني جدول جمع لسطر واحد. */}
           <p className="text-xs text-muted-soft">
-            مبنية على {state.stats.rated} قرار قيّمته من {state.stats.total}{" "}
-            محفوظ.
+            مبنية على القرارات اللي قيّمتها: {state.stats.rated} من{" "}
+            {state.stats.total} محفوظة.
           </p>
         </div>
       )}
