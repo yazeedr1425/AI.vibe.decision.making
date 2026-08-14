@@ -17,6 +17,7 @@ import Result from "./components/Result";
 import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import Thinking from "./components/Thinking";
+import BreakdownFlow from "./components/BreakdownFlow";
 import VoiceMode from "./components/VoiceMode";
 import { Card } from "./components/ui";
 
@@ -267,6 +268,7 @@ export default function Home() {
               setOptions={setOptions}
               onStart={start}
               onVoiceMode={() => setStep("voice")}
+              onBreakdown={() => setStep("breakdown")}
             />
 
             <HistorySection
@@ -280,6 +282,17 @@ export default function Home() {
               <VoiceMode
                 onComplete={fromVoice}
                 onCancel={() => setStep("landing")}
+              />
+            )}
+
+            {/* المفتاح يعيد التفكيك من أوله لو تغيرت الخيارات */}
+            {step === "breakdown" && (
+              <BreakdownFlow
+                key={filledOptions.map((o) => o.label).join("|")}
+                options={filledOptions.map((o) => o.label)}
+                categoryId={categoryId}
+                onCancel={() => setStep("landing")}
+                onRestart={restart}
               />
             )}
 
