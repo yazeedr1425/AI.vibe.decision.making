@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -20,9 +21,35 @@ const LINKS = [
 
 // المعالجات اختيارية: الصفحة الرئيسية تمرّرها لأنها تدير حالة الخطوات،
 // وأي صفحة أخرى تكتفي بالتنقّل للرئيسية.
+// نافذة تأكيد الخروج — كافية للضغطة الثانية المقصودة، وقصيرة بما
+// يكفي حتى ترجع الزر لحاله لو كانت الأولى بالغلط
+const CONFIRM_MS = 4000;
+
 export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
   const { user, signOut } = useAuth();
   const router = useRouter();
+
+  // خروج بضغطتين بدل نافذة تأكيد: الأولى تسلّح الزر («متأكد؟»)
+  // والثانية تنفذ. confirm() الأصلية بواجهة المتصفح الإنجليزية
+  // نشاز وسط التصميم، والمودال حمل زائد لقرار بهذا الحجم.
+  const [confirmingOut, setConfirmingOut] = useState(false);
+  const revertTimer = useRef(null);
+
+  useEffect(() => () => clearTimeout(revertTimer.current), []);
+
+  const handleSignOut = () => {
+    if (!confirmingOut) {
+      setConfirmingOut(true);
+      revertTimer.current = setTimeout(
+        () => setConfirmingOut(false),
+        CONFIRM_MS,
+      );
+      return;
+    }
+    clearTimeout(revertTimer.current);
+    setConfirmingOut(false);
+    signOut();
+  };
 
   const goHome = onHome ?? (() => router.push("/"));
   const startDeciding = onStart ?? (() => router.push("/"));
@@ -80,11 +107,17 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
               </Link>
               <button
                 type="button"
-                onClick={signOut}
+                onClick={handleSignOut}
                 title={user.email}
-                className="rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
+                aria-live="polite"
+                className={
+                  "rounded-full border px-4 py-2 text-sm transition-colors " +
+                  (confirmingOut
+                    ? "border-accent bg-accent-soft font-medium text-accent-strong"
+                    : "border-line bg-card hover:border-muted-soft")
+                }
               >
-                خروج
+                {confirmingOut ? "متأكد؟ اضغط ثاني" : "خروج"}
               </button>
             </>
           ) : (
