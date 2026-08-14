@@ -109,26 +109,6 @@ export default function Home() {
     setStep("questions");
   };
 
-  // زر «قرار جماعي» في الشريط: يرجع لشاشة الهبوط ويسلط الضوء على
-  // زر الجماعي في البطاقة — الطلب يحتاج خيارات، والبطاقة مكانها
-  const [groupHighlight, setGroupHighlight] = useState(0);
-  const goGroup = useCallback(() => {
-    setStep("landing");
-    setGroupHighlight(Date.now());
-  }, []);
-
-  // القادم من صفحة ثانية عبر ‎/?group=1‎ — نفس التسليط ثم تنظيف الرابط.
-  // التنظيف داخل المؤقت لا قبله: StrictMode يركّب مرتين، ولو نظفنا
-  // فوراً لغى التركيب الأول العلامة ومسح الثاني مؤقته فما صار شي.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("group") !== "1") return;
-    const timer = setTimeout(() => {
-      window.history.replaceState(null, "", "/");
-      setGroupHighlight(Date.now());
-    }, 150);
-    return () => clearTimeout(timer);
-  }, []);
-
   // القرار الجماعي: ينشئ ويوجه لصفحة التصويت — المنشئ يشارك الرابط
   // من هناك. يحتاج دخولاً لأن القرار يُملك، والضيوف يصوتون بلا حساب.
   const [groupBusy, setGroupBusy] = useState(false);
@@ -284,7 +264,6 @@ export default function Home() {
       <SiteNav
         onHome={restart}
         onVoiceMode={() => setStep("voice")}
-        onGroup={goGroup}
         onSignIn={() => router.push("/login")}
         onStart={() => {
           setStep("landing");
@@ -316,7 +295,6 @@ export default function Home() {
               onBreakdown={() => setStep("breakdown")}
               onGroup={createGroup}
               groupBusy={groupBusy}
-              groupHighlight={groupHighlight}
             />
 
             <HistorySection
