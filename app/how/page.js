@@ -6,10 +6,13 @@ import {
   Brain,
   CircleCheck,
   Headphones,
+  Lightbulb,
   Mic,
   Plus,
   RotateCw,
+  Scale,
   Sparkles,
+  Users,
   Volume2,
 } from "../components/icons";
 
@@ -18,6 +21,31 @@ export const metadata = {
   description:
     "من الحيرة إلى قرار في أقل من دقيقة: خياراتك، ثلاثة أسئلة، وترشيح مع السبب.",
 };
+
+// ما حول القرار نفسه — القدرات اللي تشتغل قبل الترشيح وبعده.
+// وضع المحادثة الصوتية له قسمه الخاص تحت، فما يتكرر هنا.
+const POWERS = [
+  {
+    icon: Lightbulb,
+    title: "الخيار اللي ما فكرت فيه",
+    body: "وأنت تكتب خياراتك، أحياناً نقترح واحداً زيادة: «برجر ولا سوشي… ولا مشاوي؟». لأن الحيرة أحياناً سببها إن الخيارين نفسيهما مو صح — والاقتراح يجي من خياراتك أنت، مو من قائمة جاهزة.",
+  },
+  {
+    icon: Scale,
+    title: "القرار الأكبر من ثلاثة أسئلة",
+    body: "«أستقيل؟» ما تحسمه أسئلة سريعة. لو خياراتك من العيار الثقيل نعرض نفكّها: فحوصات صغيرة لها جواب اليوم — عندك مدخرات؟ جربته جنب الوظيفة؟ — وبعدها حكم واضح: اقدم، أو «مو الحين» ومعها بالضبط وش اللي يقلبها.",
+  },
+  {
+    icon: Users,
+    title: "القرار الجماعي",
+    body: "«وين نتعشى» مع الربع؟ خلّه جماعي: رابط أو باركود، كل واحد يصوت باسمه بلا حساب، والأعمدة تتحرك قدام الجميع لحظة وصول كل صوت. ولو تعادلتوا، احسم يكسر التعادل بنفسه — ويتحمل اللوم عنكم.",
+  },
+  {
+    icon: Brain,
+    title: "سجل يتعلم منك",
+    body: "بعد ما تحسم، نسألك لاحقاً: كان قرار صح؟ إجاباتك تبني «شخصيتك القرارية»: وش النوع اللي تندم عليه، ووش الخيار اللي تطرحه كل مرة وما تختاره أبداً، ومتى تكون حيرتك. كل تقييم يخلي الترشيح الجاي أذكى.",
+  },
+];
 
 const STEPS = [
   {
@@ -91,6 +119,32 @@ export default function HowItWorks() {
               );
             })}
           </ol>
+        </section>
+
+        {/* حول القرار نفسه */}
+        <section className="flex flex-col gap-5">
+          <h2 className="text-2xl font-semibold sm:text-3xl">
+            وحول القرار، أربع قدرات
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {POWERS.map((power) => {
+              const Icon = power.icon;
+              return (
+                <div
+                  key={power.title}
+                  className="card-shadow flex flex-col gap-3 rounded-2xl border border-line bg-card p-5"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-soft text-accent-strong">
+                    <Icon size={18} />
+                  </span>
+                  <h3 className="text-lg font-semibold">{power.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted">
+                    {power.body}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </section>
 
         {/* ليش سؤالين مختلفين */}
@@ -173,6 +227,11 @@ export default function HowItWorks() {
             بدون تسجيل دخول، ما ينحفظ شي — تقدر تستخدم احسم كامل وما يترك أثراً.
             ولو سجّلت دخولك، نحفظ قراراتك في سجلك عشان نفهم عاداتك ونحسّن
             الترشيحات مع الوقت.
+          </p>
+          <p className="text-sm leading-relaxed text-muted">
+            وفي القرار الجماعي، اللي يفتح رابطك يشوف الخيارات والأصوات فقط —
+            الأسماء اللي صوتت ما تنكشف إلا في إعلان النتيجة، وما يحتاج أحد من
+            القروب حساباً أبداً.
           </p>
         </section>
 
