@@ -111,15 +111,18 @@ export default function AuthPanel({ mode = "signin" }) {
   const usePasswordForm = isSignUp || method === "password";
 
   return (
+    // الشاشة كاملة مثل التصميم: اللوحان يعبّيان العرض والارتفاع بلا
+    // بطاقة عائمة — البطاقة كانت تفسيراً خاطئاً للملف
+    // min-h-dvh هنا لا على body: سلسلة الارتفاع في الجذر ما توصّل
+    // (html بلا height)، وهذي الشاشة الوحيدة اللي تحتاج ملء الإطار
     <main
       id="main"
-      className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6"
+      className="grid min-h-dvh flex-1 lg:grid-cols-[1.05fr_1.2fr]"
       style={{ backgroundColor: PARCHMENT }}
     >
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl shadow-[0_20px_60px_rgba(23,20,15,0.18)] lg:grid-cols-[1.05fr_1.2fr]">
-        {/* ------- اللوح الحبري: ليش تسجل ------- */}
+      {/* ------- اللوح الحبري: ليش تسجل ------- */}
         <aside
-          className="order-2 flex flex-col gap-8 p-8 sm:p-10 lg:order-none"
+          className="order-2 flex flex-col gap-8 p-8 sm:p-12 lg:order-none lg:p-16"
           style={{ backgroundColor: INK, color: CREAM }}
         >
           <Link href="/" className="flex items-center gap-2.5 self-start">
@@ -177,9 +180,10 @@ export default function AuthPanel({ mode = "signin" }) {
 
         {/* ------- النموذج ------- */}
         <section
-          className="flex flex-col justify-center gap-7 p-8 sm:p-12"
+          className="flex flex-col items-center justify-center p-8 sm:p-12 lg:p-16"
           style={{ backgroundColor: PANEL, color: INK }}
         >
+        <div className="flex w-full max-w-md flex-col gap-7">
           <div className="flex flex-col gap-3">
             <span
               lang="en"
@@ -345,8 +349,8 @@ export default function AuthPanel({ mode = "signin" }) {
               <ArrowLeft size={15} />
             </Link>
           </div>
+        </div>
         </section>
-      </div>
     </main>
   );
 }
