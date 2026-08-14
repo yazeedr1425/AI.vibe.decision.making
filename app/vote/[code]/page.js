@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { renderSVG } from "uqr";
 import { groupService } from "@/lib/services/group";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -11,6 +12,8 @@ import { GhostButton, PrimaryButton, Tag } from "@/app/components/ui";
 import {
   Check,
   CircleCheck,
+  Copy,
+  QrCode,
   Trophy,
   TriangleAlert,
   Users,
@@ -53,8 +56,17 @@ export default function VotePage() {
   const [closing, setClosing] = useState(false);
   const [closeError, setCloseError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const channelRef = useRef(null);
   const refetchTimer = useRef(null);
+
+  // يتولد عند أول طلب فقط — الضغطة تضمن إننا في المتصفح (ما فيه
+  // window وقت رندر الخادم)، والمولّد محلي فما يطلع الرابط لأي طرف
+  // ثالث لخدمة باركود
+  const qrSvg = useMemo(
+    () => (showQr ? renderSVG(window.location.href) : null),
+    [showQr],
+  );
 
   const valid = typeof code === "string" && CODE.test(code);
 
@@ -206,16 +218,24 @@ export default function VotePage() {
     }
   };
 
-  const share = async () => {
-    const url = window.location.href;
+  const copyLink = async () => {
     try {
-      if (navigator.share) {
-        await navigator.share({ title: decision.title, url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setVoteError("ما قدرنا ننسخ — انسخ الرابط من شريط العنوان.");
+    }
+  };
+
+  const share = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: decision.title, url: window.location.href });
+        return;
+      }
+      // ما فيه قائمة مشاركة (كمبيوتر غالباً) — النسخ أقرب مكافئ
+      await copyLink();
     } catch {
       /* المستخدم لغى المشاركة — مو خطأ */
     }
@@ -369,21 +389,64 @@ export default function VotePage() {
 
       {/* ---------- المشاركة والإقفال ---------- */}
       {!closed && (
-        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-          <GhostButton onClick={share} className="flex items-center gap-1.5">
-            {copied ? <CircleCheck size={16} /> : <Users size={16} />}
-            {copied ? "انسخ الرابط ✓" : "شارك الرابط"}
-          </GhostButton>
+        <div className="flex flex-col gap-4 border-t border-line pt-5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <GhostButton onClick={share} className="flex items-center gap-1.5">
+              <Users size={16} />
+              شارك الرابط
+            </GhostButton>
 
-          {isCreator && (
-            <PrimaryButton onClick={close} disabled={closing || !total}>
-              {closing ? "… يجهز الإعلان" : "اقفل واحسم"}
-            </PrimaryButton>
-          )}
-          {closeError && (
-            <p role="alert" className="text-sm text-muted">
-              {closeError}
-            </p>
+            <button
+              type="button"
+              onClick={copyLink}
+              aria-label="انسخ رابط التصويت"
+              title="انسخ الرابط"
+              className="rounded-full border border-line bg-card p-2.5 text-muted transition-colors hover:border-muted-soft hover:text-foreground"
+            >
+              {copied ? <CircleCheck size={17} className="text-accent" /> : <Copy size={17} />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowQr((v) => !v)}
+              aria-pressed={showQr}
+              aria-label="اعرض باركود التصويت"
+              className={
+                "flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors " +
+                (showQr
+                  ? "border-accent bg-accent text-accent-ink"
+                  : "border-line bg-card text-muted hover:border-muted-soft hover:text-foreground")
+              }
+            >
+              <QrCode size={16} />
+              باركود
+            </button>
+
+            {isCreator && (
+              <PrimaryButton onClick={close} disabled={closing || !total}>
+                {closing ? "… يجهز الإعلان" : "اقفل واحسم"}
+              </PrimaryButton>
+            )}
+            {closeError && (
+              <p role="alert" className="text-sm text-muted">
+                {closeError}
+              </p>
+            )}
+          </div>
+
+          {/* الجالسون في نفس المكان: باركود على الشاشة أسرع من
+              إرسال رابط — كل واحد يمسح بكاميرته ويصوت.
+              خلفية بيضاء ثابتة مهما كان الثيم: الماسح يبي تبايناً */}
+          {showQr && qrSvg && (
+            <figure className="flex flex-col items-center gap-2 self-center rounded-2xl border border-line bg-white p-4">
+              <div
+                className="w-52 [&_svg]:h-auto [&_svg]:w-full"
+                dangerouslySetInnerHTML={{ __html: qrSvg }}
+              />
+              <figcaption className="text-sm text-[#1f1b16]">
+                امسح بالكاميرا وصوّت
+              </figcaption>
+            </figure>
           )}
         </div>
       )}
