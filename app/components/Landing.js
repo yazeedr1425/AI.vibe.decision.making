@@ -19,6 +19,7 @@ import {
   Scale,
   Sparkles,
   TriangleAlert,
+  Users,
 } from "./icons";
 
 // أمثلة الواجهة — كل واحد يعبّي الفئة والخيارات مباشرة.
@@ -56,6 +57,8 @@ export default function Landing({
   onStart,
   onVoiceMode,
   onBreakdown,
+  onGroup,
+  groupBusy,
 }) {
   const { stt } = useVoice();
   const [dictating, setDictating] = useState(false);
@@ -407,6 +410,18 @@ export default function Landing({
         >
           احسمها لي
           <ArrowLeft size={20} />
+        </button>
+
+        {/* الحيرة الجماعية أعوص من الفردية — "وين نتعشى" عطّلت
+            سهرات أكثر من أي قرار فردي. الرابط للقروب والكل يصوت. */}
+        <button
+          type="button"
+          onClick={onGroup}
+          disabled={!ready || groupBusy}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-line bg-card px-6 py-3 font-medium transition-colors hover:border-muted-soft disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Users size={18} />
+          {groupBusy ? "… نجهز الرابط" : "خلّه جماعي — القروب يصوت"}
         </button>
 
         <p className="mt-3 text-center text-xs text-muted-soft">
