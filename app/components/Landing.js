@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CATEGORIES, getCategory } from "@/lib/engine/categories";
 import { MOODS, getMood } from "@/lib/engine/mood";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { listenOnce } from "@/lib/voice/speech";
@@ -9,7 +8,6 @@ import { parseSpokenOptions } from "@/lib/voice/match";
 import { useVoice } from "@/lib/voice/VoiceProvider";
 import {
   ArrowLeft,
-  CategoryIcon,
   Headphones,
   Mic,
   MoodIcon,
