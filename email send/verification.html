@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- نمنع عكس الألوان التلقائي في الوضع الداكن — التصميم فاتح مقصود -->
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
+  <title>تأكيد بريدك — احسم</title>
+  <!--
+    قالب تأكيد البريد لمشروع «احسم».
+
+    مكانه: Supabase → Authentication → Email Templates → Confirm signup
+    (الصق محتوى الملف كاملاً في خانة Message body).
+
+    {{ .ConfirmationURL }} متغيّر يعبّيه Supabase وقت الإرسال — لا تلمسه.
+
+    ليش الشكل كذا؟ عملاء البريد ما يدعمون CSS خارجي ولا خطوط ويب ولا
+    flex — فكل شي جداول وأنماط مضمّنة، والخط من حزمة النظام (تدعم
+    العربية في كل عميل). الألوان نفس ثيم التطبيق الافتراضي.
+  -->
+</head>
+<body style="margin:0; padding:0; background-color:#faf6ef;" bgcolor="#faf6ef">
+
+  <!-- سطر المعاينة: يظهر جنب العنوان في صندوق الوارد ولا يظهر داخل الرسالة -->
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
+    ضغطة وحدة وتبدأ تحسم قراراتك.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#faf6ef" style="background-color:#faf6ef;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%;">
+
+          <!-- الشعار -->
+          <tr>
+            <td align="right" style="padding:0 8px 20px 8px;" dir="rtl">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" dir="rtl">
+                <tr>
+                  <td width="44" height="44" align="center" valign="middle" bgcolor="#e85d2f"
+                      style="background-color:#e85d2f; border-radius:14px; width:44px; height:44px;">
+                    <span style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:20px; font-weight:bold; color:#fff8f0; line-height:44px;">حـ</span>
+                  </td>
+                  <td style="padding-right:12px;">
+                    <span style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:22px; font-weight:bold; color:#1f1b16;">احسم</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- البطاقة -->
+          <tr>
+            <td bgcolor="#ffffff" style="background-color:#ffffff; border:1px solid #e4dbcd; border-radius:24px; padding:40px 32px;" dir="rtl">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl">
+
+                <tr>
+                  <td align="right" style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; color:#1f1b16;">
+                    <h1 style="margin:0 0 12px 0; font-size:26px; line-height:1.35; font-weight:bold;">
+                      خطوة وحدة وتبدأ تحسم
+                    </h1>
+                    <p style="margin:0 0 24px 0; font-size:16px; line-height:1.8; color:#6b6257;">
+                      أهلاً بك في احسم. أكّد بريدك بالزر تحت، وبعدها تنحفظ
+                      قراراتك في سجلك ونتعلم من عاداتك مع كل قرار تحسمه.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- الزر -->
+                <tr>
+                  <td align="center" style="padding:4px 0 28px 0;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#e85d2f" style="background-color:#e85d2f; border-radius:16px;">
+                          <a href="{{ .ConfirmationURL }}"
+                             style="display:inline-block; padding:15px 44px; font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:17px; font-weight:bold; color:#fff8f0; text-decoration:none; border-radius:16px;">
+                            أكّد بريدي
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- رابط احتياطي لو الزر ما اشتغل -->
+                <tr>
+                  <td align="right" style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; border-top:1px solid #e4dbcd; padding-top:20px;">
+                    <p style="margin:0 0 8px 0; font-size:13px; line-height:1.7; color:#6b6257;">
+                      الزر ما اشتغل؟ انسخ الرابط والصقه في متصفحك:
+                    </p>
+                    <p style="margin:0; font-size:12px; line-height:1.7; word-break:break-all;" dir="ltr" align="left">
+                      <a href="{{ .ConfirmationURL }}" style="color:#b8461d; text-decoration:underline;">{{ .ConfirmationURL }}</a>
+                    </p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- التذييل -->
+          <tr>
+            <td align="right" style="padding:20px 8px 0 8px; font-family:Tahoma, 'Segoe UI', Arial, sans-serif;" dir="rtl">
+              <p style="margin:0 0 6px 0; font-size:12px; line-height:1.7; color:#a89e90;">
+                ما سجلت في احسم؟ تجاهل هذي الرسالة وما راح يصير شي —
+                الحساب ما يتفعّل إلا من هذا الرابط.
+              </p>
+              <p style="margin:0; font-size:12px; line-height:1.7; color:#a89e90;">
+                احسم — مساعد قرارك اليومي. القرار لك دائمًا.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
