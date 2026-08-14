@@ -4,14 +4,54 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { ArrowLeft, CircleCheck, TriangleAlert } from "./icons";
+import {
+  ArrowLeft,
+  Brain,
+  CircleCheck,
+  Clock,
+  TriangleAlert,
+} from "./icons";
 
 const MIN_PASSWORD = 6;
+
+// «الاتجاه الجديد»: لوح حبري يشرح ليش تسجل، ودخول برابط لمرة واحدة
+// كطريقة أولى — كلمة المرور صارت البديل لا الأساس. ألوان هذي الشاشة
+// من ملف التصميم مباشرة، مقصود اختلافها الطفيف عن بقية التطبيق.
+const INK = "#17140f";
+const PARCHMENT = "#e7e0d4";
+const PANEL = "#fbf7f0";
+const ACCENT = "#c2542c";
+const ACCENT_INK = "#fdf6ee";
+const CREAM = "#f4efe4";
+
+const BENEFITS = [
+  {
+    icon: CircleCheck,
+    title: "سجلك يبقى معك",
+    sub: "كل قرار حسمته، والسبب اللي بنى عليه الترشيح.",
+  },
+  {
+    icon: Brain,
+    title: "أنماطك تتوضح",
+    sub: "مع تقييماتك، الترشيح يصير أقرب لك لا لأي أحد.",
+  },
+  {
+    icon: Clock,
+    title: "خطة اليوم تكمل من وين وقفت",
+    sub: "تفتحها من أي جهاز وتلقاها زي ما تركتها.",
+  },
+];
+
+const field =
+  "w-full border-0 border-b-2 bg-transparent px-0.5 py-2.5 text-xl outline-none transition-colors";
 
 export default function AuthPanel({ mode = "signin" }) {
   const { signIn, signUp } = useAuth();
   const router = useRouter();
+  const isSignUp = mode === "signup";
 
+  // طريقة الدخول: الرابط أولاً، وكلمة المرور خيار يُكشف بزر
+  const [method, setMethod] = useState("link");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,9 +59,33 @@ export default function AuthPanel({ mode = "signin" }) {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
 
-  const isSignUp = mode === "signup";
+  const sendLink = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.ok) {
+        setError(payload?.error ?? "ما قدرنا نرسل الرابط — جرب مرة ثانية.");
+        return;
+      }
+      setNotice(
+        `أرسلنا رابط الدخول إلى ${email.trim()} — افتحه وأنت داخل مباشرة. الرابط يفتح مرة واحدة.`,
+      );
+    } catch {
+      setError("ما وصلنا للخادم — تأكد من اتصالك.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const submit = async (e) => {
+  const submitCredentials = async (e) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
@@ -37,131 +101,252 @@ export default function AuthPanel({ mode = "signin" }) {
       setError(result.message);
       return;
     }
-
-    // تأكيد الإيميل مفعّل: ما فيه جلسة إلا بعد ما يضغط الرابط
     if (result.needsConfirmation) {
-      setNotice(
-        `أرسلنا رابط تأكيد إلى ${email.trim()}. افتحه، وبعدها سجّل دخولك.`,
-      );
+      setNotice(`أرسلنا رابط تأكيد إلى ${email.trim()}. افتحه، وبعدها ادخل.`);
       return;
     }
-
     router.push("/");
   };
+
+  const usePasswordForm = isSignUp || method === "password";
 
   return (
     <main
       id="main"
-      className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-4 py-14 sm:px-6"
+      className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6"
+      style={{ backgroundColor: PARCHMENT }}
     >
-      <header className="flex flex-col gap-2 text-center">
-        <Link href="/" className="mx-auto mb-2 flex items-center gap-2.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-lg font-bold text-accent-ink">
-            حـ
-          </span>
-          <span className="text-lg font-semibold">احسم</span>
-        </Link>
-        <h1 className="text-3xl font-semibold">
-          {isSignUp ? "أنشئ حسابك" : "سجّل دخولك"}
-        </h1>
-        <p className="text-sm text-muted">
-          {isSignUp
-            ? "عشان نحفظ قراراتك، ونتعلم من عاداتك مع الوقت."
-            : "رجعت؟ خلنا نكمل من وين وقفت."}
-        </p>
-      </header>
-
-      <form
-        onSubmit={submit}
-        className="card-shadow flex flex-col gap-4 rounded-2xl border border-line bg-card p-6"
-      >
-        {isSignUp && (
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm text-muted">الاسم</span>
-            <input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              autoComplete="name"
-              maxLength={60}
-              placeholder="كيف تحب نناديك؟"
-              className="rounded-xl border border-line bg-background px-4 py-3 outline-none transition-colors focus:border-accent"
-            />
-          </label>
-        )}
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-muted">الإيميل</span>
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-line bg-background px-4 py-3 outline-none transition-colors focus:border-accent"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-muted">كلمة المرور</span>
-          <input
-            type="password"
-            required
-            minLength={MIN_PASSWORD}
-            autoComplete={isSignUp ? "new-password" : "current-password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-xl border border-line bg-background px-4 py-3 outline-none transition-colors focus:border-accent"
-          />
-          {isSignUp && (
-            <span className="text-xs text-muted-soft">
-              {MIN_PASSWORD} أحرف على الأقل.
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl shadow-[0_20px_60px_rgba(23,20,15,0.18)] lg:grid-cols-[1.05fr_1.2fr]">
+        {/* ------- اللوح الحبري: ليش تسجل ------- */}
+        <aside
+          className="order-2 flex flex-col gap-8 p-8 sm:p-10 lg:order-none"
+          style={{ backgroundColor: INK, color: CREAM }}
+        >
+          <Link href="/" className="flex items-center gap-2.5 self-start">
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold"
+              style={{ backgroundColor: ACCENT, color: ACCENT_INK }}
+            >
+              حـ
             </span>
-          )}
-        </label>
+            <span className="text-lg font-semibold">احسم</span>
+          </Link>
 
-        {error && (
+          <div className="flex flex-col gap-3">
+            <span
+              lang="en"
+              className="text-xs font-medium uppercase tracking-[0.2em]"
+              style={{ color: "#a89e90" }}
+            >
+              why sign in
+            </span>
+            <h2 className="text-3xl font-bold leading-snug sm:text-4xl">
+              حسابك هو ذاكرة قراراتك.
+            </h2>
+          </div>
+
+          <ul className="flex flex-col gap-6">
+            {BENEFITS.map((b) => {
+              const Icon = b.icon;
+              return (
+                <li key={b.title} className="flex items-start gap-3">
+                  <Icon
+                    size={20}
+                    className="mt-1 shrink-0"
+                    style={{ color: ACCENT }}
+                  />
+                  <div>
+                    <p className="font-semibold">{b.title}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: "#bdb3a4" }}>
+                      {b.sub}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
           <p
-            role="alert"
-            className="flex items-center gap-2 rounded-xl border border-dashed border-line px-4 py-3 text-sm"
+            className="mt-auto border-t pt-6 text-sm leading-relaxed"
+            style={{ borderColor: "#3a352c", color: "#a89e90" }}
           >
-            <TriangleAlert size={15} className="shrink-0" />
-            {error}
+            تقدر تستخدم احسم بدون حساب. الحساب للحفظ فقط — وما نشارك
+            قراراتك مع أحد.
           </p>
-        )}
+        </aside>
 
-        {notice && (
-          <p
-            role="status"
-            className="flex items-start gap-2 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent-strong"
+        {/* ------- النموذج ------- */}
+        <section
+          className="flex flex-col justify-center gap-7 p-8 sm:p-12"
+          style={{ backgroundColor: PANEL, color: INK }}
+        >
+          <div className="flex flex-col gap-3">
+            <span
+              lang="en"
+              className="text-xs font-medium uppercase tracking-[0.2em]"
+              style={{ color: "#a89e90" }}
+            >
+              {isSignUp ? "create account" : "sign in"}
+            </span>
+            <h1 className="text-4xl font-bold leading-tight sm:text-[44px]">
+              {isSignUp ? "أنشئ حسابك." : "أهلًا مرة ثانية."}
+            </h1>
+            <p className="leading-relaxed" style={{ color: "#6b6257" }}>
+              {isSignUp
+                ? "عشان نحفظ قراراتك، ونتعلم من عاداتك مع الوقت."
+                : usePasswordForm
+                  ? "ادخل بإيميلك وكلمة مرورك."
+                  : "اكتب إيميلك ونرسل لك رابط دخول لمرة واحدة. بدون كلمة مرور تحتاج تتذكرها."}
+            </p>
+          </div>
+
+          <form
+            onSubmit={usePasswordForm ? submitCredentials : sendLink}
+            className="flex flex-col gap-6"
           >
-            <CircleCheck size={18} className="mt-0.5 shrink-0" />
-            {notice}
-          </p>
-        )}
+            {isSignUp && (
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm" style={{ color: "#6b6257" }}>
+                  الاسم
+                </span>
+                <input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  autoComplete="name"
+                  maxLength={60}
+                  placeholder="كيف تحب نناديك؟"
+                  className={field}
+                  style={{ borderColor: INK }}
+                />
+              </label>
+            )}
 
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-accent px-6 py-3.5 font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {busy ? "…" : isSignUp ? "أنشئ الحساب" : "دخول"}
-          {!busy && <ArrowLeft size={18} />}
-        </button>
-      </form>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm" style={{ color: "#6b6257" }}>
+                الإيميل
+              </span>
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                dir="ltr"
+                className={`${field} text-left`}
+                style={{ borderColor: INK }}
+              />
+            </label>
 
-      <p className="text-center text-sm text-muted">
-        {isSignUp ? "عندك حساب؟ " : "ما عندك حساب؟ "}
-        <Link
-          href={isSignUp ? "/login" : "/signup"}
-          className="text-accent-strong underline underline-offset-4"
-        >
-          {isSignUp ? "سجّل دخولك" : "أنشئ واحد"}
-        </Link>
-      </p>
+            {usePasswordForm && (
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm" style={{ color: "#6b6257" }}>
+                  كلمة المرور
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={MIN_PASSWORD}
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={field}
+                  style={{ borderColor: INK }}
+                />
+                {isSignUp && (
+                  <span className="text-xs" style={{ color: "#a89e90" }}>
+                    {MIN_PASSWORD} أحرف على الأقل.
+                  </span>
+                )}
+              </label>
+            )}
 
-      <p className="text-center text-xs text-muted-soft">
-        تقدر تستخدم احسم بدون حساب — الحساب فقط عشان يُحفظ سجلك.
-      </p>
+            {error && (
+              <p
+                role="alert"
+                className="flex items-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm"
+                style={{ borderColor: "#ddd3c4" }}
+              >
+                <TriangleAlert size={15} className="shrink-0" />
+                {error}
+              </p>
+            )}
+
+            {notice && (
+              <p
+                role="status"
+                className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm"
+                style={{ backgroundColor: "#f3e2d8", color: "#8a3d1f" }}
+              >
+                <CircleCheck size={18} className="mt-0.5 shrink-0" />
+                {notice}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="flex items-center justify-center gap-2 rounded-full px-6 py-4 text-lg font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: ACCENT, color: ACCENT_INK }}
+            >
+              {busy
+                ? "…"
+                : isSignUp
+                  ? "أنشئ الحساب"
+                  : usePasswordForm
+                    ? "دخول"
+                    : "أرسل لي رابط الدخول"}
+              {!busy && <ArrowLeft size={18} />}
+            </button>
+
+            {!isSignUp && (
+              <>
+                <div
+                  className="flex items-center gap-3 text-sm"
+                  style={{ color: "#a89e90" }}
+                >
+                  <span className="h-px flex-1" style={{ backgroundColor: "#ddd3c4" }} />
+                  أو
+                  <span className="h-px flex-1" style={{ backgroundColor: "#ddd3c4" }} />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMethod(method === "link" ? "password" : "link");
+                    setError(null);
+                    setNotice(null);
+                  }}
+                  className="rounded-full border px-6 py-3 text-sm font-medium transition-colors hover:border-current"
+                  style={{ backgroundColor: "#fdfaf5", borderColor: "#ddd3c4", color: INK }}
+                >
+                  {method === "link" ? "دخول بكلمة المرور" : "رجّعني لرابط الدخول"}
+                </button>
+              </>
+            )}
+          </form>
+
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 text-sm"
+            style={{ color: "#6b6257" }}
+          >
+            <p>
+              {isSignUp ? "عندك حساب؟ " : "ما عندك حساب؟ "}
+              <Link
+                href={isSignUp ? "/login" : "/signup"}
+                className="font-medium underline underline-offset-4"
+                style={{ color: "#8a3d1f" }}
+              >
+                {isSignUp ? "سجّل دخولك" : "أنشئ واحد"}
+              </Link>
+            </p>
+            <Link href="/" className="flex items-center gap-1.5">
+              أكمل بدون حساب
+              <ArrowLeft size={15} />
+            </Link>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
