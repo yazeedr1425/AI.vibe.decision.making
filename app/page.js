@@ -6,10 +6,12 @@ import { getCategory } from "@/lib/engine/categories";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
+import { questionsService } from "@/lib/services/questions";
 import { profileService } from "@/lib/services/profile";
 import { useMoodTheme } from "@/lib/theme/useMoodTheme";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Landing from "./components/Landing";
+import QuestionSkeleton from "./components/QuestionSkeleton";
 import QuestionStep from "./components/QuestionStep";
 import RatingGrid from "./components/RatingGrid";
 import HistorySection from "./components/HistorySection";
@@ -40,6 +42,13 @@ export default function Home() {
   const [recommendation, setRecommendation] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [saveState, setSaveState] = useState(null);
+
+  // القالب بأسئلة مصاغة على الخيارين. يبقى null أثناء الصياغة فيظهر
+  // الهيكل بدله، فما ندخل شاشة الأسئلة بسؤال عام ثم يتبدّل تحت اليد.
+  const [asked, setAsked] = useState(null);
+  const askAbort = useRef(null);
+
+  useEffect(() => () => askAbort.current?.abort(), []);
 
   // تفضيلات البروفايل تسبق الحالة المحلية عند تسجيل الدخول،
   // عشان اللي يحفظه المستخدم في الإعدادات يكون له أثر فعلي هنا
@@ -77,7 +86,9 @@ export default function Home() {
   // الثيم يتبع المزاج — نفس الـ hook المستخدم في الإعدادات
   useMoodTheme(mood);
 
-  const category = categoryId ? getCategory(categoryId) : null;
+  // المحرك ما يعرف من وين جت الأسئلة: weightsFor و scoreOptions
+  // تستقبلان category كوسيط، فالمصاغ يحلّ محلّ الثابت بلا تعديل فيه.
+  const category = asked;
 
   const filledOptions = useMemo(
     () =>
@@ -100,12 +111,38 @@ export default function Home() {
     [category, filledOptions, ratings, weights],
   );
 
-  const start = () => {
+  // ننتقل لشاشة الأسئلة فوراً ونصوغ خلفها. إبقاء المستخدم على شاشة
+  // الهبوط ينتظر يخليه يظن إن الزر ما اشتغل.
+  const start = useCallback(() => {
     setAnswers({});
     setRatings({});
     setQuestionIndex(0);
+    setAsked(null);
     setStep("questions");
-  };
+
+    askAbort.current?.abort();
+    const controller = new AbortController();
+    askAbort.current = controller;
+
+    questionsService
+      .forOptions({
+        categoryId,
+        options: filledOptions.map((o) => o.label),
+        signal: controller.signal,
+      })
+      .then(({ category: next, source }) => {
+        if (controller.signal.aborted) return;
+        console.info("[questions] source:", source);
+        setAsked(next);
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        // الخدمة ما ترمي إلا عند الإلغاء، لكن لو صار المستحيل نرجع
+        // للقالب بدل ما نترك المستخدم أمام هيكل ما ينتهي
+        console.error("[questions] unexpected failure:", err);
+        setAsked(getCategory(categoryId));
+      });
+  }, [categoryId, filledOptions]);
 
   const nextQuestion = () => {
     if (questionIndex + 1 < category.questions.length) {
@@ -214,12 +251,17 @@ export default function Home() {
       setOptions(voiceOptions);
       setAnswers(payload.answers);
       setRatings(byId);
+      // وضع المحادثة يبقى على القالب: /api/assist يسأل أسئلته نفسها
+      // ويرجّع إجاباتها بمفاتيحها، وبدون ضبطه هنا يبقى category فارغاً
+      // فتطلع شاشة نتيجة بلا ترتيب.
+      setAsked(getCategory(payload.categoryId));
       decide({ ...payload, ratings: byId });
     },
     [decide],
   );
 
   const restart = () => {
+    askAbort.current?.abort();
     setStep("landing");
     setQuestionIndex(0);
     setCategoryId(null);
@@ -227,6 +269,7 @@ export default function Home() {
     setOptions(initialOptions());
     setAnswers({});
     setRatings({});
+    setAsked(null);
     setRecommendation(null);
     setApiError(null);
     setSaveState(null);
@@ -282,6 +325,9 @@ export default function Home() {
                 onCancel={() => setStep("landing")}
               />
             )}
+
+            {/* الهيكل يحجز نفس تخطيط السؤال أثناء الصياغة */}
+            {step === "questions" && !category && <QuestionSkeleton />}
 
             {step === "questions" && category && (
               <QuestionStep
