@@ -117,7 +117,7 @@ export default function AuthPanel({ mode = "signin" }) {
     // (html بلا height)، وهذي الشاشة الوحيدة اللي تحتاج ملء الإطار
     <main
       id="main"
-      className="grid min-h-dvh flex-1 lg:grid-cols-[1.05fr_1.2fr]"
+      className="grid min-h-dvh flex-1 lg:grid-cols-[2fr_3fr]"
       style={{ backgroundColor: PARCHMENT }}
     >
       {/* ------- اللوح الحبري: ليش تسجل ------- */}
@@ -135,42 +135,48 @@ export default function AuthPanel({ mode = "signin" }) {
             <span className="text-lg font-semibold">احسم</span>
           </Link>
 
-          <div className="flex flex-col gap-3">
-            <span
-              lang="en"
-              className="text-xs font-medium uppercase tracking-[0.2em]"
-              style={{ color: "#a89e90" }}
-            >
-              why sign in
-            </span>
-            <h2 className="text-3xl font-bold leading-snug sm:text-4xl">
-              حسابك هو ذاكرة قراراتك.
-            </h2>
+          {/* الكتلة الوسطى تتوسط عمودياً بين الشعار والتذييل،
+              والوسم اللاتيني على الحافة اليسرى عمداً — مقابلة
+              الاتجاهين من التصميم نفسه */}
+          <div className="my-auto flex flex-col gap-8">
+            <div className="flex flex-col gap-4">
+              <span
+                lang="en"
+                dir="ltr"
+                className="w-full text-left text-xs font-medium uppercase tracking-[0.2em]"
+                style={{ color: "#a89e90" }}
+              >
+                why sign in
+              </span>
+              <h2 className="text-3xl font-bold leading-snug sm:text-4xl">
+                حسابك هو ذاكرة قراراتك.
+              </h2>
+            </div>
+
+            <ul className="flex flex-col gap-6">
+              {BENEFITS.map((b) => {
+                const Icon = b.icon;
+                return (
+                  <li key={b.title} className="flex items-start gap-3">
+                    <Icon
+                      size={20}
+                      className="mt-1 shrink-0"
+                      style={{ color: ACCENT }}
+                    />
+                    <div>
+                      <p className="font-semibold">{b.title}</p>
+                      <p className="text-sm leading-relaxed" style={{ color: "#bdb3a4" }}>
+                        {b.sub}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
-          <ul className="flex flex-col gap-6">
-            {BENEFITS.map((b) => {
-              const Icon = b.icon;
-              return (
-                <li key={b.title} className="flex items-start gap-3">
-                  <Icon
-                    size={20}
-                    className="mt-1 shrink-0"
-                    style={{ color: ACCENT }}
-                  />
-                  <div>
-                    <p className="font-semibold">{b.title}</p>
-                    <p className="text-sm leading-relaxed" style={{ color: "#bdb3a4" }}>
-                      {b.sub}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
           <p
-            className="mt-auto border-t pt-6 text-sm leading-relaxed"
+            className="border-t pt-6 text-sm leading-relaxed"
             style={{ borderColor: "#3a352c", color: "#a89e90" }}
           >
             تقدر تستخدم احسم بدون حساب. الحساب للحفظ فقط — وما نشارك
@@ -187,7 +193,8 @@ export default function AuthPanel({ mode = "signin" }) {
           <div className="flex flex-col gap-3">
             <span
               lang="en"
-              className="text-xs font-medium uppercase tracking-[0.2em]"
+              dir="ltr"
+              className="w-full text-left text-xs font-medium uppercase tracking-[0.2em]"
               style={{ color: "#a89e90" }}
             >
               {isSignUp ? "create account" : "sign in"}
@@ -290,7 +297,7 @@ export default function AuthPanel({ mode = "signin" }) {
             <button
               type="submit"
               disabled={busy}
-              className="flex items-center justify-center gap-2 rounded-full px-6 py-4 text-lg font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-full px-6 py-4 text-lg font-semibold shadow-[0_10px_24px_rgba(194,84,44,0.35)] transition-opacity hover:opacity-90 disabled:opacity-50"
               style={{ backgroundColor: ACCENT, color: ACCENT_INK }}
             >
               {busy
