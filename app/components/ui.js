@@ -1,5 +1,7 @@
 "use client";
 
+import { toArabicDigits } from "@/lib/text/digits";
+
 // عناصر مشتركة على لغة «الحبر والورق».
 //
 // قاعدة اللون هنا: الطوبيّ محجوز للفعل الواحد الرئيسي في الشاشة،
@@ -200,10 +202,9 @@ export function SectionHeading({ tag, title, sub, className = "" }) {
    ما يقول للمستخدم كم بقي.
    --------------------------------------------------------------- */
 
-// أرقام هندية — الخط العربي يحوّل بعض الأرقام اللاتينية وبعضها لا،
-// فتطلع الأعداد خليطاً من النظامين إلا لو حوّلنا نحن
-export const hindi = (n) =>
-  String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+// اسم مختصر يُستدعى كثيراً في العرض. التنفيذ في lib/text/digits
+// لأن نص النموذج يحتاجه أيضاً، والنسختان تفترقان بمرور الوقت.
+export const hindi = toArabicDigits;
 
 export function Progress({ current, total }) {
   return (

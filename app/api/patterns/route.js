@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { getCategory } from "@/lib/engine/categories";
 import { RESPONSE_SCHEMA, SYSTEM_INSTRUCTION, shape } from "@/lib/insight/prompt";
 import { describe, summarize } from "@/lib/insight/stats";
+import { toArabicDigits } from "@/lib/text/digits";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -112,9 +113,11 @@ export async function GET(request) {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: MODEL,
+      // الإحصاء يدخل بأرقام هندية: النموذج ينسخ الأرقام كما يراها،
+      // فإعطاؤه الشكل المطلوب أوثق من مطالبته بتحويله
       contents:
         "إحصاء سجل هذا الشخص:\n\n" +
-        describe(stats) +
+        toArabicDigits(describe(stats)) +
         "\n\nاقرأ شخصيته القرارية من هذي الأرقام. أرجع كائن JSON فقط.",
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
