@@ -1,9 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useScreen } from "@/lib/a11y/ScreenContext";
-import { Sparkles, TriangleAlert } from "./icons";
+import { dictationSupported, listenOnce } from "@/lib/a11y/dictate";
+import { Mic, Sparkles, TriangleAlert } from "./icons";
 
 const ROUTES = {
   home: "/",
@@ -36,6 +43,18 @@ export default function Assistant() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
+  const [listening, setListening] = useState(false);
+  const stopListening = useRef(null);
+
+  // قدرة المتصفح تُقرأ بـ useSyncExternalStore: قيمة خارجية ثابتة،
+  // والخادم ما عنده window فلقطته false — وضبطها داخل أثر يسبب
+  // رندراً متتالياً ويكسره اللينتر
+  const canDictate = useSyncExternalStore(
+    () => () => {},
+    () => dictationSupported(),
+    () => false,
+  );
+
   const inputRef = useRef(null);
   const dialogRef = useRef(null);
   const openerRef = useRef(null);
@@ -44,6 +63,8 @@ export default function Assistant() {
   useEffect(() => {
     logRef.current = log;
   }, [log]);
+
+  useEffect(() => () => stopListening.current?.(), []);
 
   // Alt+M من أي مكان. Alt عشان ما نسرق حرفاً من حقول الكتابة —
   // اختصار بحرف مجرد يكسر الكتابة على مستخدم قارئ الشاشة.
@@ -130,6 +151,38 @@ export default function Assistant() {
     },
     [getActions, router, announce],
   );
+
+  // الإملاء يعبّي الحقل ولا يرسل: المستخدم يراجع قبل ما ينفّذ
+  // الوكيل أمراً — والتعرف يخطئ، فإرسال تلقائي يعني تنفيذ ما لم يُقل
+  const dictate = () => {
+    if (listening) {
+      stopListening.current?.();
+      setListening(false);
+      return;
+    }
+    setError(null);
+    setListening(true);
+    announce("أسمعك — اتكلم الحين.");
+
+    stopListening.current = listenOnce({
+      onResult: (text) => {
+        setMessage(text);
+        announce(`سمعت: ${text}. راجعه واضغط أرسل.`);
+      },
+      onError: (code) => {
+        const msg =
+          code === "not-allowed" || code === "service-not-allowed"
+            ? "الميكروفون ممنوع — اسمح له من إعدادات المتصفح، أو اكتب طلبك."
+            : "ما سمعت شي — جرب مرة ثانية أو اكتبها.";
+        setError(msg);
+        announce(msg);
+      },
+      onEnd: () => {
+        setListening(false);
+        inputRef.current?.focus();
+      },
+    });
+  };
 
   const send = async (e) => {
     e.preventDefault();
@@ -219,7 +272,7 @@ export default function Assistant() {
 
       <p className="text-sm text-muted">
         اسألني وين أنت، أو قل لي وش تبيني أسوي — أعبّي خياراتك، أحسمها،
-        أو أوديك لصفحة ثانية.
+        أو أوديك لصفحة ثانية. تقدر تكتب أو تملي بالصوت.
       </p>
 
       {log.length > 0 && (
@@ -263,6 +316,23 @@ export default function Assistant() {
           placeholder="مثال: حطها برجر وسوشي واحسمها"
           className="w-full rounded-xl border border-line bg-background px-3 py-2.5 outline-none transition-colors focus:border-accent disabled:opacity-60"
         />
+        {canDictate && (
+          <button
+            type="button"
+            onClick={dictate}
+            disabled={busy}
+            aria-pressed={listening}
+            aria-label={listening ? "أوقف الإملاء" : "أملِ طلبك بالصوت"}
+            className={
+              "shrink-0 rounded-xl border p-2.5 transition-colors disabled:opacity-50 " +
+              (listening
+                ? "border-accent bg-accent text-accent-ink"
+                : "border-line text-muted hover:text-foreground")
+            }
+          >
+            <Mic size={18} />
+          </button>
+        )}
         <button
           type="submit"
           disabled={busy}
