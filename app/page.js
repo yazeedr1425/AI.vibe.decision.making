@@ -308,6 +308,21 @@ export default function Home() {
               />
             </Reveal>
           </>
+        ) : step === "thinking" ? (
+          // التفكير والنتيجة يجيبان سطحهما الحبري بنفسهما —
+          // البطاقة الورقية للخطوات اللي يكتب فيها المستخدم
+          <Thinking />
+        ) : step === "result" && scored.length > 0 ? (
+          <Result
+            scored={scored}
+            recommendation={recommendation}
+            apiError={apiError}
+            saveState={saveState}
+            tone={tone}
+            onRestart={restart}
+            onBack={() => setStep("ratings")}
+            onRetry={decide}
+          />
         ) : (
           <Card>
             {step === "voice" && (
@@ -351,21 +366,6 @@ export default function Home() {
                   setQuestionIndex(category.questions.length - 1);
                   setStep("questions");
                 }}
-              />
-            )}
-
-            {step === "thinking" && <Thinking />}
-
-            {step === "result" && scored.length > 0 && (
-              <Result
-                scored={scored}
-                recommendation={recommendation}
-                apiError={apiError}
-                saveState={saveState}
-                tone={tone}
-                onRestart={restart}
-                onBack={() => setStep("ratings")}
-                onRetry={decide}
               />
             )}
           </Card>

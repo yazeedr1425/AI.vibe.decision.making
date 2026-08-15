@@ -1,10 +1,10 @@
 "use client";
 
 import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
-import { GhostButton, Progress, SectionHeading } from "./ui";
-import { ArrowRight } from "./icons";
+import { Progress, QuietButton, SectionHeading } from "./ui";
+import { ArrowRight, Check } from "./icons";
 
-// سؤال واحد في كل شاشة، مثل ملف التصميم
+// سؤال واحد في كل شاشة — ورقة تُملأ سطراً سطراً
 export default function QuestionStep({
   category,
   index,
@@ -34,34 +34,45 @@ export default function QuestionStep({
       <div
         role="radiogroup"
         aria-label={question.label}
-        className="flex flex-col gap-2"
+        className="flex flex-col gap-2.5"
       >
-        {question.choices.map((c) => (
-          <button
-            key={c.value}
-            type="button"
-            role="radio"
-            aria-checked={answers[question.key] === c.value}
-            onClick={() => pick(c.value)}
-            className={
-              "flex items-center justify-between gap-4 rounded-2xl border px-5 py-4 text-start transition-all " +
-              (answers[question.key] === c.value
-                ? "border-foreground bg-accent text-accent-ink"
-                : "border-line bg-card hover:border-foreground/40")
-            }
-          >
-            <span className="font-medium">{c.label}</span>
-          </button>
-        ))}
+        {question.choices.map((c) => {
+          const checked = answers[question.key] === c.value;
+          return (
+            <button
+              key={c.value}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              onClick={() => pick(c.value)}
+              className={
+                "group flex items-center justify-between gap-4 rounded-2xl border px-5 py-4 text-start transition-all " +
+                (checked
+                  ? "border-ink bg-ink text-on-ink"
+                  : "border-line-strong hover:border-ink hover:bg-card-sunken")
+              }
+            >
+              <span className="text-lg font-medium">{c.label}</span>
+              {/* الصح يلمّح وين بيوصل الضغط، ويثبت على المختار */}
+              <Check
+                size={18}
+                className={
+                  "shrink-0 transition-opacity " +
+                  (checked ? "opacity-100" : "opacity-0 group-hover:opacity-30")
+                }
+              />
+            </button>
+          );
+        })}
       </div>
 
-      <GhostButton
+      <QuietButton
         onClick={onBack}
         className="flex items-center gap-1.5 self-start"
       >
-        <ArrowRight size={16} />
+        <ArrowRight size={15} />
         رجوع
-      </GhostButton>
+      </QuietButton>
     </div>
   );
 }

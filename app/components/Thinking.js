@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Tag } from "./ui";
 import { Dices } from "./icons";
 
 const LINES = [
@@ -12,6 +11,8 @@ const LINES = [
   "لحظة، أبي أطلع بشي ذكي…",
 ];
 
+// لحظة الحكم حبرية: الورق للكتابة والحبر للفصل. الانقلاب من بطاقة
+// فاتحة لغامقة يقول «خلصت الأسئلة» بلا كلمة واحدة.
 export default function Thinking() {
   const [line, setLine] = useState(0);
 
@@ -22,7 +23,7 @@ export default function Thinking() {
 
   return (
     <div
-      className="flex flex-col items-center gap-6 py-12"
+      className="on-ink card-shadow flex flex-col items-center gap-7 rounded-[var(--radius-card)] bg-ink px-6 py-16 text-on-ink"
       role="status"
       aria-live="polite"
       aria-busy="true"
@@ -37,11 +38,13 @@ export default function Thinking() {
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2">
-        <p tabIndex={-1} data-step-heading className="text-lg font-semibold">
-          {LINES[line]}
-        </p>
-      </div>
+      <p
+        tabIndex={-1}
+        data-step-heading
+        className="text-xl font-semibold"
+      >
+        {LINES[line]}
+      </p>
 
       <div className="flex gap-1.5">
         {[0, 1, 2].map((i) => (

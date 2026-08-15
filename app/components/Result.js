@@ -5,7 +5,7 @@ import { chancesFor, weightedRandomPick } from "@/lib/engine/score";
 import { detailedBreakdown, reasonPhrase } from "@/lib/engine/explain";
 import { voice } from "@/lib/engine/tone";
 import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
-import { GhostButton, PrimaryButton, Tag } from "./ui";
+import { Card, GhostButton, PrimaryButton, QuietButton, hindi } from "./ui";
 import {
   ArrowRight,
   ChevronDown,
@@ -13,12 +13,16 @@ import {
   CircleCheck,
   Dices,
   Scale,
+  Sparkles,
   TriangleAlert,
   Trophy,
 } from "./icons";
 
 const SPIN_MS = 1200;
 
+// الحكم حبري والحساب ورقي — نفس بطاقة «انحسمت» العائمة في الهيرو،
+// لكن بالحجم الكامل: اللي شافه المستخدم وعداً أول ما دخل يشوفه
+// الآن حقيقةً.
 export default function Result({
   scored,
   recommendation,
@@ -73,14 +77,18 @@ export default function Result({
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* القرار — يُعلن ويستقبل التركيز أول ما تظهر النتيجة */}
-      <header className="flex flex-col gap-2">
-        <p className="text-sm text-muted">قرارك هو</p>
+    <div className="flex flex-col gap-6">
+      {/* الحكم — يُعلن ويستقبل التركيز أول ما تظهر النتيجة */}
+      <section className="on-ink card-shadow rounded-[var(--radius-card)] bg-ink p-7 text-on-ink sm:p-10">
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-accent">
+          <Sparkles size={13} />
+          انحسمت
+        </p>
+        <p className="mt-4 text-sm text-on-ink-muted">قرارك هو</p>
         <h2
           tabIndex={-1}
           data-step-heading
-          className="text-4xl font-bold sm:text-5xl"
+          className="display mt-1 text-5xl font-bold sm:text-6xl"
         >
           {chosen}
         </h2>
@@ -88,26 +96,22 @@ export default function Result({
         <p className="sr-only">
           قرارك هو {chosen}. {reason}
         </p>
-      </header>
 
-      {/* فقاعة المحادثة */}
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 -rotate-3 items-center justify-center rounded-2xl bg-accent text-lg font-bold text-accent-ink">
-          حـ
-        </span>
-        <div className="relative rounded-2xl rounded-ss-sm border border-line bg-card px-5 py-4">
-          <span
-            aria-hidden
-            className="absolute -start-1.5 top-3 h-3 w-3 rotate-45 border-b border-s border-line bg-card"
-          />
-          <p className="leading-relaxed">{reason}</p>
+        {/* فقاعة المحادثة */}
+        <div className="mt-8 flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 -rotate-3 items-center justify-center rounded-2xl bg-accent text-lg font-bold text-accent-ink">
+            حـ
+          </span>
+          <div className="rounded-2xl rounded-ss-sm border border-line-ink bg-white/5 px-5 py-4">
+            <p className="leading-relaxed">{reason}</p>
+          </div>
         </div>
-      </div>
+      </section>
 
       {apiError && (
         <p
           role="alert"
-          className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted"
+          className="rounded-2xl border border-dashed border-line-strong bg-card px-5 py-4 text-sm text-muted"
         >
           <TriangleAlert size={15} className="me-1.5 inline align-text-bottom" />
           {apiError} — هذي نتيجة الحساب المحلي بالأوزان.
@@ -115,7 +119,7 @@ export default function Result({
             <button
               type="button"
               onClick={onRetry}
-              className="ms-2 text-accent underline underline-offset-4"
+              className="ms-2 text-accent-strong underline underline-offset-4"
             >
               جرب مرة ثانية
             </button>
@@ -124,7 +128,7 @@ export default function Result({
       )}
 
       {disagrees && (
-        <p className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted">
+        <p className="rounded-2xl border border-dashed border-line-strong bg-card px-5 py-4 text-sm text-muted">
           <Scale size={15} className="me-1.5 inline align-text-bottom" />
           حسابي بالأوزان يقول «{localWinner.label}»، بس شفت إن «{chosen}» أنسب
           لك اليوم.
@@ -132,12 +136,10 @@ export default function Result({
       )}
 
       {/* الترتيب حسب الأوزان */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="font-semibold">حسابك بالأوزان</h3>
-        </div>
+      <Card className="flex flex-col gap-4">
+        <h3 className="text-lg font-bold">حسابك بالأوزان</h3>
 
-        {scored.map((s, i) => (
+        {scored.map((s) => (
           <div key={s.id} className="flex flex-col gap-1.5">
             <div className="flex items-baseline justify-between gap-3">
               <span
@@ -149,15 +151,13 @@ export default function Result({
                 {s.label === chosen && <Trophy size={15} />}
                 {s.label}
               </span>
-              <span className="text-sm tabular-nums text-muted">
-                {s.percent}٪
-              </span>
+              <span className="text-sm text-muted">{hindi(s.percent)}٪</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-line">
+            <div className="h-1.5 overflow-hidden rounded-full bg-line">
               <div
                 className={
                   "h-full rounded-full transition-all duration-700 " +
-                  (s.label === chosen ? "bg-accent" : "bg-muted/40")
+                  (s.label === chosen ? "bg-accent" : "bg-muted-soft/60")
                 }
                 style={{ width: `${s.percent}%` }}
               />
@@ -168,7 +168,7 @@ export default function Result({
         <button
           type="button"
           onClick={() => setShowDetails((v) => !v)}
-          className="flex items-center gap-1 self-start text-sm text-accent underline underline-offset-4"
+          className="flex items-center gap-1 self-start text-sm text-accent-strong underline underline-offset-4"
         >
           {showDetails ? "أخفِ التفاصيل" : "وضّح أكثر"}
           {showDetails ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -186,10 +186,10 @@ export default function Result({
             ))}
           </ul>
         )}
-      </section>
+      </Card>
 
       {/* أنا متردد جدًا */}
-      <section className="rounded-2xl border border-dashed border-line bg-card p-5">
+      <section className="rounded-[var(--radius-card)] border border-dashed border-line-strong bg-card-sunken p-6">
         <p className="text-sm text-muted">{say.hesitantPrompt}</p>
 
         {(spinning || randomPick) && (
@@ -228,7 +228,9 @@ export default function Result({
           </GhostButton>
           <span className="text-xs text-muted">
             الحظوظ:{" "}
-            {withChances.map((c) => `${c.label} ${c.chance}٪`).join(" · ")}
+            {withChances
+              .map((c) => `${c.label} ${hindi(c.chance)}٪`)
+              .join(" · ")}
           </span>
         </div>
       </section>
@@ -256,10 +258,10 @@ export default function Result({
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <GhostButton onClick={onBack} className="flex items-center gap-1.5">
-          <ArrowRight size={16} />
+        <QuietButton onClick={onBack} className="flex items-center gap-1.5">
+          <ArrowRight size={15} />
           عدّل التقييمات
-        </GhostButton>
+        </QuietButton>
         <PrimaryButton onClick={onRestart}>{say.restart}</PrimaryButton>
       </div>
     </div>

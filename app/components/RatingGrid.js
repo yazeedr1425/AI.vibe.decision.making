@@ -22,7 +22,7 @@ function scaleFor(criterion) {
     { value: 3, label: criterion.high },
   ];
 }
-import { Choice, GhostButton, PrimaryButton, SectionHeading, Tag } from "./ui";
+import { Choice, PrimaryButton, QuietButton, SectionHeading } from "./ui";
 import { ArrowLeft, ArrowRight } from "./icons";
 
 // شبكة تقييم مضغوطة: كل خيار × كل معيار.
@@ -46,7 +46,10 @@ export default function RatingGrid({
   const criteria = [...category.criteria].sort(
     (a, b) => weights[b.key] - weights[a.key],
   );
-  const topWeight = Math.max(...Object.values(weights));
+  // لو تساوت الأوزان كلها ما فيه «أهم» — وسم كل شي يساوي وسم لا شي
+  const weightValues = Object.values(weights);
+  const topWeight = Math.max(...weightValues);
+  const hasTop = weightValues.some((v) => v !== topWeight);
 
   return (
     <div className="flex flex-col gap-8">
@@ -59,10 +62,10 @@ export default function RatingGrid({
         {options.map((o) => (
           <div
             key={o.id}
-            className="rounded-2xl border border-line bg-card p-4"
+            className="rounded-2xl bg-card-sunken p-5"
           >
-            <h3 className="mb-3 font-semibold">{o.label}</h3>
-            <div className="flex flex-col gap-3">
+            <h3 className="mb-4 text-lg font-bold">{o.label}</h3>
+            <div className="flex flex-col gap-3.5">
               {criteria.map((c) => (
                 <div
                   key={c.key}
@@ -70,10 +73,8 @@ export default function RatingGrid({
                 >
                   <span className="flex items-center gap-2 text-sm text-muted">
                     {c.label}
-                    {weights[c.key] === topWeight && (
-                      <Tag lang="ar" className="rounded-full bg-accent/10 px-2 py-0.5 !text-accent">
-                        الأهم
-                      </Tag>
+                    {hasTop && weights[c.key] === topWeight && (
+                      <span className="pill py-0.5">الأهم</span>
                     )}
                   </span>
                   {/* اختيار واحد من ثلاثة — دلالات radio تخلي قارئ
@@ -108,10 +109,10 @@ export default function RatingGrid({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <GhostButton onClick={onBack} className="flex items-center gap-1.5">
-          <ArrowRight size={16} />
+        <QuietButton onClick={onBack} className="flex items-center gap-1.5">
+          <ArrowRight size={15} />
           رجوع
-        </GhostButton>
+        </QuietButton>
         <PrimaryButton onClick={onNext} className="flex items-center gap-2">
           احسمها لي
           <ArrowLeft size={18} />

@@ -200,12 +200,17 @@ export function SectionHeading({ tag, title, sub, className = "" }) {
    ما يقول للمستخدم كم بقي.
    --------------------------------------------------------------- */
 
+// أرقام هندية — الخط العربي يحوّل بعض الأرقام اللاتينية وبعضها لا،
+// فتطلع الأعداد خليطاً من النظامين إلا لو حوّلنا نحن
+export const hindi = (n) =>
+  String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+
 export function Progress({ current, total }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs font-semibold tabular-nums text-muted">
-        {current}
-        <span className="text-muted-soft"> / {total}</span>
+      <span className="text-xs font-semibold text-muted">
+        {hindi(current)}
+        <span className="text-muted-soft"> / {hindi(total)}</span>
       </span>
       <div className="h-px flex-1 bg-line-strong">
         <div
