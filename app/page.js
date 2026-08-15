@@ -9,6 +9,7 @@ import { decisionService } from "@/lib/services/decisions";
 import { groupService } from "@/lib/services/group";
 import { profileService } from "@/lib/services/profile";
 import { useMoodTheme } from "@/lib/theme/useMoodTheme";
+import { useScreen } from "@/lib/a11y/ScreenContext";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Landing from "./components/Landing";
 import QuestionStep from "./components/QuestionStep";
@@ -30,6 +31,7 @@ const initialOptions = () => [
 export default function Home() {
   const { user, signOut, accessToken } = useAuth();
   const router = useRouter();
+  const { register: registerScreen, registerActions, announce } = useScreen();
   const [step, setStep] = useState("landing");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [categoryId, setCategoryId] = useState(null);
@@ -231,6 +233,75 @@ export default function Home() {
     setApiError(null);
     setSaveState(null);
   };
+
+  // ---------------------------------------------------------------
+  // تسجيل الشاشة للمساعد: لقطة يقرأها ليجاوب «وين أنا؟»، وأفعال
+  // ينفذها بدل ما يتنقل المستخدم بالـ Tab لكل زر.
+  // التسجيل في كل رندر عمداً — الحالة تتغير باستمرار، والتخزين في
+  // ref فما فيه إعادة رندر.
+  // ---------------------------------------------------------------
+  const SCREENS = {
+    landing: "شاشة البداية — تكتب خياراتك وتختار نوع القرار",
+    questions: "أسئلة سريعة تحدد وش يهمك",
+    ratings: "تقييم سريع لكل خيار",
+    thinking: "احسم يفكر الحين",
+    result: "النتيجة والترشيح",
+    breakdown: "تفكيك القرار الكبير",
+  };
+
+  registerScreen({
+    screen: SCREENS[step] ?? step,
+    summary:
+      step === "landing"
+        ? `تحتاج نوع القرار وخيارين على الأقل قبل ما تحسم. ${
+            categoryId ? "النوع مختار." : "النوع ما انختار بعد."
+          }`
+        : step === "questions"
+          ? `سؤال ${questionIndex + 1} من ${category?.questions.length ?? 0}.`
+          : step === "result"
+            ? "تقدر تطلب تعيد سماع النتيجة، أو تبدأ قراراً جديداً."
+            : "",
+    facts: {
+      options: filledOptions.map((o) => o.label),
+      categoryId,
+      mood,
+      question:
+        step === "questions" ? category?.questions[questionIndex]?.label : null,
+      result:
+        step === "result" && recommendation
+          ? `${recommendation.selected_option} — ${recommendation.funny_reason}`
+          : null,
+      signedIn: Boolean(user),
+    },
+  });
+
+  registerActions({
+    setOptions: (labels) =>
+      setOptions(labels.map((label, i) => ({ id: `guide-${i}`, label }))),
+    setCategory: setCategoryId,
+    setMood,
+    decide: () => {
+      if (!categoryId || filledOptions.length < 2) return;
+      decide();
+    },
+    breakdown: () => setStep("breakdown"),
+    restart,
+    readResult: () =>
+      recommendation
+        ? `قرارك هو ${recommendation.selected_option}. ${recommendation.funny_reason}`
+        : "ما فيه نتيجة معروضة الحين.",
+  });
+
+  // النتيجة تصل بعد انتظار والشاشة تتبدل تحت المستخدم — بلا إعلان
+  // يسمع صمتاً ولا يدري إن القرار جاهز. الإعلان مرة واحدة لكل نتيجة.
+  const announcedRef = useRef(null);
+  useEffect(() => {
+    if (step !== "result" || !recommendation) return;
+    const line = `قرارك هو ${recommendation.selected_option}. ${recommendation.funny_reason}`;
+    if (announcedRef.current === line) return;
+    announcedRef.current = line;
+    announce(line);
+  }, [step, recommendation, announce]);
 
   const isLanding = step === "landing";
 

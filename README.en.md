@@ -33,13 +33,16 @@ As you type, an agent reads the trade-off between your options and suggests a th
 ### 6 — A history that learns
 Under every saved decision: "was it the right call?". The answers feed your **decision personality**: regret rate by category, the option you keep listing but never pick, the matchup you keep reopening (Al Baik vs shawarma, four times!), and when your indecision strikes — in *your* timezone. All statistics are computed in code; Gemini interprets, it never counts.
 
-### 8 — Day planner (`/plan`)
+### 8 — Accessibility guide
+Built for people who cannot see the screen or do not use a mouse: open it with Alt+M anywhere, ask "where am I?" and get an answer from the real screen snapshot, or have it act for you — "make it burger and sushi, category food" fills both fields and the category in one go. **It never speaks**: the reply is text placed in an `aria-live` region so the user's own screen reader voices it, at their speed — an app that self-voices fights the screen reader. The verdict is announced automatically the moment it lands.
+
+### 9 — Day planner (`/plan`)
 Pick mood, vibe, budget, and duration; the agent builds a real schedule: venues from Google Places (actually open at visit time), travel times from the Routes API, and Open-Meteo weather that steers outdoor stops away from peak heat — and a weather failure never breaks the plan.
 
-### 9 — Risk analysis (`/analyze`)
+### 10 — Risk analysis (`/analyze`)
 For one big decision: a SWOT analysis and a sourced decision tree, saved to the `analyses` table.
 
-### 10 — Accounts & verification
+### 11 — Accounts & verification
 Supabase Auth sign-up, with the confirmation email sent from **our own Arabic template** through Mailtrap on our domain — not Supabase's English default. If the send fails, the half-created account is deleted automatically so retries stay clean. Signing out asks for a confirming second tap.
 
 ---
@@ -87,6 +90,7 @@ email send/               the verification template in Supabase syntax
 | `GET/POST /api/group` | group-vote verdict / close (creator's token) | 20 / 5 per min + 24h cache |
 | `GET /api/patterns` | decision personality from your history | **token required** + browser timezone |
 | `POST /api/signup` | account creation + Mailtrap verification | 5/min + compensating delete |
+| `POST /api/guide` | accessibility guide — describes the screen and acts, text not speech | 30/min |
 | `POST /api/plan` | day plan (Places + Routes + weather) | — |
 | `POST /api/analyze` | SWOT + decision tree | — |
 

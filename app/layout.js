@@ -1,5 +1,7 @@
 import { IBM_Plex_Sans_Arabic, Space_Grotesk } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { ScreenProvider } from "@/lib/a11y/ScreenContext";
+import Assistant from "./components/Assistant";
 import "./globals.css";
 
 const plexArabic = IBM_Plex_Sans_Arabic({
@@ -33,7 +35,11 @@ export default function RootLayout({ children }) {
           تخطَّ إلى المحتوى
         </a>
         <AuthProvider>
-          {children}
+          <ScreenProvider>
+            {children}
+            {/* آخر عنصر: يستقبل التركيز بعد المحتوى لا قبله */}
+            <Assistant />
+          </ScreenProvider>
         </AuthProvider>
       </body>
     </html>

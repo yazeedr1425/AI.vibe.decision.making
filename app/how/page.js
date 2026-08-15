@@ -182,6 +182,27 @@ export default function HowItWorks() {
           </p>
         </section>
 
+        {/* الوصول */}
+        <section className="flex flex-col gap-4 rounded-2xl border border-dashed border-line p-6 sm:p-8">
+          <h2 className="flex items-center gap-2 text-2xl font-semibold">
+            <Sparkles size={22} className="text-accent" />
+            ما تشوف الشاشة؟
+          </h2>
+          <p className="leading-relaxed text-muted">
+            فيه مساعد وصول مبني للي يستخدم قارئ شاشة أو لوحة مفاتيح بس.
+            افتحه بـ <strong className="font-semibold text-foreground">Alt</strong>{" "}
+            مع حرف <strong className="font-semibold text-foreground">M</strong> من
+            أي مكان، واسأله وين أنت وش تقدر تسوي — أو قل له ينفّذ: «حطها
+            برجر وسوشي وخلي النوع أكل» ويعبّيها كلها بدون ما تتنقل بين
+            الحقول.
+          </p>
+          <p className="text-sm leading-relaxed text-muted">
+            وما ينطق بصوته: يكتب رده وقارئ الشاشة عندك يقرأه بصوتك
+            وسرعتك وإعداداتك — عشان ما يصير صوتان فوق بعض. والنتيجة
+            تنعلن أول ما تجهز بدون ما تدوّر عليها.
+          </p>
+        </section>
+
         {/* الخصوصية */}
         <section className="flex flex-col gap-4">
           <h2 className="text-2xl font-semibold sm:text-3xl">وقرارك لك</h2>
