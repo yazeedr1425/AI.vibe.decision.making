@@ -6,6 +6,7 @@ import { decisionService } from "@/lib/services/decisions";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import OutcomeAsk from "./OutcomeAsk";
 import PatternsCard from "./PatternsCard";
+import { Eyebrow, GhostButton, InkButton } from "./ui";
 import { ArrowLeft, CircleCheck, TriangleAlert } from "./icons";
 
 // كان معروضاً ٣، وقراءة الأنماط تحتاج ٥ مقيَّمة — فما كان للمستخدم
@@ -13,7 +14,9 @@ import { ArrowLeft, CircleCheck, TriangleAlert } from "./icons";
 const COMPACT_LIMIT = 6;
 const FULL_LIMIT = 24;
 
-const rtf = new Intl.RelativeTimeFormat("ar", { numeric: "auto" });
+// ‎-u-nu-arab‎ يفرض الأرقام الهندية — locale ‏"ar" وحدها تترك القرار
+// للمنصة، وكروم على ويندوز يطلع أرقاماً لاتينية وسط الجملة العربية
+const rtf = new Intl.RelativeTimeFormat("ar-u-nu-arab", { numeric: "auto" });
 
 function relativeTime(iso) {
   if (!iso) return "";
@@ -75,75 +78,76 @@ export default function HistorySection({ onSignIn, refreshKey }) {
       : { status: "loading", decisions: [] };
 
   return (
-    <section id="history" className="flex flex-col gap-5">
+    <section id="history" className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm text-accent-strong">ارجع لها وقت ما تحتاج</p>
-          <h2 className="text-2xl font-semibold sm:text-3xl">سجل القرارات</h2>
+        <div className="flex flex-col gap-2">
+          <Eyebrow>ارجع لها وقت ما تحتاج</Eyebrow>
+          <h2 className="display text-3xl font-bold sm:text-4xl">
+            سجل القرارات
+          </h2>
         </div>
         {state.status === "ready" &&
           state.decisions.length >= COMPACT_LIMIT && (
-            <button
-              type="button"
+            <GhostButton
               onClick={() =>
-                setLimit((l) => (l === COMPACT_LIMIT ? FULL_LIMIT : COMPACT_LIMIT))
+                setLimit((l) =>
+                  l === COMPACT_LIMIT ? FULL_LIMIT : COMPACT_LIMIT,
+                )
               }
-              className="flex items-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm transition-colors hover:border-muted-soft"
+              className="flex items-center gap-2"
             >
               <ArrowLeft size={16} />
               {limit === COMPACT_LIMIT ? "عرض السجل كامل" : "اعرض أقل"}
-            </button>
+            </GhostButton>
           )}
       </div>
 
       {state.status === "anonymous" && (
-        <div className="rounded-2xl border border-dashed border-line bg-card p-6 text-center">
-          <p className="font-medium">سجلك يبدأ بعد أول قرار تحفظه.</p>
-          <p className="mt-1 text-sm text-muted">
+        <div className="rounded-[var(--radius-card)] border border-dashed border-line-strong bg-card p-8 text-center">
+          <p className="text-lg font-semibold">
+            سجلك يبدأ بعد أول قرار تحفظه.
+          </p>
+          <p className="mt-1.5 text-sm text-muted">
             سجّل دخولك عشان نحفظ قراراتك ونتعلم من عاداتك.
           </p>
-          <button
-            type="button"
-            onClick={onSignIn}
-            className="mt-4 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85"
-          >
+          <InkButton onClick={onSignIn} className="mt-5 px-6 py-2.5 text-sm">
             دخول
-          </button>
+          </InkButton>
         </div>
       )}
 
       {state.status === "loading" && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-32 animate-pulse rounded-2xl border border-line bg-card"
+              className="h-36 animate-pulse rounded-[1.5rem] border border-line bg-card"
             />
           ))}
         </div>
       )}
 
       {state.status === "error" && (
-        <p className="flex items-center gap-2 rounded-2xl border border-dashed border-line bg-card p-5 text-sm text-muted">
+        <p className="flex items-center gap-2 rounded-[1.5rem] border border-dashed border-line-strong bg-card p-5 text-sm text-muted">
           <TriangleAlert size={15} className="shrink-0" />
           تعذر جلب السجل. {state.message}
         </p>
       )}
 
       {state.status === "ready" && state.decisions.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-line bg-card p-6 text-center text-sm text-muted">
+        <div className="rounded-[1.5rem] border border-dashed border-line-strong bg-card p-6 text-center text-sm text-muted">
           ما فيه قرارات محفوظة بعد — أول قرار تحسمه بيظهر هنا.
         </div>
       )}
 
       {state.status === "ready" && state.decisions.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {state.decisions.map((d) => {
             const category = getCategory(d.category);
             return (
               <article
                 key={d.id}
-                className="card-shadow flex flex-col gap-3 rounded-2xl border border-line bg-card p-5"
+                className="card-shadow flex flex-col gap-3 rounded-[1.5rem] border border-line bg-card p-5 transition-transform hover:-translate-y-0.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="pill">
@@ -155,11 +159,15 @@ export default function HistorySection({ onSignIn, refreshKey }) {
                   </span>
                 </div>
 
-                <h3 className="font-semibold leading-snug">{d.title}</h3>
+                <h3 className="font-bold leading-snug">{d.title}</h3>
 
+                {/* المختار بحبرٍ يملأ — نفس لغة الاختيار في كل الموقع */}
                 {d.chosen && (
-                  <p className="flex items-center gap-2 rounded-xl bg-background px-3 py-2 text-sm">
-                    <CircleCheck size={18} className="shrink-0 text-accent" />
+                  <p className="flex items-center gap-2 rounded-xl bg-card-sunken px-3 py-2 text-sm font-medium">
+                    <CircleCheck
+                      size={18}
+                      className="shrink-0 text-accent-strong"
+                    />
                     {d.chosen}
                   </p>
                 )}

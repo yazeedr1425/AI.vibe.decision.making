@@ -63,8 +63,8 @@ export default function OutcomeAsk({ decisionId, satisfaction, onRecorded }) {
               className={
                 "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors disabled:opacity-60 " +
                 (active
-                  ? "border-accent bg-accent text-accent-ink"
-                  : "border-line text-muted hover:border-muted-soft hover:text-foreground")
+                  ? "border-ink bg-ink text-on-ink"
+                  : "border-line-strong text-muted hover:border-ink hover:text-ink")
               }
             >
               <Icon size={13} />

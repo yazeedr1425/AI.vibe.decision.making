@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { patternsService } from "@/lib/services/patterns";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { hindi } from "./ui";
 import { Brain, Lightbulb, RefreshCw, Sparkles, TriangleAlert } from "./icons";
 
 /**
@@ -13,6 +14,9 @@ import { Brain, Lightbulb, RefreshCw, Sparkles, TriangleAlert } from "./icons";
  *
  * القراءة بضغطة لا تلقائياً: النداء يكلّف، والسجل ما يتغيّر بين زيارة
  * وزيارة إلا لو حسم المستخدم قراراً جديداً.
+ *
+ * البطاقة حبرية عمداً: الحبر في هذا التصميم للأحكام — والقراءة حكمٌ
+ * على صاحب السجل نفسه، فتقفل الصفحة بنفس لون بطاقة النتيجة.
  */
 export default function PatternsCard() {
   const { user, accessToken } = useAuth();
@@ -69,10 +73,10 @@ export default function PatternsCard() {
     fetched?.userId === user.id ? fetched : { status: "idle" };
 
   return (
-    <div className="card-shadow rounded-2xl border border-line bg-card p-5 sm:p-6">
+    <div className="on-ink card-shadow rounded-[var(--radius-card)] bg-ink p-6 text-on-ink sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 font-semibold">
-          <Brain size={18} className="text-accent" />
+        <h3 className="flex items-center gap-2.5 text-lg font-bold">
+          <Brain size={20} className="text-accent" />
           شخصيتك القرارية
         </h3>
 
@@ -80,12 +84,12 @@ export default function PatternsCard() {
           <button
             type="button"
             onClick={read}
-            className="flex items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-sm transition-colors hover:border-muted-soft"
+            className="flex items-center gap-1.5 rounded-full border border-line-ink px-4 py-2 text-sm transition-colors hover:border-on-ink"
           >
             {state.status === "ready" ? (
               <RefreshCw size={14} />
             ) : (
-              <Sparkles size={14} />
+              <Sparkles size={14} className="text-accent" />
             )}
             {state.status === "ready" ? "اقرأها من جديد" : "اقرأ أنماطي"}
           </button>
@@ -93,19 +97,19 @@ export default function PatternsCard() {
       </div>
 
       {state.status === "idle" && (
-        <p className="mt-3 text-sm leading-relaxed text-muted">
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-ink-muted">
           كل ما قلت لنا نتيجة قرار، صارت القراءة أدق. اضغط الزر ونقول لك وش
           نشوفه في طريقة حسمك.
         </p>
       )}
 
       {state.status === "loading" && (
-        <div className="mt-4 flex flex-col gap-2" aria-live="polite">
+        <div className="mt-5 flex flex-col gap-2.5" aria-live="polite">
           <span className="sr-only">نقرأ سجلك…</span>
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-4 animate-pulse rounded-full bg-[color:var(--line)]"
+              className="h-4 animate-pulse rounded-full bg-white/10"
               style={{ width: `${100 - i * 18}%` }}
             />
           ))}
@@ -113,17 +117,17 @@ export default function PatternsCard() {
       )}
 
       {state.status === "needs_more" && (
-        <p className="mt-3 text-sm leading-relaxed text-muted">
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-ink-muted">
           {state.rated === 0
             ? "ما قيّمت أي قرار بعد. قل لنا عن قراراتك السابقة كانت صح ولا لا، وبعدها نقرأ لك."
-            : `قيّمت ${state.rated} قرارات — باقي ${state.need} وتبان أنماطك. أقل من كذا نقرأ صدفة مو نمطاً.`}
+            : `قيّمت ${hindi(state.rated)} قرارات — باقي ${hindi(state.need)} وتبان أنماطك. أقل من كذا نقرأ صدفة مو نمطاً.`}
         </p>
       )}
 
       {state.status === "error" && (
         <p
           role="alert"
-          className="mt-3 flex items-center gap-2 text-sm text-muted"
+          className="mt-3 flex items-center gap-2 text-sm text-on-ink-muted"
         >
           <TriangleAlert size={15} className="shrink-0" />
           {state.message}
@@ -131,8 +135,8 @@ export default function PatternsCard() {
       )}
 
       {state.status === "ready" && (
-        <div className="mt-4 flex flex-col gap-4">
-          <p className="text-lg font-medium leading-snug">
+        <div className="mt-5 flex flex-col gap-4">
+          <p className="display text-2xl font-bold leading-snug">
             {state.reading.headline}
           </p>
 
@@ -140,10 +144,10 @@ export default function PatternsCard() {
             {state.reading.patterns.map((pattern) => (
               <li
                 key={pattern.title}
-                className="rounded-xl bg-background px-4 py-3"
+                className="rounded-xl bg-white/5 px-4 py-3"
               >
-                <p className="text-sm font-medium">{pattern.title}</p>
-                <p className="mt-0.5 text-sm leading-relaxed text-muted">
+                <p className="text-sm font-semibold">{pattern.title}</p>
+                <p className="mt-0.5 text-sm leading-relaxed text-on-ink-muted">
                   {pattern.detail}
                 </p>
               </li>
@@ -152,18 +156,18 @@ export default function PatternsCard() {
 
           {/* الفقرة اللي ما أحد يبي يقرأها وهي اللي تنفع */}
           {state.reading.blindSpot && (
-            <div className="rounded-xl border border-dashed border-line px-4 py-3">
-              <p className="flex items-center gap-1.5 text-sm font-medium">
+            <div className="rounded-xl border border-dashed border-line-ink px-4 py-3">
+              <p className="flex items-center gap-1.5 text-sm font-semibold">
                 <TriangleAlert size={15} className="shrink-0 text-accent" />
                 النقطة العمياء
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-muted">
+              <p className="mt-1 text-sm leading-relaxed text-on-ink-muted">
                 {state.reading.blindSpot}
               </p>
             </div>
           )}
 
-          <p className="flex items-start gap-2 rounded-xl bg-accent px-4 py-3 text-sm leading-relaxed text-accent-ink">
+          <p className="glow-sm flex items-start gap-2 rounded-xl bg-accent px-4 py-3 text-sm leading-relaxed text-accent-ink">
             <Lightbulb size={16} className="mt-0.5 shrink-0" />
             {state.reading.advice}
           </p>
@@ -171,9 +175,9 @@ export default function PatternsCard() {
           {/* بصيغة "على ٦ قرار" ينكسر العدد المعدود — الصحيح "قرارات"
               للثلاثة حتى العشرة و"قرارًا" فوقها. نتفادى التمييز أصلاً
               بدل ما نبني جدول جمع لسطر واحد. */}
-          <p className="text-xs text-muted-soft">
-            مبنية على القرارات اللي قيّمتها: {state.stats.rated} من{" "}
-            {state.stats.total} محفوظة.
+          <p className="text-xs text-on-ink-muted">
+            مبنية على القرارات اللي قيّمتها: {hindi(state.stats.rated)} من{" "}
+            {hindi(state.stats.total)} محفوظة.
           </p>
         </div>
       )}
