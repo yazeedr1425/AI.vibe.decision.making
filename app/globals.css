@@ -71,6 +71,7 @@
   --color-muted: var(--muted);
   --color-muted-soft: var(--muted-soft);
   --font-sans: var(--font-arabic);
+  --font-heading: var(--font-heading);
   --font-latin: var(--font-latin);
 }
 
@@ -81,6 +82,17 @@ body {
   transition:
     background-color 600ms ease,
     color 600ms ease;
+}
+
+/* العناوين بالمرعى، والمتن ببلكس. التطبيق على الوسوم لا على صنف
+   يعني إن أي عنوان جديد ياخذه بلا ما ينتبه أحد */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading), var(--font-arabic), system-ui, sans-serif;
 }
 
 * {

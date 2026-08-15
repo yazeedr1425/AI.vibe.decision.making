@@ -1,4 +1,8 @@
-import { IBM_Plex_Sans_Arabic, Space_Grotesk } from "next/font/google";
+import {
+  Almarai,
+  IBM_Plex_Sans_Arabic,
+  Space_Grotesk,
+} from "next/font/google";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { VoiceProvider } from "@/lib/voice/VoiceProvider";
 import "./globals.css";
@@ -7,6 +11,20 @@ const plexArabic = IBM_Plex_Sans_Arabic({
   variable: "--font-arabic",
   subsets: ["arabic", "latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+// العناوين وحدها: المرعى أنعم وأدور من بلكس، والفرق يبان في
+// الأحجام الكبيرة. المتن باقٍ على بلكس — وجه المتن يُقرأ لفقرات
+// كاملة، وتغييره قرار ثانٍ غير قرار العناوين.
+//
+// المرعى ما فيه وزن ٦٠٠، وعناوين المشروع كلها font-semibold (٦٠٠).
+// المتصفح يحلّها لأقرب وزن أعلى = ٧٠٠، وهذا المطلوب فعلاً؛ فنحمّل
+// ٧٠٠ للعناوين و٤٠٠ احتياطاً لأي عنوان بلا صنف وزن — بلا ٨٠٠ لأن
+// ما فيه ما يطلبه.
+const almarai = Almarai({
+  variable: "--font-heading",
+  subsets: ["arabic"],
+  weight: ["400", "700"],
 });
 
 const spaceGrotesk = Space_Grotesk({
@@ -24,7 +42,7 @@ export default function RootLayout({ children }) {
     <html
       lang="ar"
       dir="rtl"
-      className={`${plexArabic.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${plexArabic.variable} ${almarai.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <a
