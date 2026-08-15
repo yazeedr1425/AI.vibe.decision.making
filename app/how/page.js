@@ -85,7 +85,7 @@ export default function HowItWorks() {
             <Sparkles size={14} />
             كيف يعمل
           </span>
-          <h1 className="text-4xl font-semibold leading-[1.15] sm:text-5xl">
+          <h1 className="display text-4xl font-bold sm:text-5xl">
             من الحيرة إلى قرار، في أقل من دقيقة.
           </h1>
           <p className="max-w-2xl text-lg leading-relaxed text-muted">
@@ -96,14 +96,14 @@ export default function HowItWorks() {
 
         {/* الخطوات */}
         <section className="flex flex-col gap-5">
-          <h2 className="text-2xl font-semibold sm:text-3xl">الخطوات الأربع</h2>
+          <h2 className="display text-2xl font-bold sm:text-3xl">الخطوات الأربع</h2>
           <ol className="grid gap-4 sm:grid-cols-2">
             {STEPS.map((step, i) => {
               const Icon = step.icon;
               return (
                 <li
                   key={step.title}
-                  className="card-shadow flex flex-col gap-3 rounded-2xl border border-line bg-card p-5"
+                  className="card-shadow flex flex-col gap-3 rounded-[1.5rem] border border-line bg-card p-6 transition-transform hover:-translate-y-0.5"
                 >
                   <div className="flex items-center gap-3">
                     <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-soft text-accent-strong">
@@ -123,7 +123,7 @@ export default function HowItWorks() {
 
         {/* حول القرار نفسه */}
         <section className="flex flex-col gap-5">
-          <h2 className="text-2xl font-semibold sm:text-3xl">
+          <h2 className="display text-2xl font-bold sm:text-3xl">
             وحول القرار، أربع قدرات
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -132,7 +132,7 @@ export default function HowItWorks() {
               return (
                 <div
                   key={power.title}
-                  className="card-shadow flex flex-col gap-3 rounded-2xl border border-line bg-card p-5"
+                  className="card-shadow flex flex-col gap-3 rounded-[1.5rem] border border-line bg-card p-6 transition-transform hover:-translate-y-0.5"
                 >
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-soft text-accent-strong">
                     <Icon size={18} />
@@ -148,8 +148,8 @@ export default function HowItWorks() {
         </section>
 
         {/* ليش سؤالين مختلفين */}
-        <section className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold">
+        <section className="card-shadow flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-card p-6 sm:p-8">
+          <h2 className="display text-2xl font-bold">
             ليش نسألك مرتين — أسئلة وتقييم؟
           </h2>
           <p className="leading-relaxed text-muted">
@@ -163,7 +163,7 @@ export default function HowItWorks() {
             بدون الاثنين، نص المعادلة ناقص — نعرف إيش يهمك، بس ما نعرف أي خيار
             يحققه. النتيجة النهائية بسيطة:
           </p>
-          <p className="rounded-xl bg-background px-4 py-3 text-center font-medium">
+          <p className="rounded-xl bg-card-sunken px-4 py-3 text-center font-medium">
             درجة الخيار = مجموع (وزن المعيار × تقييم الخيار فيه)
           </p>
           <p className="text-sm leading-relaxed text-muted">
@@ -174,7 +174,7 @@ export default function HowItWorks() {
 
         {/* المزاج */}
         <section className="flex flex-col gap-4">
-          <h2 className="text-2xl font-semibold sm:text-3xl">والمزاج؟</h2>
+          <h2 className="display text-2xl font-bold sm:text-3xl">والمزاج؟</h2>
           <p className="leading-relaxed text-muted">
             مزاجك يغيّر لون الصفحة كلها، ويضيف{" "}
             <strong className="font-semibold text-foreground">+١</strong> لوزن
@@ -188,8 +188,8 @@ export default function HowItWorks() {
         </section>
 
         {/* الصوت */}
-        <section className="flex flex-col gap-4 rounded-2xl border border-dashed border-line p-6 sm:p-8">
-          <h2 className="flex items-center gap-2 text-2xl font-semibold">
+        <section className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-dashed border-line-strong bg-card-sunken p-6 sm:p-8">
+          <h2 className="flex items-center gap-2 display text-2xl font-bold">
             <Headphones size={22} className="text-accent" />
             تفضّل تتكلم؟
           </h2>
@@ -219,7 +219,7 @@ export default function HowItWorks() {
 
         {/* الخصوصية */}
         <section className="flex flex-col gap-4">
-          <h2 className="text-2xl font-semibold sm:text-3xl">وقرارك لك</h2>
+          <h2 className="display text-2xl font-bold sm:text-3xl">وقرارك لك</h2>
           <p className="leading-relaxed text-muted">
             بدون تسجيل دخول، ما ينحفظ شي — تقدر تستخدم احسم كامل وما يترك أثراً.
             ولو سجّلت دخولك، نحفظ قراراتك في سجلك عشان نفهم عاداتك ونحسّن
@@ -234,12 +234,12 @@ export default function HowItWorks() {
 
         {/* دعوة */}
         <section className="flex flex-col items-start gap-4 border-t border-line pt-10">
-          <h2 className="text-2xl font-semibold">
+          <h2 className="display text-2xl font-bold">
             جرّبه على قرار محتار فيه الحين.
           </h2>
           <Link
             href="/"
-            className="flex items-center gap-2 rounded-2xl bg-accent px-6 py-3.5 text-lg font-semibold text-accent-ink transition-opacity hover:opacity-90"
+            className="glow flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-lg font-semibold text-accent-ink transition-all hover:brightness-95 active:translate-y-px"
           >
             احسمها لي
             <ArrowLeft size={20} />

@@ -217,7 +217,7 @@ export default function VoiceMode({ onComplete, onCancel }) {
           sub={INTRO}
         />
         {!stt && (
-          <p className="rounded-xl border border-dashed border-line bg-card px-4 py-3 text-sm text-muted">
+          <p className="rounded-xl border border-dashed border-line-strong bg-card-sunken px-4 py-3 text-sm text-muted">
             متصفحك ما يدعم التعرف على الكلام — بنكمل بالكتابة، ونفس المحادثة
             تشتغل.
           </p>
@@ -259,8 +259,8 @@ export default function VoiceMode({ onComplete, onCancel }) {
               className={
                 "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed " +
                 (entry.who === "user"
-                  ? "border border-line bg-card"
-                  : "bg-accent text-accent-ink")
+                  ? "border border-line-strong bg-card-sunken"
+                  : "bg-ink text-on-ink")
               }
             >
               <span className="sr-only">
@@ -284,7 +284,7 @@ export default function VoiceMode({ onComplete, onCancel }) {
           placeholder={textOnly ? "اكتب ردك هنا" : "أو اكتبها"}
           aria-label="اكتب ردك"
           disabled={busy}
-          className="w-full rounded-xl border border-line bg-card px-4 py-3 outline-none transition-colors focus:border-accent disabled:opacity-60"
+          className="w-full border-0 border-b-2 border-line bg-transparent px-0.5 py-2.5 text-lg outline-none transition-colors placeholder:text-muted-soft focus:border-ink disabled:opacity-60"
         />
         <PrimaryButton
           type="submit"

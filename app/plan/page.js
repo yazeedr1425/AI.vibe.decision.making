@@ -4,7 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
 import PlanTimeline from "../components/plan/PlanTimeline";
-import { Card, Choice, GhostButton, PrimaryButton, SectionHeading, Tag } from "../components/ui";
+import {
+  Card,
+  Choice,
+  GhostButton,
+  PrimaryButton,
+  SectionHeading,
+  Tag,
+  hindi,
+} from "../components/ui";
 import {
   Check,
   GroupIcon,
@@ -227,7 +235,7 @@ export default function PlanPage() {
                     disabled={loading}
                     maxLength={120}
                     placeholder="مثال: حي النخيل، الرياض"
-                    className="rounded-xl border border-line bg-background px-4 py-3 outline-none transition-colors focus:border-accent disabled:opacity-60"
+                    className="w-full border-0 border-b-2 border-line bg-transparent px-0.5 py-2.5 text-lg outline-none transition-colors placeholder:text-muted-soft focus:border-ink disabled:opacity-60"
                   />
                 </>
               )}
@@ -242,7 +250,7 @@ export default function PlanPage() {
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   disabled={loading}
-                  className="rounded-xl border border-line bg-background px-4 py-3 outline-none transition-colors focus:border-accent disabled:opacity-60"
+                  className="w-full border-0 border-b-2 border-line bg-transparent px-0.5 py-2.5 text-lg outline-none transition-colors placeholder:text-muted-soft focus:border-ink disabled:opacity-60"
                 />
               </label>
 
@@ -321,11 +329,7 @@ export default function PlanPage() {
             {/* النطاق */}
             <label htmlFor="radius" className="flex flex-col gap-2">
               <span className="font-semibold">
-                أبعد مسافة تروحها:{" "}
-                <span dir="ltr" style={{ unicodeBidi: "isolate" }}>
-                  {radiusKm}
-                </span>{" "}
-                كم
+                أبعد مسافة تروحها: {hindi(radiusKm)} كم
               </span>
               <input
                 id="radius"

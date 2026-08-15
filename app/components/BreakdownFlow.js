@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { decisionService } from "@/lib/services/decisions";
 import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
-import { GhostButton, PrimaryButton, Progress, SectionHeading, Tag } from "./ui";
+import {
+  Eyebrow,
+  GhostButton,
+  PrimaryButton,
+  Progress,
+  QuietButton,
+  SectionHeading,
+} from "./ui";
 import {
   ArrowRight,
   Check,
@@ -198,7 +205,7 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-14 animate-pulse rounded-2xl border border-line bg-card"
+              className="h-14 animate-pulse rounded-2xl bg-card-sunken"
               style={{ opacity: 1 - i * 0.25 }}
             />
           ))}
@@ -243,12 +250,12 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
         <Progress current={index + 1} total={questions.length} />
 
         <header className="flex flex-col gap-2">
-          <Tag lang="ar">{`فحص ${index + 1}`}</Tag>
+          <Eyebrow>{`فحص ${"١٢٣٤٥٦"[index] ?? index + 1}`}</Eyebrow>
           <h2
             tabIndex={-1}
             ref={headingRef}
             data-step-heading
-            className="text-2xl font-semibold sm:text-3xl"
+            className="display text-3xl font-bold sm:text-4xl"
           >
             {question.label}
           </h2>
@@ -272,8 +279,8 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
               className={
                 "rounded-2xl border px-5 py-4 text-start text-lg transition-all " +
                 (answers[question.key] === choice
-                  ? "border-accent bg-accent text-accent-ink"
-                  : "border-line bg-card hover:-translate-y-0.5 hover:border-foreground/40")
+                  ? "border-ink bg-ink text-on-ink"
+                  : "border-line-strong hover:-translate-y-0.5 hover:border-ink hover:bg-card-sunken")
               }
             >
               {choice}
@@ -281,10 +288,10 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
           ))}
         </div>
 
-        <GhostButton onClick={back} className="flex items-center gap-1.5 self-start">
-          <ArrowRight size={16} />
+        <QuietButton onClick={back} className="flex items-center gap-1.5 self-start">
+          <ArrowRight size={15} />
           رجوع
-        </GhostButton>
+        </QuietButton>
       </div>
     );
   }
@@ -300,23 +307,23 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
             tabIndex={-1}
             ref={headingRef}
             data-step-heading
-            className="text-3xl font-bold sm:text-4xl"
+            className="display text-3xl font-bold sm:text-4xl"
           >
             {verdict.headline}
           </h2>
         </header>
 
-        <p className="flex items-center gap-2 self-start rounded-2xl border border-line bg-card px-4 py-2.5 font-medium">
-          <Trophy size={17} className="shrink-0 text-accent" />
+        <p className="flex items-center gap-2 self-start rounded-2xl bg-card-sunken px-4 py-2.5 font-medium">
+          <Trophy size={17} className="shrink-0 text-accent-strong" />
           {verdict.chosen}
         </p>
 
         <p className="leading-relaxed text-muted">{verdict.detail}</p>
 
         {verdict.missing.length > 0 && (
-          <section className="rounded-2xl border border-dashed border-line p-5">
+          <section className="rounded-2xl border border-dashed border-line-strong p-5">
             <h3 className="flex items-center gap-1.5 font-semibold">
-              <Check size={17} className="shrink-0 text-accent" />
+              <Check size={17} className="shrink-0 text-accent-strong" />
               اللي يقلبها لـ«اقدم»
             </h3>
             <ul className="mt-3 flex flex-col gap-2">
@@ -330,7 +337,7 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
           </section>
         )}
 
-        <p className="flex items-start gap-2 rounded-2xl bg-accent px-5 py-4 leading-relaxed text-accent-ink">
+        <p className="glow-sm flex items-start gap-2 rounded-2xl bg-accent px-5 py-4 leading-relaxed text-accent-ink">
           <Lightbulb size={18} className="mt-1 shrink-0" />
           <span>
             <span className="font-semibold">خطوتك هالأسبوع: </span>

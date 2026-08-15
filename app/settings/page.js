@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { useVoice } from "@/lib/voice/VoiceProvider";
 import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
+import { Field } from "../components/ui";
 import {
   ArrowLeft,
   CircleCheck,
@@ -98,7 +99,7 @@ export default function SettingsPage() {
         className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14"
       >
         <header className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold sm:text-4xl">الإعدادات</h1>
+          <h1 className="display text-3xl font-bold sm:text-4xl">الإعدادات</h1>
           <p className="text-muted">
             تفضيلاتك تنحفظ في حسابك، فتلاقيها على أي جهاز تدخل منه.
           </p>
@@ -116,7 +117,7 @@ export default function SettingsPage() {
             </p>
             <Link
               href="/login"
-              className="mt-4 inline-flex rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85"
+              className="mt-4 inline-flex rounded-full bg-ink px-6 py-2.5 text-sm font-semibold text-on-ink transition-opacity hover:opacity-85"
             >
               دخول
             </Link>
@@ -142,14 +143,13 @@ export default function SettingsPage() {
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm text-muted">الاسم</span>
-                <input
+                <Field
                   value={form.display_name}
                   onChange={(e) =>
                     setForm({ ...form, display_name: e.target.value })
                   }
                   maxLength={60}
                   placeholder="اسمك"
-                  className="rounded-xl border border-line bg-background px-4 py-3 outline-none transition-colors focus:border-accent"
                 />
               </label>
 
@@ -173,8 +173,8 @@ export default function SettingsPage() {
                     className={
                       "rounded-full border px-4 py-2 text-sm transition-colors " +
                       (form.tone === t.id
-                        ? "border-accent bg-accent text-accent-ink"
-                        : "border-line hover:border-muted-soft")
+                        ? "border-ink bg-ink text-on-ink"
+                        : "border-line-strong hover:border-ink")
                     }
                   >
                     {t.label}
@@ -197,8 +197,8 @@ export default function SettingsPage() {
                   className={
                     "rounded-full border px-4 py-2 text-sm transition-colors " +
                     (form.default_mood === null
-                      ? "border-accent bg-accent text-accent-ink"
-                      : "border-line hover:border-muted-soft")
+                      ? "border-ink bg-ink text-on-ink"
+                      : "border-line-strong hover:border-ink")
                   }
                 >
                   بدون
@@ -211,8 +211,8 @@ export default function SettingsPage() {
                     className={
                       "flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors " +
                       (form.default_mood === m.id
-                        ? "border-accent bg-accent text-accent-ink"
-                        : "border-line hover:border-muted-soft")
+                        ? "border-ink bg-ink text-on-ink"
+                        : "border-line-strong hover:border-ink")
                     }
                   >
                     <MoodIcon moodId={m.id} size={16} />
@@ -253,13 +253,13 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="glow flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-ink transition-all hover:brightness-95 active:translate-y-px disabled:opacity-50"
               >
                 {saving ? "…" : "احفظ"}
               </button>
               <Link
                 href="/"
-                className="flex items-center gap-2 rounded-full border border-line bg-card px-5 py-2.5 text-sm transition-colors hover:border-muted-soft"
+                className="flex items-center gap-2 rounded-full border border-line-strong px-5 py-2.5 text-sm transition-colors hover:border-ink"
               >
                 <ArrowLeft size={16} />
                 رجوع للرئيسية

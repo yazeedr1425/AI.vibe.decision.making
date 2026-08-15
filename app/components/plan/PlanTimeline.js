@@ -77,17 +77,17 @@ function Stop({ stop, index, total, next }) {
       <div className="flex flex-col items-center">
         <span
           aria-hidden="true"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-ink"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-bold text-on-ink"
         >
           {index + 1}
         </span>
         {index < total - 1 && (
-          <span aria-hidden="true" className="mt-1 w-px flex-1 bg-line" />
+          <span aria-hidden="true" className="mt-1 w-px flex-1 bg-line-strong" />
         )}
       </div>
 
       <div className="flex-1 pb-6">
-        <div className="card-shadow rounded-2xl border border-line bg-card p-5">
+        <div className="card-shadow rounded-[1.5rem] border border-line bg-card p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <h3 className="text-lg font-semibold">{stop.name}</h3>
             <p className="flex items-center gap-1.5 text-sm text-muted">
@@ -175,7 +175,7 @@ export default function PlanTimeline({ plan, weather, onSwap, busy }) {
         <h2
           tabIndex={-1}
           data-step-heading
-          className="text-2xl font-bold sm:text-3xl"
+          className="display text-2xl font-bold sm:text-3xl"
         >
           {plan.title}
         </h2>
@@ -199,7 +199,7 @@ export default function PlanTimeline({ plan, weather, onSwap, busy }) {
       </ol>
 
       {plan.note && (
-        <p className="flex items-start gap-2 rounded-2xl border border-line bg-background/60 p-4 text-sm leading-relaxed text-muted">
+        <p className="flex items-start gap-2 rounded-2xl bg-card-sunken p-4 text-sm leading-relaxed text-muted">
           <Lightbulb size={16} className="mt-0.5 shrink-0" />
           {plan.note}
         </p>
@@ -217,7 +217,7 @@ export default function PlanTimeline({ plan, weather, onSwap, busy }) {
               type="button"
               disabled={busy}
               onClick={() => onSwap(stop)}
-              className="flex items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-2 text-xs transition-colors hover:border-foreground/40 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-full border border-line-strong px-3.5 py-2 text-xs transition-colors hover:border-ink disabled:opacity-40"
             >
               <Shuffle size={13} />
               بدّل {stop.name}

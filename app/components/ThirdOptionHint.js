@@ -68,7 +68,7 @@ export default function ThirdOptionHint({ options, onPick }) {
           key={s.label}
           type="button"
           onClick={() => onPick(s.label)}
-          className="group flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1.5 text-sm transition-colors hover:border-accent hover:bg-accent hover:text-accent-ink"
+          className="group flex items-center gap-1.5 rounded-full border border-dashed border-line-strong px-3.5 py-1.5 text-sm transition-colors hover:border-ink hover:bg-ink hover:text-on-ink"
         >
           <span className="font-medium">{s.label}</span>
           {s.note && (

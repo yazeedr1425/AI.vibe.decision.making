@@ -223,7 +223,7 @@ export default function AnalyzePage() {
             rows={3}
             maxLength={600}
             placeholder="مثال: أفتح فرع ثاني لمطعمي في جدة بميزانية ٤٠٠ ألف ريال؟"
-            className="mt-3 w-full rounded-2xl border border-line bg-background p-4 leading-relaxed outline-none focus:border-accent disabled:opacity-60"
+            className="mt-3 w-full rounded-2xl border border-line bg-card-sunken p-4 leading-relaxed outline-none transition-colors placeholder:text-muted-soft focus:border-ink disabled:opacity-60"
           />
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -233,7 +233,7 @@ export default function AnalyzePage() {
                 type="button"
                 disabled={running}
                 onClick={() => setStatement(ex)}
-                className="rounded-full border border-line bg-card px-3 py-1.5 text-xs text-muted transition-colors hover:border-foreground/40 hover:text-foreground disabled:opacity-40"
+                className="rounded-full border border-line-strong px-3 py-1.5 text-xs text-muted transition-colors hover:border-ink hover:text-ink disabled:opacity-40"
               >
                 {ex}
               </button>
@@ -254,7 +254,7 @@ export default function AnalyzePage() {
             rows={3}
             maxLength={2000}
             placeholder="مثال: الفرع الحالي يحقق ٨٠ ألف شهرياً بهامش ٢٢٪، وعندي طاقم جاهز بس ما عندي خبرة في جدة."
-            className="mt-3 w-full rounded-2xl border border-line bg-background p-4 leading-relaxed outline-none focus:border-accent disabled:opacity-60"
+            className="mt-3 w-full rounded-2xl border border-line bg-card-sunken p-4 leading-relaxed outline-none transition-colors placeholder:text-muted-soft focus:border-ink disabled:opacity-60"
           />
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -323,10 +323,10 @@ export default function AnalyzePage() {
             )}
 
             {/* تنويه لازم يبقى ظاهراً: الأداة دعم قرار، مو استشارة مالية */}
-            <p className="rounded-2xl bg-background/60 p-4 text-xs leading-relaxed text-muted">
+            <p className="rounded-2xl bg-card-sunken p-4 text-xs leading-relaxed text-muted">
               هذا التحليل أداة دعم قرار وليس استشارة مالية أو قانونية. الأرقام
               فيه تقديرات محسوبة من أحكام نوعية — راجع{" "}
-              <span className="text-foreground/70">«كيف انحسبت هذي الأرقام؟»</span>{" "}
+              <span className="text-ink">«كيف انحسبت هذي الأرقام؟»</span>{" "}
               داخل كل مسار — ومو توقعات مبنية على نموذج مالي. تحقق من المصادر
               بنفسك قبل أي التزام مالي.
             </p>

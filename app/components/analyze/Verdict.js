@@ -1,6 +1,6 @@
 "use client";
 
-import { Tag } from "../ui";
+import { Eyebrow } from "../ui";
 
 const CONFIDENCE = {
   high: "ثقة عالية",
@@ -11,7 +11,7 @@ const CONFIDENCE = {
 const SEVERITY = {
   high: { label: "خطير", className: "bg-accent-strong text-accent-ink" },
   medium: { label: "متوسط", className: "bg-accent-soft text-accent-strong" },
-  low: { label: "بسيط", className: "bg-line text-foreground/70" },
+  low: { label: "بسيط", className: "bg-line text-muted" },
 };
 
 export function Recommendation({ recommendation }) {
@@ -19,21 +19,21 @@ export function Recommendation({ recommendation }) {
   const r = recommendation;
 
   return (
-    <section className="rounded-3xl border-2 border-accent bg-card p-6 sm:p-8">
+    <section className="on-ink card-shadow rounded-[var(--radius-card)] bg-ink p-6 text-on-ink sm:p-8">
       <header className="flex flex-wrap items-center gap-2">
-        <Tag lang="ar">الخلاصة</Tag>
+        <Eyebrow>الخلاصة</Eyebrow>
         <span className="pill">{CONFIDENCE[r.confidence] ?? "ثقة متوسطة"}</span>
       </header>
 
-      <h2 tabIndex={-1} data-step-heading className="mt-2 text-2xl font-bold sm:text-3xl">
+      <h2 tabIndex={-1} data-step-heading className="display mt-2 text-3xl font-bold sm:text-4xl">
         {r.recommended_path}
       </h2>
 
       <p className="mt-3 leading-relaxed">{r.rationale}</p>
 
       {r.answering_objections && (
-        <div className="mt-5 rounded-2xl bg-background/70 p-4">
-          <Tag lang="ar">رد على الاعتراضات</Tag>
+        <div className="mt-5 rounded-2xl bg-white/5 p-4">
+          <Eyebrow>رد على الاعتراضات</Eyebrow>
           <p className="mt-1.5 text-sm leading-relaxed">{r.answering_objections}</p>
         </div>
       )}
@@ -42,7 +42,7 @@ export function Recommendation({ recommendation }) {
         {r.conditions?.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold">قبل ما تتحرك</h3>
-            <ul className="mt-2 list-disc space-y-1 pr-5 text-sm text-muted">
+            <ul className="mt-2 list-disc space-y-1 pr-5 text-sm text-on-ink-muted">
               {r.conditions.map((c, i) => (
                 <li key={i}>{c}</li>
               ))}
@@ -54,7 +54,7 @@ export function Recommendation({ recommendation }) {
         {r.would_change_my_mind?.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold">وش يخليني أغيّر رأيي</h3>
-            <ul className="mt-2 list-disc space-y-1 pr-5 text-sm text-muted">
+            <ul className="mt-2 list-disc space-y-1 pr-5 text-sm text-on-ink-muted">
               {r.would_change_my_mind.map((c, i) => (
                 <li key={i}>{c}</li>
               ))}
@@ -64,7 +64,7 @@ export function Recommendation({ recommendation }) {
       </div>
 
       {r.confidence_note && (
-        <p className="mt-5 border-t border-line pt-4 text-sm text-muted">
+        <p className="mt-5 border-t border-line-ink pt-4 text-sm text-on-ink-muted">
           {r.confidence_note}
         </p>
       )}
@@ -79,7 +79,7 @@ export function Critique({ challenges, skipped }) {
     return (
       <section
         role="alert"
-        className="rounded-3xl border-2 border-accent-strong bg-accent-soft p-6"
+        className="rounded-[var(--radius-card)] border-2 border-accent-strong bg-accent-soft p-6"
       >
         <h3 className="mt-1 text-lg font-semibold text-accent-strong">
           المراجعة النقدية ما اكتملت
@@ -98,7 +98,7 @@ export function Critique({ challenges, skipped }) {
   const missing = challenges.missing_data ?? [];
 
   return (
-    <section className="rounded-3xl border border-line bg-card p-6">
+    <section className="card-shadow rounded-[var(--radius-card)] border border-line bg-card p-6">
       <header className="flex flex-col gap-1">
         <h3 className="text-lg font-semibold">اعتراضات على التحليل</h3>
         <p className="text-sm text-muted">
@@ -112,7 +112,7 @@ export function Critique({ challenges, skipped }) {
           {items.map((c, i) => {
             const s = SEVERITY[c.severity] ?? SEVERITY.medium;
             return (
-              <li key={i} className="rounded-2xl border border-line p-4">
+              <li key={i} className="rounded-2xl bg-card-sunken p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="font-medium">{c.target}</p>
                   <span
@@ -146,7 +146,7 @@ export function Sources({ sources, findings }) {
   const list = sources ?? [];
 
   return (
-    <section className="rounded-3xl border border-line bg-card p-6">
+    <section className="card-shadow rounded-[var(--radius-card)] border border-line bg-card p-6">
       <header className="flex flex-col gap-1">
         <h3 className="text-lg font-semibold">
           المصادر {list.length > 0 && `(${list.length})`}
