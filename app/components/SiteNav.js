@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import VoiceShortcuts from "./VoiceShortcuts";
 
 // صفحات فقط. «سجل القرارات» و«أمثلة» انحذفا لأنهما مرساتان داخل
 // الرئيسية لا وجهتان: القفز لوسط صفحة أخرى ليس تنقّلاً، والخلط
@@ -25,7 +24,7 @@ const LINKS = [
 // يكفي حتى ترجع الزر لحاله لو كانت الأولى بالغلط
 const CONFIRM_MS = 4000;
 
-export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
+export default function SiteNav({ onHome, onSignIn, onStart }) {
   const { user, signOut } = useAuth();
   const router = useRouter();
 
@@ -54,7 +53,6 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
   const goHome = onHome ?? (() => router.push("/"));
   const startDeciding = onStart ?? (() => router.push("/"));
   const signIn = onSignIn ?? (() => router.push("/login"));
-  const openVoice = onVoiceMode ?? (() => router.push("/"));
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-background/85 backdrop-blur">
@@ -92,11 +90,8 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
           </ul>
         </div>
 
-        {/* الحساب في الطرف المقابل. زرّا القراءة الصوتية انحذفا،
-            واختصاراتهما باقية في VoiceShortcuts (ما يرسم شيئاً). */}
+        {/* الحساب في الطرف المقابل */}
         <div className="flex items-center gap-1 sm:gap-2">
-          <VoiceShortcuts onVoiceMode={openVoice} />
-
           {user ? (
             <>
               <Link

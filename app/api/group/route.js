@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { supabaseAdmin } from "@/lib/supabase-server";
-import { normalizeArabic } from "@/lib/voice/match";
+import { normalizeArabic } from "@/lib/text/arabic";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

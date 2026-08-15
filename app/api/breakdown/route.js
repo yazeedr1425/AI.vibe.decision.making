@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
-import { normalizeArabic } from "@/lib/voice/match";
+import { normalizeArabic } from "@/lib/text/arabic";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

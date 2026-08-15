@@ -1,6 +1,5 @@
 "use client";
 
-import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
 import { GhostButton, Progress, SectionHeading } from "./ui";
 import { ArrowRight } from "./icons";
 
@@ -15,10 +14,6 @@ export default function QuestionStep({
 }) {
   const question = category.questions[index];
   const total = category.questions.length;
-
-  useScreenAnnounce(
-    `${question.label} ${question.choices.map((c) => c.label).join("، أو ")}`,
-  );
 
   const pick = (value) => {
     setAnswers((prev) => ({ ...prev, [question.key]: value }));

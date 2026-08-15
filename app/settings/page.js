@@ -7,7 +7,6 @@ import { TONES } from "@/lib/engine/tone";
 import { profileService } from "@/lib/services/profile";
 import { useMoodTheme } from "@/lib/theme/useMoodTheme";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { useVoice } from "@/lib/voice/VoiceProvider";
 import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
 import {
@@ -19,7 +18,6 @@ import {
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
-  const { setReadAloud, tts } = useVoice();
 
   const [loaded, setLoaded] = useState(null); // { profile, email } بعد الجلب
   const [form, setForm] = useState(null);
@@ -41,11 +39,8 @@ export default function SettingsPage() {
         setForm({
           display_name: result.profile.display_name ?? "",
           tone: result.profile.tone ?? TONES[0].id,
-          read_aloud: Boolean(result.profile.read_aloud),
           default_mood: result.profile.default_mood ?? null,
         });
-        // البروفايل هو المرجع — نطابق تفضيل القراءة عليه
-        setReadAloud(Boolean(result.profile.read_aloud));
       } else {
         setLoaded({
           userId: user.id,
@@ -57,7 +52,7 @@ export default function SettingsPage() {
     return () => {
       active = false;
     };
-  }, [user, setReadAloud]);
+  }, [user]);
 
   const save = async (e) => {
     e.preventDefault();
@@ -67,13 +62,11 @@ export default function SettingsPage() {
     const result = await profileService.update({
       display_name: form.display_name.trim() || null,
       tone: form.tone,
-      read_aloud: form.read_aloud,
       default_mood: form.default_mood,
     });
 
     setSaving(false);
     if (result.ok) {
-      setReadAloud(form.read_aloud);
       setStatus({ ok: true, message: "انحفظت إعداداتك." });
     } else {
       setStatus({
@@ -220,33 +213,6 @@ export default function SettingsPage() {
                   </button>
                 ))}
               </div>
-            </section>
-
-            {/* القراءة الصوتية */}
-            <section className="card-shadow flex flex-col gap-3 rounded-2xl border border-line bg-card p-5 sm:p-6">
-              <h2 className="font-semibold">القراءة الصوتية</h2>
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={form.read_aloud}
-                  onChange={(e) =>
-                    setForm({ ...form, read_aloud: e.target.checked })
-                  }
-                  className="h-4 w-4 accent-[color:var(--accent)]"
-                />
-                {/* كان يحيل على زر القراءة في الهيدر — والزر انحذف،
-                    فبقيت الإشارة تدل على شي غير موجود */}
-                <span className="text-sm">
-                  اقرأ لي كل شاشة تلقائياً (اختصار حرف S)
-                </span>
-              </label>
-              {!tts && (
-                <p className="flex items-center gap-2 text-sm text-muted">
-                  <TriangleAlert size={15} className="shrink-0" />
-                  متصفحك ما يدعم القراءة الصوتية — الإعداد بينحفظ بس ما راح
-                  يشتغل هنا.
-                </p>
-              )}
             </section>
 
             <div className="flex flex-wrap items-center gap-3">

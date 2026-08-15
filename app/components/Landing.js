@@ -5,15 +5,10 @@ import { CATEGORIES, getCategory } from "@/lib/engine/categories";
 import { MOODS, getMood } from "@/lib/engine/mood";
 import { looksOversized } from "@/lib/engine/oversized";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
-import { listenOnce } from "@/lib/voice/speech";
-import { parseSpokenOptions } from "@/lib/voice/match";
-import { useVoice } from "@/lib/voice/VoiceProvider";
 import ThirdOptionHint from "./ThirdOptionHint";
 import {
   ArrowLeft,
   CategoryIcon,
-  Headphones,
-  Mic,
   MoodIcon,
   Plus,
   Scale,
@@ -55,21 +50,13 @@ export default function Landing({
   options,
   setOptions,
   onStart,
-  onVoiceMode,
   onBreakdown,
   onGroup,
   groupBusy,
 }) {
-  const { stt } = useVoice();
-  const [dictating, setDictating] = useState(false);
-  const [dictationError, setDictationError] = useState(null);
   // مفتاح الرفض هو نص الخيارات وقت الرفض — تغيير الخيارات يرجّع
   // البانر لأن القرار صار غيره
   const [dismissedKey, setDismissedKey] = useState(null);
-  const stopRef = useRef(() => {});
-
-  useEffect(() => () => stopRef.current?.(), []);
-
   const filledLabels = options
     .map((o) => o.label.trim())
     .filter(Boolean);
@@ -100,8 +87,7 @@ export default function Landing({
       prev.length <= MIN_OPTIONS ? prev : prev.filter((o) => o.id !== id),
     );
 
-  // الاقتراح يعبّي أول خانة فاضية إن وجدت، وإلا يضيف صفاً — نفس
-  // سلوك الإملاء الصوتي، حتى ما يفاجأ المستخدم بترتيب مختلف
+  // الاقتراح يعبّي أول خانة فاضية إن وجدت، وإلا يضيف صفاً
   const addWithLabel = (label) =>
     setOptions((prev) => {
       if (prev.length >= MAX_OPTIONS) return prev;
@@ -115,57 +101,6 @@ export default function Landing({
     setCategoryId(example.categoryId);
     setOptions(example.options.map((label, i) => ({ id: `ex-${i}`, label })));
   };
-
-  const dictate = useCallback(() => {
-    if (!stt || dictating) return;
-    setDictationError(null);
-    setDictating(true);
-
-    stopRef.current = listenOnce({
-      onResult: (text) => {
-        setDictating(false);
-        const spoken = parseSpokenOptions(text, { max: MAX_OPTIONS });
-        if (!spoken.length) {
-          setDictationError("ما التقطت خيارات — عيد أو اكتبها.");
-          return;
-        }
-        setOptions((prev) => {
-          const next = [...prev];
-          for (const label of spoken) {
-            const empty = next.findIndex((o) => !o.label.trim());
-            if (empty !== -1) next[empty] = { ...next[empty], label };
-            else if (next.length < MAX_OPTIONS)
-              next.push({ id: crypto.randomUUID(), label });
-          }
-          return next;
-        });
-      },
-      onError: (code) => {
-        setDictating(false);
-        setDictationError(
-          code === "not-allowed"
-            ? "الميكروفون ممنوع — اكتب خياراتك بدل الإملاء."
-            : "ما سمعت شي — عيد أو اكتبها.",
-        );
-      },
-    });
-  }, [stt, dictating, setOptions]);
-
-  // اختصار حرف M
-  useEffect(() => {
-    const onKey = (e) => {
-      const tag = e.target?.tagName?.toLowerCase();
-      if (tag === "input" || tag === "textarea" || e.target?.isContentEditable)
-        return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key.toLowerCase() === "m") {
-        e.preventDefault();
-        dictate();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [dictate]);
 
   return (
     <div className="grid items-start gap-8 md:grid-cols-2 md:gap-8 lg:gap-14">
@@ -343,38 +278,7 @@ export default function Landing({
               أضف خيارًا {options.length === 2 ? "ثالثًا" : "آخر"}
             </button>
           )}
-          {stt && (
-            <button
-              type="button"
-              onClick={dictate}
-              disabled={dictating}
-              aria-label="أملِ خياراتك بالصوت — اختصار حرف M"
-              className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground disabled:opacity-50"
-            >
-              <Mic size={16} />
-              {dictating ? "أسمعك…" : "أملِ بالصوت"}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onVoiceMode}
-            aria-label="وضع المحادثة الصوتية — اختصار حرف V"
-            className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
-          >
-            <Headphones size={16} />
-            محادثة صوتية
-          </button>
         </div>
-
-        {dictationError && (
-          <p
-            role="status"
-            className="mt-2 flex items-center gap-1.5 text-sm text-muted"
-          >
-            <TriangleAlert size={15} />
-            {dictationError}
-          </p>
-        )}
 
         {showBreakdown && (
           <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-dashed border-accent/50 bg-accent-soft/40 p-4">

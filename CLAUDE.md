@@ -34,6 +34,8 @@ Database schema changes are **new timestamped files** in `supabase/migrations/`,
 
 ## Conventions and known traps
 
+- **`normalizeArabic` lives in `lib/text/arabic.js`** and is used by the statistics, the matchup grouping, group voting, and the third-option validator — normalize before any Arabic comparison.
+
 - **Comments are Arabic and explain "why", never "what".** Match this in any file you touch.
 - **UI renders zero decorative Latin** — the English caption tags were deliberately stripped (PR #37). `en` fields still exist in data files; don't render them. Arabic-content `<Tag>` needs `lang="ar"` (component defaults to `lang="en"`).
 - **`react-hooks/set-state-in-effect` is enforced and will fail lint.** No synchronous setState in effect bodies — the codebase patterns: owner-tagged fetched state derived at render (`PatternsCard`), promise-`.then` setState (`HistorySection`), attempt-counter as effect trigger (`BreakdownFlow`).
@@ -42,7 +44,7 @@ Database schema changes are **new timestamped files** in `supabase/migrations/`,
 - **Times shown to users are computed in the user's IANA timezone from the browser**, never server time (3-hour Riyadh/UTC skew bites otherwise; `lib/insight/stats.js` drops the stat entirely on an invalid zone rather than lying).
 - **Emails are inline table-HTML with system fonts** (`app/api/signup`, `/api/magic-link`) — email clients ignore external CSS/webfonts/flex. The Mailtrap template UUID for signup lives in the route; the Mailtrap token must be Account-Admin scoped (sandbox tokens 401 on live send).
 - **Caches are in-process Maps with normalized+sorted, version-prefixed keys** — bump the version string whenever a prompt/contract changes, or stale-shaped entries get served.
-- **A11y patterns to preserve:** step headings get `tabIndex={-1} data-step-heading` (page.js moves focus on step change; self-managed flows like `BreakdownFlow` focus their own headings), `useScreenAnnounce` for spoken results, real `radiogroup`/`radio` roles on choice lists.
+- **A11y patterns to preserve:** step headings get `tabIndex={-1} data-step-heading` (page.js moves focus on step change; self-managed flows like `BreakdownFlow` focus their own headings), `sr-only` text equivalents where the visual layout carries meaning, real `radiogroup`/`radio` roles on choice lists. (Voice mode and its self-voicing were removed — screen-reader users bring their own AT.)
 
 ## Git workflow (as actually practiced)
 

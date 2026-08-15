@@ -1,6 +1,5 @@
 import { IBM_Plex_Sans_Arabic, Space_Grotesk } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
-import { VoiceProvider } from "@/lib/voice/VoiceProvider";
 import "./globals.css";
 
 const plexArabic = IBM_Plex_Sans_Arabic({
@@ -34,7 +33,7 @@ export default function RootLayout({ children }) {
           تخطَّ إلى المحتوى
         </a>
         <AuthProvider>
-          <VoiceProvider>{children}</VoiceProvider>
+          {children}
         </AuthProvider>
       </body>
     </html>

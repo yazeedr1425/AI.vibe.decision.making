@@ -33,11 +33,6 @@ As you type, an agent reads the trade-off between your options and suggests a th
 ### 6 — A history that learns
 Under every saved decision: "was it the right call?". The answers feed your **decision personality**: regret rate by category, the option you keep listing but never pick, the matchup you keep reopening (Al Baik vs shawarma, four times!), and when your indecision strikes — in *your* timezone. All statistics are computed in code; Gemini interprets, it never counts.
 
-### 7 — Voice
-- Dictate your options (press M)
-- A full voice-conversation mode: talk naturally, the agent extracts everything and asks only for what's missing — with a typed fallback when the mic is blocked
-- Screen readout (S to toggle, R to repeat, V for conversation mode)
-
 ### 8 — Day planner (`/plan`)
 Pick mood, vibe, budget, and duration; the agent builds a real schedule: venues from Google Places (actually open at visit time), travel times from the Routes API, and Open-Meteo weather that steers outdoor stops away from peak heat — and a weather failure never breaks the plan.
 
@@ -75,7 +70,7 @@ lib/
   engine/                 scoring, categories, mood, oversized-decision detector, explanations
   insight/                history statistics + decision-personality prompt
   services/               client-side wrappers for routes and tables
-  voice/                  speech recognition, TTS, Arabic normalization
+  text/                   Arabic normalization for comparisons
   plan/ places/ routing/ weather/   day-planner building blocks
   supabase.js             browser client (anon) · supabase-server.js server client (service role)
 supabase/migrations/      schema + policies — run in order (see the warning below)
@@ -91,7 +86,6 @@ email send/               the verification template in Supabase syntax
 | `POST /api/breakdown` | oversized-decision breakdown (questions/verdict phases) | 10/min |
 | `GET/POST /api/group` | group-vote verdict / close (creator's token) | 20 / 5 per min + 24h cache |
 | `GET /api/patterns` | decision personality from your history | **token required** + browser timezone |
-| `POST /api/assist` | voice-conversation agent | — |
 | `POST /api/signup` | account creation + Mailtrap verification | 5/min + compensating delete |
 | `POST /api/plan` | day plan (Places + Routes + weather) | — |
 | `POST /api/analyze` | SWOT + decision tree | — |
@@ -143,6 +137,6 @@ The email template lives in Mailtrap (its UUID is in `app/api/signup/route.js`) 
 
 **Unmerged branches**: `feat/devils-advocate` (a counsel for the losing option — built, awaiting review) · `feat/photo-options` (options from a photo — parked).
 
-**Before deploying**: rate-limit the four original routes (`decide`, `assist`, `plan`, `analyze`) · delete the RLS-disable migration · Vercel env vars · Supabase Auth Site URL · finish the sending-domain DNS (DMARC).
+**Before deploying**: rate-limit the original routes (`decide`, `plan`, `analyze`) · delete the RLS-disable migration · Vercel env vars · Supabase Auth Site URL · finish the sending-domain DNS (DMARC).
 
 **Candidate ideas**: a daily "was it the right call?" email (feeds the decision personality) · shareable result cards · a `closes_at` deadline for group votes.

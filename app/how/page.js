@@ -5,15 +5,11 @@ import {
   ArrowLeft,
   Brain,
   CircleCheck,
-  Headphones,
   Lightbulb,
-  Mic,
   Plus,
-  RotateCw,
   Scale,
   Sparkles,
   Users,
-  Volume2,
 } from "../components/icons";
 
 export const metadata = {
@@ -23,7 +19,6 @@ export const metadata = {
 };
 
 // ما حول القرار نفسه — القدرات اللي تشتغل قبل الترشيح وبعده.
-// وضع المحادثة الصوتية له قسمه الخاص تحت، فما يتكرر هنا.
 const POWERS = [
   {
     icon: Lightbulb,
@@ -51,7 +46,7 @@ const STEPS = [
   {
     icon: Plus,
     title: "اكتب خياراتك",
-    body: "من خيارين إلى خمسة. اكتبها، أو أملِها بالصوت، أو خلّ المحادثة الصوتية تعبّيها عنك.",
+    body: "من خيارين إلى خمسة — اكتبها وبس. ولو ما عجبك أي واحد منها، نقترح لك ثالثاً ما فكرت فيه.",
   },
   {
     icon: Brain,
@@ -185,36 +180,6 @@ export default function HowItWorks() {
             وأثره معلن: لو المزاج هو اللي رجّح معياراً، بتلقى ذلك مكتوباً في شرح
             النتيجة — «ومزاجك زاده وزن».
           </p>
-        </section>
-
-        {/* الصوت */}
-        <section className="flex flex-col gap-4 rounded-2xl border border-dashed border-line p-6 sm:p-8">
-          <h2 className="flex items-center gap-2 text-2xl font-semibold">
-            <Headphones size={22} className="text-accent" />
-            تفضّل تتكلم؟
-          </h2>
-          <p className="leading-relaxed text-muted">
-            وضع المحادثة الصوتية يسألك ويسمع ردك ويعبّي كل شي عنك، ويقرأ لك
-            النتيجة. وإذا الميكروفون ممنوع أو متصفحك ما يدعمه، يظهر لك مربع
-            كتابة وتكمل نفس المحادثة بالضبط.
-          </p>
-          <ul className="grid gap-2 text-sm text-muted sm:grid-cols-2">
-            <li className="flex items-center gap-2">
-              <Headphones size={16} className="text-accent" /> حرف V — المحادثة
-              الصوتية
-            </li>
-            <li className="flex items-center gap-2">
-              <Mic size={16} className="text-accent" /> حرف M — أملِ خياراتك
-            </li>
-            <li className="flex items-center gap-2">
-              <Volume2 size={16} className="text-accent" /> حرف S — تشغيل أو
-              إيقاف القراءة
-            </li>
-            <li className="flex items-center gap-2">
-              <RotateCw size={16} className="text-accent" /> حرف R — أعد قراءة
-              الشاشة
-            </li>
-          </ul>
         </section>
 
         {/* الخصوصية */}

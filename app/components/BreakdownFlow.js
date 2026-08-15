@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { decisionService } from "@/lib/services/decisions";
-import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
 import { GhostButton, PrimaryButton, Progress, SectionHeading, Tag } from "./ui";
 import {
   ArrowRight,
@@ -178,10 +177,6 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
   };
 
   const question = questions[index];
-  useScreenAnnounce(
-    phase === "asking" && question ? question.label : "",
-  );
-
   // ---------- الهيكل أثناء التوليد ----------
   if (phase === "loading" || phase === "composing") {
     return (

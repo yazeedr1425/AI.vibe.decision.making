@@ -19,7 +19,6 @@ import SiteFooter from "./components/SiteFooter";
 import SiteNav from "./components/SiteNav";
 import Thinking from "./components/Thinking";
 import BreakdownFlow from "./components/BreakdownFlow";
-import VoiceMode from "./components/VoiceMode";
 import { Card } from "./components/ui";
 
 // معرّفات ثابتة للخيارين الأوليين حتى لا يختلف الرندر بين الخادم والمتصفح
@@ -220,30 +219,6 @@ export default function Home() {
     [filledOptions, answers, categoryId, weights, accessToken],
   );
 
-  // المحادثة الصوتية تعطينا كل شي دفعة واحدة — بما فيه التقييمات.
-  // الوكيل يرجّعها مفهرسة بنص الخيار، والمحرك يبيها بمعرّف الخيار.
-  const fromVoice = useCallback(
-    (payload) => {
-      const voiceOptions = payload.options.map((label, i) => ({
-        id: `voice-${i}`,
-        label,
-      }));
-
-      const byId = {};
-      for (const option of voiceOptions) {
-        const given = payload.ratings?.[option.label];
-        if (given) byId[option.id] = given;
-      }
-
-      setCategoryId(payload.categoryId);
-      setOptions(voiceOptions);
-      setAnswers(payload.answers);
-      setRatings(byId);
-      decide({ ...payload, ratings: byId });
-    },
-    [decide],
-  );
-
   const restart = () => {
     setStep("landing");
     setQuestionIndex(0);
@@ -263,7 +238,6 @@ export default function Home() {
     <>
       <SiteNav
         onHome={restart}
-        onVoiceMode={() => setStep("voice")}
         onSignIn={() => router.push("/login")}
         onStart={() => {
           setStep("landing");
@@ -291,8 +265,7 @@ export default function Home() {
               options={options}
               setOptions={setOptions}
               onStart={start}
-              onVoiceMode={() => setStep("voice")}
-              onBreakdown={() => setStep("breakdown")}
+                    onBreakdown={() => setStep("breakdown")}
               onGroup={createGroup}
               groupBusy={groupBusy}
             />
@@ -304,13 +277,6 @@ export default function Home() {
           </>
         ) : (
           <Card>
-            {step === "voice" && (
-              <VoiceMode
-                onComplete={fromVoice}
-                onCancel={() => setStep("landing")}
-              />
-            )}
-
             {/* المفتاح يعيد التفكيك من أوله لو تغيرت الخيارات */}
             {step === "breakdown" && (
               <BreakdownFlow
