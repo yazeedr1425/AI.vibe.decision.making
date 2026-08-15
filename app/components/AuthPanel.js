@@ -143,14 +143,6 @@ export default function AuthPanel({ mode = "signin" }) {
               فيه فراغ يسمح بها */}
           <div className="my-auto flex flex-col gap-8 lg:-translate-y-8">
             <div className="flex flex-col gap-4">
-              <span
-                lang="en"
-                dir="ltr"
-                className="w-full text-left text-sm font-medium uppercase tracking-[0.2em]"
-                style={{ color: "#a89e90" }}
-              >
-                why sign in
-              </span>
               <h2 className="text-4xl font-bold leading-snug sm:text-5xl sm:leading-snug">
                 حسابك هو ذاكرة قراراتك.
               </h2>
@@ -194,14 +186,6 @@ export default function AuthPanel({ mode = "signin" }) {
         >
         <div className="flex w-full max-w-md flex-col gap-7">
           <div className="flex flex-col gap-3">
-            <span
-              lang="en"
-              dir="ltr"
-              className="w-full text-left text-xs font-medium uppercase tracking-[0.2em]"
-              style={{ color: "#a89e90" }}
-            >
-              {isSignUp ? "create account" : "sign in"}
-            </span>
             <h1 className="text-4xl font-bold leading-tight sm:text-[44px]">
               {isSignUp ? "أنشئ حسابك." : "أهلًا مرة ثانية."}
             </h1>

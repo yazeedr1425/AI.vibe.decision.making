@@ -98,9 +98,6 @@ export default function SettingsPage() {
         className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14"
       >
         <header className="flex flex-col gap-2">
-          <span lang="en" className="tag">
-            settings
-          </span>
           <h1 className="text-3xl font-semibold sm:text-4xl">الإعدادات</h1>
           <p className="text-muted">
             تفضيلاتك تنحفظ في حسابك، فتلاقيها على أي جهاز تدخل منه.

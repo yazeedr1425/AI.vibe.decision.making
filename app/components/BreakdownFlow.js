@@ -187,7 +187,6 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
     return (
       <div className="flex flex-col gap-6">
         <SectionHeading
-          tag="break it down"
           title={phase === "loading" ? "نفك قرارك…" : "نركب الحكم…"}
           sub={
             phase === "loading"
@@ -244,7 +243,7 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
         <Progress current={index + 1} total={questions.length} />
 
         <header className="flex flex-col gap-2">
-          <Tag>{`فحص ${index + 1}`}</Tag>
+          <Tag lang="ar">{`فحص ${index + 1}`}</Tag>
           <h2
             tabIndex={-1}
             ref={headingRef}
@@ -296,7 +295,6 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
     return (
       <div className="flex flex-col gap-7">
         <header className="flex flex-col gap-2">
-          <Tag>{go ? "the call: go" : "the call: not yet"}</Tag>
           <p className="text-sm text-muted">{go ? "الظروف ناضجة" : "مو الحين — ولها طريق"}</p>
           <h2
             tabIndex={-1}

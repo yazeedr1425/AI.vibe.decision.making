@@ -180,7 +180,6 @@ export default function PlanPage() {
         className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14"
       >
         <SectionHeading
-          tag="DAY PLANNER"
           title="ابنِ لك خطة يوم كاملة"
           sub="نجيب الأماكن المفتوحة حولك، نرتّبها لتقليل التنقّل، ونحسب وقت الطريق بين كل محطة."
         />

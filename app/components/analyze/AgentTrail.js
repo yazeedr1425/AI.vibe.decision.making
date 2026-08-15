@@ -74,7 +74,6 @@ export default function AgentTrail({ steps, current, failed }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">{s.label}</span>
-                <Tag>{s.en}</Tag>
                 {state === "running" && !isFailed && (
                   <span className="pill animate-pulse">يشتغل الآن…</span>
                 )}

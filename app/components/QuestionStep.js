@@ -29,7 +29,7 @@ export default function QuestionStep({
     <div className="flex flex-col gap-8">
       <Progress current={index + 1} total={total} />
 
-      <SectionHeading tag={question.en} title={question.label} />
+      <SectionHeading title={question.label} />
 
       <div
         role="radiogroup"
@@ -51,15 +51,6 @@ export default function QuestionStep({
             }
           >
             <span className="font-medium">{c.label}</span>
-            <span
-              className={
-                answers[question.key] === c.value
-                  ? "tag !text-accent-ink/70"
-                  : "tag"
-              }
-            >
-              {c.en}
-            </span>
           </button>
         ))}
       </div>

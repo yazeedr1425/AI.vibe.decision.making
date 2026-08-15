@@ -41,7 +41,6 @@ export default function Thinking() {
         <p tabIndex={-1} data-step-heading className="text-lg font-semibold">
           {LINES[line]}
         </p>
-        <Tag>ahsem is thinking</Tag>
       </div>
 
       <div className="flex gap-1.5">

@@ -203,7 +203,6 @@ export default function AnalyzePage() {
 
       <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
         <SectionHeading
-          tag="RISK ANALYST"
           title="حلّل قراراً كبيراً قبل ما تاخذه"
           sub="خمسة وكلاء: واحد يبحث، واحد يبني SWOT، واحد يرسم المسارات، واحد يهاجمهم كلهم، وواحد يوصي."
         />
@@ -274,7 +273,6 @@ export default function AnalyzePage() {
         {/* ——— التقدّم ——— */}
         {started && (
           <div className="mt-6">
-            <Tag>PIPELINE</Tag>
             <div className="mt-2">
               <AgentTrail steps={steps} current={current} failed={failed} />
             </div>
@@ -296,7 +294,7 @@ export default function AnalyzePage() {
             <Recommendation recommendation={result.recommendation} />
 
             <div>
-              <SectionHeading tag="DECISION TREE" title="المسارات" />
+              <SectionHeading title="المسارات" />
               <div className="mt-4">
                 <PathTree
                   paths={result.paths}
@@ -306,7 +304,7 @@ export default function AnalyzePage() {
             </div>
 
             <div>
-              <SectionHeading tag="SWOT" title="التحليل الرباعي" />
+              <SectionHeading title="التحليل الرباعي" />
               <div className="mt-4">
                 <SwotGrid swot={result.swot} />
               </div>
