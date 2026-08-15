@@ -8,7 +8,13 @@ import { groupService } from "@/lib/services/group";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import SiteFooter from "@/app/components/SiteFooter";
-import { GhostButton, PrimaryButton, Tag } from "@/app/components/ui";
+import {
+  Eyebrow,
+  Field,
+  GhostButton,
+  PrimaryButton,
+  hindi,
+} from "@/app/components/ui";
 import {
   Check,
   CircleCheck,
@@ -262,7 +268,10 @@ export default function VotePage() {
       <Shell>
         <div className="flex flex-col gap-3" aria-hidden>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-2xl border border-line bg-card" />
+            <div
+              key={i}
+              className="h-14 animate-pulse rounded-2xl border border-line bg-card-sunken"
+            />
           ))}
         </div>
       </Shell>
@@ -277,11 +286,11 @@ export default function VotePage() {
   return (
     <Shell>
       <div className="flex items-center justify-between gap-3">
-        <Tag lang="ar">{closed ? "النتيجة" : "تصويت جماعي"}</Tag>
+        <Eyebrow>{closed ? "النتيجة" : "تصويت جماعي"}</Eyebrow>
         {present > 0 && (
-          <span className="flex items-center gap-1.5 text-sm text-muted">
-            <Users size={15} />
-            الحاضرين الحين: {present}
+          <span className="pill">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+            الحاضرين الحين: {hindi(present)}
           </span>
         )}
       </div>
@@ -289,22 +298,25 @@ export default function VotePage() {
       <h1
         tabIndex={-1}
         data-step-heading
-        className="text-3xl font-bold leading-snug sm:text-4xl"
+        className="display text-3xl font-bold sm:text-4xl"
       >
         {decision.title}
       </h1>
 
-      {/* ---------- النتيجة ---------- */}
+      {/* ---------- النتيجة: حكم القروب بالحبر، مثل بطاقة النتيجة ---------- */}
       {closed && (
-        <div className="flex flex-col gap-4">
-          <p className="flex items-center gap-2 self-start rounded-2xl bg-accent px-5 py-3 text-lg font-semibold text-accent-ink">
-            <Trophy size={20} className="shrink-0" />
+        <section className="on-ink rounded-[1.5rem] bg-ink p-6 text-on-ink sm:p-7">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-accent">
+            <Trophy size={14} className="shrink-0" />
+            القروب حسمها
+          </p>
+          <p className="display mt-2 text-4xl font-bold">
             {winnerLabel ?? "…"}
           </p>
           {verdict?.announcement && (
-            <p className="leading-relaxed">{verdict.announcement}</p>
+            <p className="mt-4 leading-relaxed">{verdict.announcement}</p>
           )}
-        </div>
+        </section>
       )}
 
       {/* ---------- الاسم ---------- */}
@@ -313,7 +325,7 @@ export default function VotePage() {
           <label htmlFor="voter-name" className="text-sm text-muted">
             اسمك — عشان القروب يعرف من صوّت
           </label>
-          <input
+          <Field
             id="voter-name"
             value={savedName || name}
             onChange={(e) => {
@@ -322,12 +334,11 @@ export default function VotePage() {
             }}
             maxLength={30}
             placeholder="اكتب اسمك"
-            className="rounded-2xl border border-line bg-background px-4 py-3 outline-none transition-colors focus:border-accent"
           />
         </div>
       )}
 
-      {/* ---------- الخيارات والأعمدة الحية ---------- */}
+      {/* ---------- الخيارات: العمود الحي خلف الصف نفسه ---------- */}
       <div className="flex flex-col gap-3" aria-live="polite">
         {options.map((option) => {
           const count = Number(option.votes ?? 0);
@@ -336,37 +347,45 @@ export default function VotePage() {
           const winner = closed && decision.winner_option_id === option.id;
 
           return (
-            <div key={option.id} className="flex flex-col gap-1.5">
-              <button
-                type="button"
-                onClick={() => vote(option.id)}
-                disabled={closed || Boolean(myOptionId) || busy}
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => vote(option.id)}
+              disabled={closed || Boolean(myOptionId) || busy}
+              className={
+                "relative overflow-hidden rounded-2xl border text-start transition-all " +
+                (winner
+                  ? "border-accent"
+                  : mine
+                    ? "border-ink"
+                    : "border-line-strong") +
+                (!closed && !myOptionId
+                  ? " hover:-translate-y-0.5 hover:border-ink"
+                  : "")
+              }
+            >
+              {/* التعبئة خلف النص هي العمود — تتحرك مع كل صوت */}
+              <span
+                aria-hidden
                 className={
-                  "flex items-center justify-between gap-3 rounded-2xl border px-5 py-4 text-start text-lg transition-all " +
-                  (mine || winner
-                    ? "border-accent bg-accent-soft"
-                    : "border-line bg-card") +
-                  (!closed && !myOptionId
-                    ? " hover:-translate-y-0.5 hover:border-foreground/40"
-                    : "")
+                  "absolute inset-y-0 start-0 transition-all duration-500 " +
+                  (winner ? "bg-accent-soft" : "bg-card-sunken")
                 }
-              >
-                <span className="flex items-center gap-2 font-medium">
-                  {mine && <Check size={17} className="shrink-0 text-accent" />}
-                  {winner && <Trophy size={17} className="shrink-0 text-accent" />}
+                style={{ width: `${percent}%` }}
+              />
+              <span className="relative flex items-center justify-between gap-3 px-5 py-4">
+                <span className="flex items-center gap-2 text-lg font-medium">
+                  {mine && <Check size={17} className="shrink-0 text-accent-strong" />}
+                  {winner && (
+                    <Trophy size={17} className="shrink-0 text-accent-strong" />
+                  )}
                   {option.label}
                 </span>
-                <span className="text-sm tabular-nums text-muted">
-                  {count} · {percent}٪
+                <span className="text-sm text-muted">
+                  {hindi(count)} · {hindi(percent)}٪
                 </span>
-              </button>
-              <div className="h-2 overflow-hidden rounded-full bg-line">
-                <div
-                  className="h-full rounded-full bg-accent transition-all duration-500"
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-            </div>
+              </span>
+            </button>
           );
         })}
       </div>
@@ -383,7 +402,7 @@ export default function VotePage() {
             صوتك محسوب يا {savedName} — الأعمدة تتحرك أول ما يصوت أحد.
           </span>
         ) : !closed ? (
-          `${total} ${total === 1 ? "صوت" : "أصوات"} لين الحين`
+          `${hindi(total)} ${total === 1 ? "صوت" : "أصوات"} لين الحين`
         ) : null}
       </p>
 
@@ -401,9 +420,13 @@ export default function VotePage() {
               onClick={copyLink}
               aria-label="انسخ رابط التصويت"
               title="انسخ الرابط"
-              className="rounded-full border border-line bg-card p-2.5 text-muted transition-colors hover:border-muted-soft hover:text-foreground"
+              className="rounded-full border border-line-strong p-2.5 text-muted transition-colors hover:border-ink hover:text-ink"
             >
-              {copied ? <CircleCheck size={17} className="text-accent" /> : <Copy size={17} />}
+              {copied ? (
+                <CircleCheck size={17} className="text-accent-strong" />
+              ) : (
+                <Copy size={17} />
+              )}
             </button>
 
             <button
@@ -414,8 +437,8 @@ export default function VotePage() {
               className={
                 "flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors " +
                 (showQr
-                  ? "border-accent bg-accent text-accent-ink"
-                  : "border-line bg-card text-muted hover:border-muted-soft hover:text-foreground")
+                  ? "border-ink bg-ink text-on-ink"
+                  : "border-line-strong text-muted hover:border-ink hover:text-ink")
               }
             >
               <QrCode size={16} />
@@ -423,7 +446,11 @@ export default function VotePage() {
             </button>
 
             {isCreator && (
-              <PrimaryButton onClick={close} disabled={closing || !total}>
+              <PrimaryButton
+                onClick={close}
+                disabled={closing || !total}
+                className="px-5 py-2.5 text-base"
+              >
                 {closing ? "… يجهز الإعلان" : "اقفل واحسم"}
               </PrimaryButton>
             )}
@@ -443,7 +470,7 @@ export default function VotePage() {
                 className="w-52 [&_svg]:h-auto [&_svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: qrSvg }}
               />
-              <figcaption className="text-sm text-[#1f1b16]">
+              <figcaption className="text-sm text-[#17140f]">
                 امسح بالكاميرا وصوّت
               </figcaption>
             </figure>
@@ -476,7 +503,7 @@ function Shell({ children }) {
           </span>
           <span className="font-semibold">احسم</span>
         </Link>
-        <div className="card-shadow flex flex-col gap-6 rounded-3xl border border-line bg-card p-6 sm:p-8">
+        <div className="card-shadow flex flex-col gap-6 rounded-[var(--radius-card)] border border-line bg-card p-6 sm:p-8">
           {children}
         </div>
       </main>
