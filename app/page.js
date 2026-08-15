@@ -20,6 +20,7 @@ import SiteNav from "./components/SiteNav";
 import Thinking from "./components/Thinking";
 import BreakdownFlow from "./components/BreakdownFlow";
 import VoiceMode from "./components/VoiceMode";
+import Reveal from "./components/Reveal";
 import { Card } from "./components/ui";
 
 // معرّفات ثابتة للخيارين الأوليين حتى لا يختلف الرندر بين الخادم والمتصفح
@@ -276,11 +277,14 @@ export default function Home() {
       <main
         id="main"
         className={
-          "mx-auto flex w-full flex-1 flex-col gap-16 px-4 py-8 sm:px-6 sm:py-12 " +
-          (isLanding ? "max-w-6xl" : "max-w-3xl")
+          "flex w-full flex-1 flex-col " +
+          (isLanding
+            ? ""
+            : "mx-auto max-w-3xl gap-16 px-4 py-8 sm:px-6 sm:py-12")
         }
       >
-        {/* شاشة الهبوط لها تخطيطها الخاص، وباقي الخطوات داخل بطاقة */}
+        {/* شاشة الهبوط أشرطة بعرض الشاشة تدير حاوياتها بنفسها،
+            وباقي الخطوات داخل بطاقة ضيقة */}
         {isLanding ? (
           <>
             <Landing
@@ -297,10 +301,12 @@ export default function Home() {
               groupBusy={groupBusy}
             />
 
-            <HistorySection
-              onSignIn={() => router.push("/login")}
-              refreshKey={saveState?.status === "saved" ? "saved" : "idle"}
-            />
+            <Reveal className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6">
+              <HistorySection
+                onSignIn={() => router.push("/login")}
+                refreshKey={saveState?.status === "saved" ? "saved" : "idle"}
+              />
+            </Reveal>
           </>
         ) : (
           <Card>

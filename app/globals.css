@@ -1,61 +1,82 @@
 @import "tailwindcss";
 
-/* لوحة الألوان الدافئة من التصميم القديم: كريمي وبرتقالي.
-   التخطيط من Framer، لكن الألوان رجعت للأصل. */
+/* ---------------------------------------------------------------
+   لوحة «الحبر والورق» — مأخوذة من شاشة الدخول ومعمّمة على كل الموقع.
+   الفكرة: خلفية ورقية دافئة، حبر شبه أسود، وطوبيّ واحد للفعل.
+   السطوح الغامقة ليست عكساً للثيم بل جزء ثابت منه — تُستخدم للتأطير
+   والتباين، فلها متغيراتها الخاصة بدل قلب الألوان بالحاسبة.
+   --------------------------------------------------------------- */
 :root {
-  --background: #faf6ef;
-  --foreground: #1f1b16;
-  --accent: #e85d2f;
-  --accent-ink: #fff8f0;
-  --accent-soft: #fbe7db;
-  --accent-strong: #b8461d;
-  --ink: #1f1b16;
-  --card: #fffdf9;
-  --line: #e4dbcd;
-  --muted: #8a8072;
-  --muted-soft: #a2988a;
-  --glow: 232 93 47;
+  --background: #e7e0d4;
+  --foreground: #17140f;
+  --ink: #17140f;
+
+  /* السطوح: البطاقة أفتح من الصفحة حتى ترتفع عنها بلا ظل ثقيل */
+  --card: #fbf7f0;
+  --card-sunken: #f4efe4;
+
+  --accent: #c2542c;
+  --accent-ink: #fdf6ee;
+  --accent-soft: #f2e2d6;
+  --accent-strong: #9c3f1e;
+
+  --line: #ddd3c4;
+  --line-strong: #c9bda9;
+  --muted: #6b6257;
+  --muted-soft: #a89e90;
+
+  /* السطح الغامق ونصوصه — الجانب الأيسر في شاشة الدخول */
+  --on-ink: #f4efe4;
+  --on-ink-muted: #bdb3a4;
+  --line-ink: #3a352c;
+
+  /* ثلاثي RGB لظل التوهج تحت الأزرار — يتبع المزاج */
+  --glow: 194 84 44;
+
+  --radius-card: 1.75rem;
 }
 
 /* ---------------------------------------------------------------
-   الثيم يتبع المزاج — الدرجات معايرة على الأساس الكريمي.
+   الثيم يتبع المزاج. الهوية (ورق + حبر) ثابتة، والمزاج يحرّك اللون
+   الفاعل ويميل بالورق ميلة خفيفة فقط — لولا ذلك صار كل مزاج تطبيقاً
+   مختلفاً، وهذا آخر شي نبيه بعد ما وحّدنا اللغة البصرية.
    المنتقي داخل زر "غيّر" في بطاقة القرار.
    --------------------------------------------------------------- */
 
 :root[data-mood="hyped"] {
-  --background: #fff3e9;
-  --accent: #d93f27;
-  --accent-soft: #fbe0d7;
-  --accent-strong: #a83318;
-  --line: #f0d9c8;
-  --glow: 217 63 39;
+  --background: #ebdfd0;
+  --accent: #c2452a;
+  --accent-soft: #f3ddd2;
+  --accent-strong: #96311a;
+  --line: #dccdb9;
+  --glow: 194 69 42;
 }
 
 :root[data-mood="calm"] {
-  --background: #f1f5f4;
-  --accent: #1f6f63;
-  --accent-soft: #dcebe8;
-  --accent-strong: #15574d;
-  --line: #d6e2df;
-  --glow: 31 111 99;
+  --background: #dee5e0;
+  --accent: #2f6b57;
+  --accent-soft: #dbe8e2;
+  --accent-strong: #1f5040;
+  --line: #cbd8d1;
+  --glow: 47 107 87;
 }
 
 :root[data-mood="drained"] {
-  --background: #f2f1f6;
-  --accent: #4640b8;
-  --accent-soft: #e4e2f4;
-  --accent-strong: #363093;
-  --line: #dcd9e6;
-  --glow: 70 64 184;
+  --background: #e2e0e7;
+  --accent: #4a4478;
+  --accent-soft: #e2dfee;
+  --accent-strong: #342f5b;
+  --line: #d0ccd9;
+  --glow: 74 68 120;
 }
 
 :root[data-mood="happy"] {
-  --background: #fff6f9;
-  --accent: #c22268;
-  --accent-soft: #f9dce8;
-  --accent-strong: #971a51;
-  --line: #f2d8e3;
-  --glow: 194 34 104;
+  --background: #ecdfdd;
+  --accent: #b03a5b;
+  --accent-soft: #f2dde3;
+  --accent-strong: #862742;
+  --line: #dccbc9;
+  --glow: 176 58 91;
 }
 
 @theme inline {
@@ -67,9 +88,14 @@
   --color-accent-strong: var(--accent-strong);
   --color-ink: var(--ink);
   --color-card: var(--card);
+  --color-card-sunken: var(--card-sunken);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-muted: var(--muted);
   --color-muted-soft: var(--muted-soft);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-muted: var(--on-ink-muted);
+  --color-line-ink: var(--line-ink);
   --font-sans: var(--font-arabic);
   --font-heading: var(--font-heading);
   --font-latin: var(--font-latin);
@@ -93,6 +119,12 @@ h4,
 h5,
 h6 {
   font-family: var(--font-heading), var(--font-arabic), system-ui, sans-serif;
+}
+
+/* العناوين الكبيرة تتنفّس أضيق — المرعى واسع السطر افتراضياً */
+.display {
+  line-height: 1.15;
+  letter-spacing: -0.01em;
 }
 
 * {
@@ -120,14 +152,42 @@ h6 {
   border-radius: 4px;
 }
 
+/* على السطح الغامق الطوبيّ يذوب في السواد، فنستخدم الورق */
+.on-ink
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline-color: var(--on-ink);
+}
+
 /* العناصر اللي تستقبل التركيز برمجياً عند تغيّر الخطوة —
    ما نبي حلقة حولها لأن المستخدم ما نقلها بنفسه */
 [data-step-heading]:focus {
   outline: none;
 }
 
-/* الليبلات اللاتينية الصغيرة */
+/* ليبل صغير فوق العنوان. التباعد والحروف الكبيرة تخص اللاتيني فقط —
+   العربية ما لها حالة كبيرة، والتباعد يفكك الوصل بين حروفها */
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+.eyebrow:not([lang="ar"]) {
+  font-family: var(--font-latin), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* اسم قديم بقي لأن ملفات كثيرة تستدعيه */
 .tag {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.tag:not([lang="ar"]) {
   font-family: var(--font-latin), ui-monospace, monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.12em;
@@ -137,7 +197,7 @@ h6 {
   unicode-bidi: isolate;
 }
 
-/* شريحة صغيرة بخلفية برتقالية فاتحة — تتكرر كثير في التصميم */
+/* شريحة صغيرة بخلفية اللون الفاعل الفاتحة */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -150,9 +210,96 @@ h6 {
   font-weight: 500;
 }
 
-/* ظل ناعم للبطاقات، مثل الموك أب */
+/* ظل ورقي: خفيف وواسع، بلا حدّ حاد */
 .card-shadow {
   box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.04),
-    0 12px 32px -12px rgb(16 24 40 / 0.12);
+    0 1px 2px rgb(23 20 15 / 0.04),
+    0 18px 40px -24px rgb(23 20 15 / 0.28);
+}
+
+/* توهج تحت الزر الفاعل — يتبع لون المزاج عبر --glow.
+   القاعدة هنا خارج طبقات Tailwind فتغلب disabled:shadow-none
+   مهما كانت الأولوية — فنطفيه للمعطّل صراحةً */
+.glow {
+  box-shadow: 0 10px 24px rgb(var(--glow) / 0.35);
+}
+
+.glow:disabled {
+  box-shadow: none;
+}
+
+.glow-sm {
+  box-shadow: 0 6px 16px rgb(var(--glow) / 0.28);
+}
+
+/* ---------------------------------------------------------------
+   الكشف عند التمرير — يُدار من مكوّن Reveal.
+   الترانزيشن هنا يغلب قاعدة * لأن صنفاً أعلى تحديداً من نجمة.
+   --------------------------------------------------------------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------
+   بطاقات الهيرو العائمة — تطفو وتهبط ببطء، كل وحدة بميلها الخاص.
+   الدوران داخل المتغير حتى ما تمسحه الحركة العمودية.
+   --------------------------------------------------------------- */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--tilt, 0deg));
+  }
+  50% {
+    transform: translateY(-12px) rotate(var(--tilt, 0deg));
+  }
+}
+
+.floaty {
+  animation: floaty 6s ease-in-out infinite;
+}
+
+.floaty-slow {
+  animation: floaty 8s ease-in-out infinite;
+  animation-delay: 1.2s;
+}
+
+/* ---------------------------------------------------------------
+   الشريط الجاري — نسختان من المحتوى وإزاحة نصف المسار تعطي
+   حلقة بلا وصلة ظاهرة. حركة النظام معطّلة؟ قاعدة * فوق توقفه.
+   --------------------------------------------------------------- */
+.marquee {
+  overflow: hidden;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 3rem;
+  padding-inline-start: 3rem;
+  animation: marquee 36s linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(50%);
+  }
 }
