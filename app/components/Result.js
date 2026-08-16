@@ -83,7 +83,7 @@ export default function Result({
         <h2
           tabIndex={-1}
           data-step-heading
-          className="display mt-1 text-5xl font-bold sm:text-6xl"
+          className="display mt-3 text-5xl font-bold sm:text-6xl"
         >
           {chosen}
         </h2>

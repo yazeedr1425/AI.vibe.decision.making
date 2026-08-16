@@ -23,7 +23,7 @@ export function Recommendation({ recommendation }) {
         <span className="pill">{CONFIDENCE[r.confidence] ?? "ثقة متوسطة"}</span>
       </header>
 
-      <h2 tabIndex={-1} data-step-heading className="display mt-2 text-3xl font-bold sm:text-4xl">
+      <h2 tabIndex={-1} data-step-heading className="display mt-3 text-3xl font-bold sm:text-4xl">
         {r.recommended_path}
       </h2>
 
