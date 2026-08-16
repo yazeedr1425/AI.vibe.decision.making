@@ -204,25 +204,36 @@ function Hero({ onCta }) {
 
 /* ---------------------------------------------------------------
    شريط جارٍ بميل خفيف — حيرة الناس كلها تمر من هنا.
+
+   الغلاف بـ overflow-hidden ضروري لا تزيين: الميل والتكبير يوسّعان
+   صندوق الشريط عن عرض الشاشة (٩٣١ مقابل ٩١٢)، فيولّد تمريراً أفقياً
+   للصفحة كلها — فراغ فارغ يظهر عند التمرير جانباً. التكبير نفسه
+   مقصود: بدونه يكشف الميلُ مثلثين فاضيين عند الطرفين.
+
+   والحشوة العمودية على الغلاف لأن overflow-hidden يقصّ على صندوق
+   التخطيط، والدوران لا يدخل في حساب التخطيط — فبدونها تُقصّ زوايا
+   الشريط المائلة وتبان نهاياته مقطوعة أفقياً.
    --------------------------------------------------------------- */
 function MarqueeBand() {
   return (
-    <div aria-hidden className="-rotate-1 scale-[1.02] bg-ink py-4 text-on-ink">
-      <div className="marquee">
-        <div className="marquee-track">
-          {[0, 1].map((copy) => (
-            <div key={copy} className="flex shrink-0 items-center gap-12">
-              {MARQUEE.map((phrase) => (
-                <span
-                  key={phrase}
-                  className="flex items-center gap-12 whitespace-nowrap text-lg font-medium"
-                >
-                  {phrase}
-                  <span className="text-accent">✳</span>
-                </span>
-              ))}
-            </div>
-          ))}
+    <div aria-hidden className="overflow-hidden py-2">
+      <div className="-rotate-1 scale-[1.02] bg-ink py-4 text-on-ink">
+        <div className="marquee">
+          <div className="marquee-track">
+            {[0, 1].map((copy) => (
+              <div key={copy} className="flex shrink-0 items-center gap-12">
+                {MARQUEE.map((phrase) => (
+                  <span
+                    key={phrase}
+                    className="flex items-center gap-12 whitespace-nowrap text-lg font-medium"
+                  >
+                    {phrase}
+                    <span className="text-accent">✳</span>
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
