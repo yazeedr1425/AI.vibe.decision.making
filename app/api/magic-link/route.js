@@ -40,13 +40,24 @@ const fail = (status, message) =>
 // نفس بنية رسالة التحقق وألوانها: جداول وأنماط مضمّنة، لأن عملاء
 // البريد يتجاهلون CSS الخارجي و flex.
 //
+// الخلفية بيضاء لا ورقية: صندوق البريد نفسه أبيض، والشريط الورقي
+// حول البطاقة كان يبان إطاراً غريباً بدل ما يذوب في الصفحة. الورقيّ
+// باقٍ في البطاقة نفسها، وهو اللي يحمل دفء الهوية.
+//
 // المرعى يُطلب بثلاث طرق لأن كل عميل يحترم واحدة ويسقط غيرها: وسم
 // link، و@import داخل style، وإعلان مضمّن على العنوان نفسه. المُختبَر
 // في معاينة Mailtrap أن link وحده ما كفى — @import هو اللي حمّل الخط.
-// وجيميل وأوتلوك يسقطون الخطوط الخارجية مهما فعلنا فيرجعون لتاهوما،
-// وهذا مقبول: اللون والتخطيط يصلان في كل مكان، والوجه وحده يتنازل.
+// وجيميل يسقط الخطوط الخارجية مهما فعلنا، فما ينفع إلا ضبط ما بعده:
+// انظر ترتيب السقوط في FONT تحت.
 function emailHtml(actionLink) {
-  const FONT = "'Almarai', Tahoma, 'Segoe UI', Arial, sans-serif";
+  // ترتيب السقوط مقصود. جيميل يسقط الخطوط الخارجية دائماً، فالمهم
+  // ليس المرعى بل ما يليه: تاهوما خط عربي قديم الطراز ثقيل، والمرعى
+  // هندسي حديث — فالقفز إليه مباشرة كان يعطي أبعد شكل ممكن عن الهوية.
+  // نوتو سانس عربي مثبّت على أندرويد، وsystem-ui يعطي SF Arabic على
+  // آبل وSegoe UI على ويندوز، وكلها هندسية أقرب للمرعى. تاهوما تبقى
+  // آخر ملجأ لا أول بديل.
+  const FONT =
+    "'Almarai', 'Noto Sans Arabic', system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif";
 
   return `<!doctype html>
 <html lang="ar" dir="rtl">
@@ -62,9 +73,9 @@ function emailHtml(actionLink) {
     h1, h2, h3, td, span, a, p { font-family: ${FONT}; }
   </style>
 </head>
-<body style="margin:0; padding:0; background-color:#e7e0d4;" bgcolor="#e7e0d4">
+<body style="margin:0; padding:0; background-color:#ffffff;" bgcolor="#ffffff">
   <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">ضغطة وحدة وأنت داخل.</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#e7e0d4" style="background-color:#e7e0d4;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color:#ffffff;">
     <tr>
       <td align="center" style="padding:32px 16px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%;">
