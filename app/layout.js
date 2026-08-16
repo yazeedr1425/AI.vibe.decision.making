@@ -6,6 +6,7 @@ import {
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { MoodProvider } from "@/lib/theme/MoodProvider";
 import { VoiceProvider } from "@/lib/voice/VoiceProvider";
+import Splash from "./components/Splash";
 import "./globals.css";
 
 const plexArabic = IBM_Plex_Sans_Arabic({
@@ -46,6 +47,9 @@ export default function RootLayout({ children }) {
       className={`${plexArabic.variable} ${almarai.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* خارج المزوّدات: الافتتاحية ما تحتاج هوية ولا مزاجاً،
+            وتغطي الشاشة قبل أن يجهز أي منهما */}
+        <Splash />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-ink"

@@ -15,7 +15,7 @@
   --card: #fbf7f0;
   --card-sunken: #f4efe4;
 
-  --accent: #c2542c;
+  --accent: var(--mood-default);
   --accent-ink: #fdf6ee;
   --accent-soft: #f2e2d6;
   --accent-strong: #9c3f1e;
@@ -34,6 +34,15 @@
   --glow: 194 84 44;
 
   --radius-card: 1.75rem;
+
+  /* ألوان المزاج مسمّاة: الشاشة الافتتاحية تمرّ عليها كلها بالتتابع،
+     وكتلة كل مزاج تحت تستهلك نفس المتغيّر. لولا التسمية لانتسخت
+     القيم في مكانين وافترقت أول ما يتغيّر لون */
+  --mood-default: #c2542c;
+  --mood-hyped: #c2452a;
+  --mood-calm: #2f6b57;
+  --mood-drained: #4a4478;
+  --mood-happy: #b03a5b;
 }
 
 /* ---------------------------------------------------------------
@@ -45,7 +54,7 @@
 
 :root[data-mood="hyped"] {
   --background: #ebdfd0;
-  --accent: #c2452a;
+  --accent: var(--mood-hyped);
   --accent-soft: #f3ddd2;
   --accent-strong: #96311a;
   --line: #dccdb9;
@@ -54,7 +63,7 @@
 
 :root[data-mood="calm"] {
   --background: #dee5e0;
-  --accent: #2f6b57;
+  --accent: var(--mood-calm);
   --accent-soft: #dbe8e2;
   --accent-strong: #1f5040;
   --line: #cbd8d1;
@@ -63,7 +72,7 @@
 
 :root[data-mood="drained"] {
   --background: #e2e0e7;
-  --accent: #4a4478;
+  --accent: var(--mood-drained);
   --accent-soft: #e2dfee;
   --accent-strong: #342f5b;
   --line: #d0ccd9;
@@ -72,7 +81,7 @@
 
 :root[data-mood="happy"] {
   --background: #ecdfdd;
-  --accent: #b03a5b;
+  --accent: var(--mood-happy);
   --accent-soft: #f2dde3;
   --accent-strong: #862742;
   --line: #dccbc9;
@@ -233,6 +242,82 @@ h6 {
 
 .glow-sm {
   box-shadow: 0 6px 16px rgb(var(--glow) / 0.28);
+}
+
+/* ---------------------------------------------------------------
+   الشاشة الافتتاحية — لوح حبري يغطي كل شي ثم ينسحب.
+   العلامة تمرّ على ألوان المزاج الخمسة بالتتابع: نفس المتغيّرات
+   اللي تلوّن الموقع، فما فيه لون هنا لا وجود له هناك.
+   currentColor يخلي الخلفية والتوهج والشريط يتحركون بخاصية واحدة.
+   --------------------------------------------------------------- */
+@keyframes splash-mood {
+  0%,
+  100% {
+    color: var(--mood-default);
+  }
+  20% {
+    color: var(--mood-hyped);
+  }
+  40% {
+    color: var(--mood-calm);
+  }
+  60% {
+    color: var(--mood-drained);
+  }
+  80% {
+    color: var(--mood-happy);
+  }
+}
+
+@keyframes splash-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.splash {
+  position: fixed;
+  inset: 0;
+  /* فوق الشريط اللاصق (z-40) وفوق أي مودال */
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  opacity: 1;
+  transition: opacity 450ms ease;
+}
+
+.splash-out {
+  opacity: 0;
+}
+
+.splash-cycle {
+  animation: splash-mood 1.8s linear infinite;
+}
+
+.splash-mark {
+  background-color: currentColor;
+  box-shadow: 0 0 70px -8px currentColor;
+}
+
+.splash-bar > span {
+  background-color: currentColor;
+  transform-origin: right;
+  animation: splash-fill 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* قاعدة * فوق تطفي الحركة، فيبقى اللون على الافتراضي والشريط ممتلئاً */
+@media (prefers-reduced-motion: reduce) {
+  .splash-cycle {
+    color: var(--mood-default);
+  }
+
+  .splash-bar > span {
+    transform: none;
+  }
 }
 
 /* ---------------------------------------------------------------
