@@ -8,7 +8,7 @@ import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
 import { groupService } from "@/lib/services/group";
 import { profileService } from "@/lib/services/profile";
-import { useMoodTheme } from "@/lib/theme/useMoodTheme";
+import { useMood } from "@/lib/theme/MoodProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Landing from "./components/Landing";
 import QuestionStep from "./components/QuestionStep";
@@ -35,7 +35,8 @@ export default function Home() {
   const [step, setStep] = useState("landing");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [categoryId, setCategoryId] = useState(null);
-  const [mood, setMood] = useState(null);
+  // المزاج يعيش في المزوّد الجذري حتى يبقى اللون عبر كل الصفحات
+  const { mood, setMood } = useMood();
   const [options, setOptions] = useState(initialOptions);
   const [answers, setAnswers] = useState({});
   const [ratings, setRatings] = useState({});
@@ -53,7 +54,6 @@ export default function Home() {
     profileService.get().then((result) => {
       if (!active || !result.ok) return;
       if (result.profile.tone) setTone(result.profile.tone);
-      if (result.profile.default_mood) setMood(result.profile.default_mood);
     });
 
     profileService.touchLastSeen();
@@ -76,9 +76,6 @@ export default function Home() {
     const heading = document.querySelector("[data-step-heading]");
     heading?.focus();
   }, [step, questionIndex]);
-
-  // الثيم يتبع المزاج — نفس الـ hook المستخدم في الإعدادات
-  useMoodTheme(mood);
 
   const category = categoryId ? getCategory(categoryId) : null;
 

@@ -4,6 +4,7 @@ import {
   Space_Grotesk,
 } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { MoodProvider } from "@/lib/theme/MoodProvider";
 import { VoiceProvider } from "@/lib/voice/VoiceProvider";
 import "./globals.css";
 
@@ -51,8 +52,12 @@ export default function RootLayout({ children }) {
         >
           تخطَّ إلى المحتوى
         </a>
+        {/* المزاج فوق كل المسارات: لو عاش داخل صفحة انمسح لونه أول
+            ما يغادرها المستخدم */}
         <AuthProvider>
-          <VoiceProvider>{children}</VoiceProvider>
+          <MoodProvider>
+            <VoiceProvider>{children}</VoiceProvider>
+          </MoodProvider>
         </AuthProvider>
       </body>
     </html>

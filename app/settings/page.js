@@ -5,7 +5,7 @@ import Link from "next/link";
 import { MOODS } from "@/lib/engine/mood";
 import { TONES } from "@/lib/engine/tone";
 import { profileService } from "@/lib/services/profile";
-import { useMoodTheme } from "@/lib/theme/useMoodTheme";
+import { useClearMoodPreview, useMood } from "@/lib/theme/MoodProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useVoice } from "@/lib/voice/VoiceProvider";
 import SiteNav from "../components/SiteNav";
@@ -21,6 +21,9 @@ import {
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const { setReadAloud, tts } = useVoice();
+  const { setMood, setPreview } = useMood();
+  // مغادرة الصفحة بلا حفظ ترجّع اللون للمحفوظ في البروفايل
+  useClearMoodPreview();
 
   const [loaded, setLoaded] = useState(null); // { profile, email } بعد الجلب
   const [form, setForm] = useState(null);
@@ -75,6 +78,9 @@ export default function SettingsPage() {
     setSaving(false);
     if (result.ok) {
       setReadAloud(form.read_aloud);
+      // المحفوظ صار هو الأساس، فما بقي للمعاينة معنى
+      setMood(form.default_mood);
+      setPreview(undefined);
       setStatus({ ok: true, message: "انحفظت إعداداتك." });
     } else {
       setStatus({
@@ -83,10 +89,6 @@ export default function SettingsPage() {
       });
     }
   };
-
-  // معاينة حيّة: أول ما تختار مزاجاً يتلوّن الموقع كله، قبل الحفظ.
-  // بدونها كنت تختار وما يتغير شي، فتحس إن الإعداد ما اشتغل.
-  useMoodTheme(form?.default_mood ?? null);
 
   const ready = user && form && loaded?.userId === user.id;
 
@@ -193,7 +195,10 @@ export default function SettingsPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setForm({ ...form, default_mood: null })}
+                  onClick={() => {
+                    setForm({ ...form, default_mood: null });
+                    setPreview(null);
+                  }}
                   className={
                     "rounded-full border px-4 py-2 text-sm transition-colors " +
                     (form.default_mood === null
@@ -207,7 +212,10 @@ export default function SettingsPage() {
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => setForm({ ...form, default_mood: m.id })}
+                    onClick={() => {
+                      setForm({ ...form, default_mood: m.id });
+                      setPreview(m.id);
+                    }}
                     className={
                       "flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors " +
                       (form.default_mood === m.id
