@@ -37,20 +37,34 @@ function allowed(ip) {
 const fail = (status, message) =>
   Response.json({ ok: false, error: message }, { status });
 
-// نفس بنية رسالة التحقق: جداول وأنماط مضمّنة وخط النظام —
-// عملاء البريد ما يفهمون غيرها
+// نفس بنية رسالة التحقق وألوانها: جداول وأنماط مضمّنة، لأن عملاء
+// البريد يتجاهلون CSS الخارجي و flex.
+//
+// المرعى يُطلب بثلاث طرق لأن كل عميل يحترم واحدة ويسقط غيرها: وسم
+// link، و@import داخل style، وإعلان مضمّن على العنوان نفسه. المُختبَر
+// في معاينة Mailtrap أن link وحده ما كفى — @import هو اللي حمّل الخط.
+// وجيميل وأوتلوك يسقطون الخطوط الخارجية مهما فعلنا فيرجعون لتاهوما،
+// وهذا مقبول: اللون والتخطيط يصلان في كل مكان، والوجه وحده يتنازل.
 function emailHtml(actionLink) {
+  const FONT = "'Almarai', Tahoma, 'Segoe UI', Arial, sans-serif";
+
   return `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light" />
   <meta name="supported-color-schemes" content="light" />
   <title>رابط دخولك — احسم</title>
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&display=swap" rel="stylesheet" />
+  <style type="text/css">
+    @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&display=swap');
+    h1, h2, h3, td, span, a, p { font-family: ${FONT}; }
+  </style>
 </head>
-<body style="margin:0; padding:0; background-color:#faf6ef;" bgcolor="#faf6ef">
+<body style="margin:0; padding:0; background-color:#e7e0d4;" bgcolor="#e7e0d4">
   <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">ضغطة وحدة وأنت داخل.</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#faf6ef" style="background-color:#faf6ef;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#e7e0d4" style="background-color:#e7e0d4;">
     <tr>
       <td align="center" style="padding:32px 16px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%;">
@@ -58,22 +72,24 @@ function emailHtml(actionLink) {
             <td align="right" style="padding:0 8px 20px 8px;" dir="rtl">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" dir="rtl">
                 <tr>
-                  <td width="44" height="44" align="center" valign="middle" bgcolor="#e85d2f" style="background-color:#e85d2f; border-radius:14px; width:44px; height:44px;">
-                    <span style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:20px; font-weight:bold; color:#fff8f0; line-height:44px;">حـ</span>
+                  <td width="44" height="44" align="center" valign="middle" bgcolor="#c2542c" style="background-color:#c2542c; border-radius:14px; width:44px; height:44px;">
+                    <span style="font-family:${FONT}; font-size:20px; font-weight:bold; color:#fdf6ee; line-height:44px;">حـ</span>
                   </td>
                   <td style="padding-right:12px;">
-                    <span style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:22px; font-weight:bold; color:#1f1b16;">احسم</span>
+                    <span style="font-family:${FONT}; font-size:22px; font-weight:bold; color:#17140f;">احسم</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
           <tr>
-            <td bgcolor="#ffffff" style="background-color:#ffffff; border:1px solid #e4dbcd; border-radius:24px; padding:40px 32px;" dir="rtl">
+            <td bgcolor="#fbf7f0" style="background-color:#fbf7f0; border:1px solid #ddd3c4; border-radius:28px; padding:40px 32px;" dir="rtl">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl">
                 <tr>
-                  <td align="right" style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; color:#1f1b16;">
-                    <h1 style="margin:0 0 12px 0; font-size:26px; line-height:1.35; font-weight:bold;">رابط دخولك جاهز</h1>
+                  <td align="right" style="font-family:${FONT}; color:#17140f;">
+                    <!-- ١٫٢٥ لا ١٫٣٥: الهمزة والشدة تعلوان صندوق السطر في
+                         العربية، والضيق يخلّيهما يلامسان ما فوقهما -->
+                    <h1 style="font-family:${FONT}; margin:0 0 12px 0; font-size:28px; line-height:1.25; font-weight:bold;">رابط دخولك جاهز</h1>
                     <p style="margin:0 0 24px 0; font-size:16px; line-height:1.8; color:#6b6257;">
                       اضغط الزر وأنت داخل — بلا كلمة مرور. الرابط يفتح مرة
                       واحدة، فلو ما اشتغل اطلب رابطاً جديداً من صفحة الدخول.
@@ -84,18 +100,18 @@ function emailHtml(actionLink) {
                   <td align="center" style="padding:4px 0 28px 0;">
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
-                        <td align="center" bgcolor="#e85d2f" style="background-color:#e85d2f; border-radius:16px;">
-                          <a href="${actionLink}" style="display:inline-block; padding:15px 44px; font-family:Tahoma, 'Segoe UI', Arial, sans-serif; font-size:17px; font-weight:bold; color:#fff8f0; text-decoration:none; border-radius:16px;">ادخل لاحسم</a>
+                        <td align="center" bgcolor="#c2542c" style="background-color:#c2542c; border-radius:999px;">
+                          <a href="${actionLink}" style="display:inline-block; padding:15px 44px; font-family:${FONT}; font-size:17px; font-weight:bold; color:#fdf6ee; text-decoration:none; border-radius:999px;">ادخل لاحسم</a>
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
                 <tr>
-                  <td align="right" style="font-family:Tahoma, 'Segoe UI', Arial, sans-serif; border-top:1px solid #e4dbcd; padding-top:20px;">
+                  <td align="right" style="font-family:${FONT}; border-top:1px solid #ddd3c4; padding-top:20px;">
                     <p style="margin:0 0 8px 0; font-size:13px; line-height:1.7; color:#6b6257;">الزر ما اشتغل؟ انسخ الرابط والصقه في متصفحك:</p>
                     <p style="margin:0; font-size:12px; line-height:1.7; word-break:break-all;" dir="ltr" align="left">
-                      <a href="${actionLink}" style="color:#b8461d; text-decoration:underline;">${actionLink}</a>
+                      <a href="${actionLink}" style="color:#9c3f1e; text-decoration:underline;">${actionLink}</a>
                     </p>
                   </td>
                 </tr>
@@ -103,7 +119,7 @@ function emailHtml(actionLink) {
             </td>
           </tr>
           <tr>
-            <td align="right" style="padding:20px 8px 0 8px; font-family:Tahoma, 'Segoe UI', Arial, sans-serif;" dir="rtl">
+            <td align="right" style="padding:20px 8px 0 8px; font-family:${FONT};" dir="rtl">
               <p style="margin:0; font-size:12px; line-height:1.7; color:#a89e90;">
                 ما طلبت الدخول؟ تجاهل هذي الرسالة وما راح يدخل أحد —
                 الرابط ما يوصل إلا لبريدك.
