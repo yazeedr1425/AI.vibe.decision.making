@@ -6,7 +6,7 @@ import { decisionService } from "@/lib/services/decisions";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import OutcomeAsk from "./OutcomeAsk";
 import PatternsCard from "./PatternsCard";
-import { Eyebrow, GhostButton, InkButton } from "./ui";
+import { GhostButton, InkButton } from "./ui";
 import { ArrowLeft, CircleCheck, TriangleAlert } from "./icons";
 
 // كان معروضاً ٣، وقراءة الأنماط تحتاج ٥ مقيَّمة — فما كان للمستخدم
@@ -80,12 +80,9 @@ export default function HistorySection({ onSignIn, refreshKey }) {
   return (
     <section id="history" className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <Eyebrow>ارجع لها وقت ما تحتاج</Eyebrow>
-          <h2 className="display text-3xl font-bold sm:text-4xl">
-            سجل القرارات
-          </h2>
-        </div>
+        <h2 className="display text-3xl font-bold sm:text-4xl">
+          سجل القرارات
+        </h2>
         {state.status === "ready" &&
           state.decisions.length >= COMPACT_LIMIT && (
             <GhostButton

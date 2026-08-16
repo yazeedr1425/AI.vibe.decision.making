@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/engine/categories";
-import { MOODS, getMood } from "@/lib/engine/mood";
+import { MOODS } from "@/lib/engine/mood";
 import { looksOversized } from "@/lib/engine/oversized";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { listenOnce } from "@/lib/voice/speech";
@@ -11,7 +11,7 @@ import { parseSpokenOptions } from "@/lib/voice/match";
 import { useVoice } from "@/lib/voice/VoiceProvider";
 import ThirdOptionHint from "./ThirdOptionHint";
 import Reveal from "./Reveal";
-import { Eyebrow, Field } from "./ui";
+import { Field } from "./ui";
 import {
   Activity,
   ArrowLeft,
@@ -132,11 +132,6 @@ function Hero({ onCta }) {
   return (
     <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pb-20 pt-12 sm:px-6 sm:pt-16 lg:grid-cols-[7fr_5fr] lg:gap-8">
       <Reveal className="flex flex-col items-start gap-6">
-        <span className="pill">
-          <Sparkles size={14} />
-          مساعد قرارك اليومي
-        </span>
-
         <h1 className="display text-5xl font-bold sm:text-6xl lg:text-[4.5rem]">
           خلّ الحيرة{" "}
           <br aria-hidden />
@@ -182,8 +177,7 @@ function Hero({ onCta }) {
           className="floaty card-shadow rounded-[1.75rem] border border-line bg-card p-6 pb-10"
           style={{ "--tilt": "2deg" }}
         >
-          <p className="text-sm text-muted">قرار جديد</p>
-          <p className="mt-1.5 text-2xl font-bold">وين نتعشى الليلة؟</p>
+          <p className="text-2xl font-bold">وين نتعشى الليلة؟</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="rounded-full border border-line-strong px-4 py-1.5 text-sm">
               برجر
@@ -273,7 +267,6 @@ function ComposerSection({
   const filledLabels = options.map((o) => o.label.trim()).filter(Boolean);
   const filled = filledLabels.length;
   const ready = filled >= MIN_OPTIONS && categoryId;
-  const activeMood = getMood(mood);
 
   // بانر التفكيك: كشف محلي بلا نداء، والدخول بيد المستخدم دائماً
   const oversizedKey = filledLabels.join("|");
@@ -378,7 +371,6 @@ function ComposerSection({
           {/* ------------ لوح الكتابة ------------ */}
           <div className="flex flex-col gap-7 bg-card p-6 sm:p-10 lg:p-12">
             <header className="flex flex-col gap-2.5">
-              <Eyebrow>قرار جديد</Eyebrow>
               <h2 className="display text-3xl font-bold sm:text-[2.4rem]">
                 وش القرار اللي محتار فيه؟
               </h2>
@@ -485,9 +477,7 @@ function ComposerSection({
               </fieldset>
 
               <fieldset>
-                <legend className="mb-2.5 text-sm text-muted">
-                  مزاجك — يغيّر لون الصفحة ووزن معيار واحد
-                </legend>
+                <legend className="mb-2.5 text-sm text-muted">مزاجك</legend>
                 <div className="flex flex-wrap gap-2">
                   {MOODS.map((m) => (
                     <button
@@ -502,9 +492,6 @@ function ComposerSection({
                     </button>
                   ))}
                 </div>
-                {activeMood && (
-                  <p className="mt-2.5 text-sm text-muted">{activeMood.line}</p>
-                )}
               </fieldset>
             </div>
 
@@ -624,8 +611,7 @@ function ComposerSection({
 function StepsSection() {
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
-      <Reveal className="mb-10 flex flex-col gap-2">
-        <Eyebrow>الطريقة</Eyebrow>
+      <Reveal className="mb-10">
         <h2 className="display text-3xl font-bold sm:text-4xl">
           ثلاث خطوات وتنحسم.
         </h2>
@@ -701,8 +687,7 @@ function FeaturesSection({ onVoiceMode, onCta }) {
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-12 pb-20 sm:px-6">
-      <Reveal className="mb-10 flex flex-col gap-2">
-        <Eyebrow>أكثر من حسم سريع</Eyebrow>
+      <Reveal className="mb-10">
         <h2 className="display text-3xl font-bold sm:text-4xl">
           كل أنواع الحيرة، لها أداة.
         </h2>
