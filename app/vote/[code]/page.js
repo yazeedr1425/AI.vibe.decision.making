@@ -9,7 +9,6 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import SiteFooter from "@/app/components/SiteFooter";
 import {
-  Eyebrow,
   Field,
   GhostButton,
   PrimaryButton,
@@ -285,15 +284,16 @@ export default function VotePage() {
 
   return (
     <Shell>
-      <div className="flex items-center justify-between gap-3">
-        <Eyebrow>{closed ? "النتيجة" : "تصويت جماعي"}</Eyebrow>
-        {present > 0 && (
+      {/* بعد حذف الوسم ما بقي في الصف إلا شارة الحضور — والصف الفاضي
+          يظل عنصراً في flex ويورث فجوة كاملة، فنحذفه معها */}
+      {present > 0 && (
+        <div className="flex items-center justify-end">
           <span className="pill">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
             الحاضرين الحين: {hindi(present)}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <h1
         tabIndex={-1}
@@ -306,11 +306,7 @@ export default function VotePage() {
       {/* ---------- النتيجة: حكم القروب بالحبر، مثل بطاقة النتيجة ---------- */}
       {closed && (
         <section className="on-ink rounded-[1.5rem] bg-ink p-6 text-on-ink sm:p-7">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-accent">
-            <Trophy size={14} className="shrink-0" />
-            القروب حسمها
-          </p>
-          <p className="display mt-2 text-4xl font-bold">
+          <p className="display text-4xl font-bold">
             {winnerLabel ?? "…"}
           </p>
           {verdict?.announcement && (

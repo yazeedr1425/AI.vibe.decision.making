@@ -81,10 +81,6 @@ export default function HowItWorks() {
       >
         {/* المقدمة */}
         <section className="flex flex-col gap-5">
-          <span className="pill self-start">
-            <Sparkles size={14} />
-            كيف يعمل
-          </span>
           <h1 className="display text-4xl font-bold sm:text-5xl">
             من الحيرة إلى قرار، في أقل من دقيقة.
           </h1>

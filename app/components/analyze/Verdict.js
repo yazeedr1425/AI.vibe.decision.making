@@ -1,6 +1,5 @@
 "use client";
 
-import { Eyebrow } from "../ui";
 
 const CONFIDENCE = {
   high: "ثقة عالية",
@@ -21,7 +20,6 @@ export function Recommendation({ recommendation }) {
   return (
     <section className="on-ink card-shadow rounded-[var(--radius-card)] bg-ink p-6 text-on-ink sm:p-8">
       <header className="flex flex-wrap items-center gap-2">
-        <Eyebrow>الخلاصة</Eyebrow>
         <span className="pill">{CONFIDENCE[r.confidence] ?? "ثقة متوسطة"}</span>
       </header>
 
@@ -33,8 +31,7 @@ export function Recommendation({ recommendation }) {
 
       {r.answering_objections && (
         <div className="mt-5 rounded-2xl bg-white/5 p-4">
-          <Eyebrow>رد على الاعتراضات</Eyebrow>
-          <p className="mt-1.5 text-sm leading-relaxed">{r.answering_objections}</p>
+          <p className="text-sm leading-relaxed">{r.answering_objections}</p>
         </div>
       )}
 

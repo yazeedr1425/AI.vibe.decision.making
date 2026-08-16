@@ -23,7 +23,6 @@ import {
   MoodIcon,
   Plus,
   Scale,
-  Sparkles,
   TriangleAlert,
   Users,
 } from "./icons";
@@ -160,9 +159,6 @@ function Hero({ onCta }) {
           </Link>
         </div>
 
-        <p className="text-sm text-muted-soft">
-          بدون حساب — الحساب للحفظ فقط، وقرارك ما يطلع لأحد.
-        </p>
       </Reveal>
 
       {/* المعاينة: سؤال ورقي وحكم حبري يركب على زاويته السفلية.
@@ -196,11 +192,7 @@ function Hero({ onCta }) {
           className="floaty-slow on-ink absolute bottom-0 left-2 w-[70%] rounded-[1.5rem] bg-ink p-5 text-on-ink shadow-[0_24px_48px_-16px_rgb(23_20_15/0.5)]"
           style={{ "--tilt": "-3deg" }}
         >
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-accent">
-            <Sparkles size={13} />
-            انحسمت
-          </p>
-          <p className="mt-1 text-xl font-bold">سوشي.</p>
+          <p className="text-xl font-bold">سوشي.</p>
           <p className="mt-1 text-sm leading-relaxed text-on-ink-muted">
             خفيف، يناسب مزاجك الليلة، وما يأخّرك عن نومك.
           </p>
@@ -594,10 +586,6 @@ function ComposerSection({
               </div>
             </div>
 
-            <p className="border-t border-line-ink pt-6 text-sm leading-relaxed text-on-ink-muted">
-              تقدر تستخدم احسم بدون حساب. الحساب للحفظ فقط — وما نشارك
-              قراراتك مع أحد.
-            </p>
           </aside>
         </div>
       </Reveal>

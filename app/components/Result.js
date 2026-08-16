@@ -13,14 +13,13 @@ import {
   CircleCheck,
   Dices,
   Scale,
-  Sparkles,
   TriangleAlert,
   Trophy,
 } from "./icons";
 
 const SPIN_MS = 1200;
 
-// الحكم حبري والحساب ورقي — نفس بطاقة «انحسمت» العائمة في الهيرو،
+// الحكم حبري والحساب ورقي — نفس البطاقة الغامقة العائمة في الهيرو،
 // لكن بالحجم الكامل: اللي شافه المستخدم وعداً أول ما دخل يشوفه
 // الآن حقيقةً.
 export default function Result({
@@ -80,11 +79,7 @@ export default function Result({
     <div className="flex flex-col gap-6">
       {/* الحكم — يُعلن ويستقبل التركيز أول ما تظهر النتيجة */}
       <section className="on-ink card-shadow rounded-[var(--radius-card)] bg-ink p-7 text-on-ink sm:p-10">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-accent">
-          <Sparkles size={13} />
-          انحسمت
-        </p>
-        <p className="mt-4 text-sm text-on-ink-muted">قرارك هو</p>
+        <p className="text-sm text-on-ink-muted">قرارك هو</p>
         <h2
           tabIndex={-1}
           data-step-heading

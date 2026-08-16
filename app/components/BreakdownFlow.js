@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { decisionService } from "@/lib/services/decisions";
 import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
 import {
-  Eyebrow,
   GhostButton,
   PrimaryButton,
   Progress,
@@ -250,7 +249,6 @@ export default function BreakdownFlow({ options, categoryId, onCancel, onRestart
         <Progress current={index + 1} total={questions.length} />
 
         <header className="flex flex-col gap-2">
-          <Eyebrow>{`فحص ${"١٢٣٤٥٦"[index] ?? index + 1}`}</Eyebrow>
           <h2
             tabIndex={-1}
             ref={headingRef}
