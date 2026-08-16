@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-// الظهور ثم الانسحاب. المدة مقصودة قصيرة: الشاشة الافتتاحية لحظة
-// هوية لا حاجز — والزيادة عليها تتحول من لمسة إلى تأخير.
-const HOLD_MS = 1300;
+// الظهور ثم الانسحاب. لون واحد ثابت ما يحتاج وقتاً ليُقرأ، فالمدة
+// رجعت لحدّ اللمسة: تكفي لتثبيت العلامة وما تتحول لانتظار.
+const HOLD_MS = 1600;
 const FADE_MS = 450;
 // مع تعطيل الحركة في النظام: نمر سريعاً بدل ما نلغيها كلياً، حتى
 // ما تقفز الصفحة فجأة من سواد إلى محتوى
@@ -50,8 +50,11 @@ export default function Splash() {
     <div
       aria-hidden
       className={"splash" + (phase === "fading" ? " splash-out" : "")}
+      // مصدر واحد لمدة الشريط: ثابت وقت الرندر فيتطابق الخادم
+      // والمتصفح، ويتبع HOLD_MS لو تغيّر
+      style={{ "--splash-hold": `${HOLD_MS}ms` }}
     >
-      <div className="splash-cycle flex flex-col items-center gap-5">
+      <div className="splash-tint flex flex-col items-center gap-5">
         <span className="splash-mark flex h-20 w-20 items-center justify-center rounded-[1.4rem] text-4xl font-bold">
           <span className="text-[color:var(--accent-ink)]">حـ</span>
         </span>
