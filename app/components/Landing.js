@@ -51,35 +51,29 @@ const EXAMPLES = [
   },
 ];
 
-// عبارات الشريط الجاري — حيرة يومية يعرفها الكل، تجميلية بحتة
-const MARQUEE = [
-  "وين نتعشى الليلة؟",
-  "أطلب ولا أطبخ؟",
-  "أشتري الحين أو أنتظر التخفيض؟",
-  "أروح الجيم ولا أرتاح؟",
-  "أكمّل المسلسل ولا أنام؟",
-  "قهوة ثالثة… فكرة زينة؟",
-  "أرد على الرسالة الحين ولا بكرة؟",
-];
-
 // أرقام هندية — الصفحة كلها عربية والرقم اللاتيني ينشز
 const ORDINALS = ["١", "٢", "٣", "٤", "٥"];
 
+// كل خطوة بتدرّجها، والثلاثة تمشي على محطات المزاج بالترتيب فتقرأ
+// كتسلسل لا كثلاثة ألوان متفرقة
 const STEPS = [
   {
     number: "٠١",
     title: "اكتب خياراتك",
     sub: "خيارين أو أكثر، بكلماتك. أو أملِها بصوتك وخلنا نرتبها.",
+    gradient: "linear-gradient(120deg, var(--accent), var(--grad-c))",
   },
   {
     number: "٠٢",
     title: "جاوب أسئلة خفيفة",
     sub: "وقتك، مزاجك، أولوياتك — أسئلة تضبط الميزان قبل الحكم.",
+    gradient: "linear-gradient(120deg, var(--grad-c), var(--grad-d))",
   },
   {
     number: "٠٣",
     title: "خذ الترشيح والسبب",
     sub: "جواب واحد واضح، مع ليش. مو قائمة إيجابيات تحسمها أنت.",
+    gradient: "linear-gradient(120deg, var(--grad-d), var(--grad-e))",
   },
 ];
 
@@ -102,7 +96,6 @@ export default function Landing({
   return (
     <div className="flex flex-col">
       <Hero onCta={scrollToComposer} />
-      <MarqueeBand />
       <ComposerSection
         mood={mood}
         setMood={setMood}
@@ -129,12 +122,13 @@ export default function Landing({
    --------------------------------------------------------------- */
 function Hero({ onCta }) {
   return (
-    <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pb-20 pt-12 sm:px-6 sm:pt-16 lg:grid-cols-[7fr_5fr] lg:gap-8">
+    <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pb-22 pt-14 sm:px-6 sm:pt-18 lg:grid-cols-[7fr_5fr] lg:gap-8">
       <Reveal className="flex flex-col items-start gap-6">
+        {/* نصف العنوان بتدرّج المزاج: الجملة تبدأ حبراً وتنتهي لوناً،
+            فيقع الوعد نفسه («تنتهي عندك») في الضوء */}
         <h1 className="display text-5xl font-bold sm:text-6xl lg:text-[4.5rem]">
-          خلّ الحيرة{" "}
-          <br aria-hidden />
-          <span className="text-accent">تنتهي عندك.</span>
+          خلّ الحيرة <br aria-hidden />
+          <span className="grad-text">تنتهي عندك.</span>
         </h1>
 
         <p className="max-w-xl text-lg leading-relaxed text-muted sm:text-xl">
@@ -146,31 +140,30 @@ function Hero({ onCta }) {
           <button
             type="button"
             onClick={onCta}
-            className="glow flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-lg font-semibold text-accent-ink transition-all hover:brightness-95 active:translate-y-px"
+            className="action flex items-center gap-2 rounded-full px-8 py-4 text-lg font-semibold transition-all active:translate-y-px"
           >
             ابدأ قرارك
             <ArrowLeft size={20} />
           </button>
           <Link
             href="/how"
-            className="rounded-full border border-line-strong px-6 py-4 font-medium transition-colors hover:border-ink"
+            className="glass rounded-full border border-line-strong bg-white/50 px-6 py-4 font-medium transition-colors hover:border-ink"
           >
             كيف يعمل؟
           </Link>
         </div>
-
       </Reveal>
 
-      {/* المعاينة: سؤال ورقي وحكم حبري يركب على زاويته السفلية.
+      {/* المعاينة: سؤال زجاجي وحكم حبري يركب على زاويته السفلية.
           الحكم مطلق الموضع، فالحاوية تحجز له فراغاً تحتها حتى ما
-          يبلع شرائح الخيارات ولا يلمس الشريط الجاري */}
+          يبلع شرائح الخيارات */}
       <Reveal
         delay={150}
         className="relative mx-auto hidden w-full max-w-sm pb-24 sm:block lg:max-w-none"
       >
         <div
           aria-hidden
-          className="floaty card-shadow rounded-[1.75rem] border border-line bg-card p-6 pb-10"
+          className="floaty glass-deep rounded-[1.75rem] border border-line bg-card p-6 pb-10 shadow-[0_30px_60px_-30px_rgb(23_20_15/0.26),inset_0_1px_0_rgb(255_255_255/0.14)]"
           style={{ "--tilt": "2deg" }}
         >
           <p className="text-2xl font-bold">وين نتعشى الليلة؟</p>
@@ -189,10 +182,10 @@ function Hero({ onCta }) {
 
         <div
           aria-hidden
-          className="floaty-slow on-ink absolute bottom-0 left-2 w-[70%] rounded-[1.5rem] bg-ink p-5 text-on-ink shadow-[0_24px_48px_-16px_rgb(23_20_15/0.5)]"
+          className="floaty-slow ink-glass on-ink absolute bottom-0 left-2 w-[70%] rounded-[1.5rem] p-5"
           style={{ "--tilt": "-3deg" }}
         >
-          <p className="text-xl font-bold">سوشي.</p>
+          <p className="grad-text-on-ink text-xl font-bold">سوشي.</p>
           <p className="mt-1 text-sm leading-relaxed text-on-ink-muted">
             خفيف، يناسب مزاجك الليلة، وما يأخّرك عن نومك.
           </p>
@@ -203,46 +196,9 @@ function Hero({ onCta }) {
 }
 
 /* ---------------------------------------------------------------
-   شريط جارٍ بميل خفيف — حيرة الناس كلها تمر من هنا.
-
-   الغلاف بـ overflow-hidden ضروري لا تزيين: الميل والتكبير يوسّعان
-   صندوق الشريط عن عرض الشاشة (٩٣١ مقابل ٩١٢)، فيولّد تمريراً أفقياً
-   للصفحة كلها — فراغ فارغ يظهر عند التمرير جانباً. التكبير نفسه
-   مقصود: بدونه يكشف الميلُ مثلثين فاضيين عند الطرفين.
-
-   والحشوة العمودية على الغلاف لأن overflow-hidden يقصّ على صندوق
-   التخطيط، والدوران لا يدخل في حساب التخطيط — فبدونها تُقصّ زوايا
-   الشريط المائلة وتبان نهاياته مقطوعة أفقياً.
-   --------------------------------------------------------------- */
-function MarqueeBand() {
-  return (
-    <div aria-hidden className="overflow-hidden py-2">
-      <div className="-rotate-1 scale-[1.02] bg-ink py-4 text-on-ink">
-        <div className="marquee">
-          <div className="marquee-track">
-            {[0, 1].map((copy) => (
-              <div key={copy} className="flex shrink-0 items-center gap-12">
-                {MARQUEE.map((phrase) => (
-                  <span
-                    key={phrase}
-                    className="flex items-center gap-12 whitespace-nowrap text-lg font-medium"
-                  >
-                    {phrase}
-                    <span className="text-accent">✳</span>
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------
-   المؤلّف: هنا المنتج نفسه. لوح ورقي للكتابة ولوح حبري للأمثلة —
-   نفس انقسام شاشة الدخول.
+   المؤلّف: هنا المنتج نفسه. لوح كتابة زجاجي ولوح أمثلة أفتح منه
+   بخيط يفصلهما — الانقسام باقٍ والفرق صار في وزن الزجاج لا في
+   قلب اللون.
    --------------------------------------------------------------- */
 function ComposerSection({
   mood,
@@ -365,14 +321,17 @@ function ComposerSection({
     "flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition-all " +
     (active
       ? "bg-ink text-on-ink"
-      : "border border-line-strong text-ink hover:border-ink hover:bg-card");
+      : "border border-line-strong bg-white/50 text-ink hover:border-ink hover:bg-white/75");
 
   return (
-    <section id="how" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-20 sm:px-6">
+    <section
+      id="how"
+      className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-20 sm:px-6"
+    >
       <Reveal>
-        <div className="card-shadow grid overflow-hidden rounded-[2rem] border border-line lg:grid-cols-[3fr_2fr]">
+        <div className="panel-shadow grid overflow-hidden rounded-[2rem] border border-line lg:grid-cols-[3fr_2fr]">
           {/* ------------ لوح الكتابة ------------ */}
-          <div className="flex flex-col gap-7 bg-card p-6 sm:p-10 lg:p-12">
+          <div className="glass-deep flex flex-col gap-7 bg-card p-6 sm:p-10 lg:p-12">
             <header className="flex flex-col gap-2.5">
               <h2 className="display text-3xl font-bold sm:text-[2.4rem]">
                 وش القرار اللي محتار فيه؟
@@ -532,7 +491,7 @@ function ComposerSection({
                 type="button"
                 onClick={onStart}
                 disabled={!ready}
-                className="glow flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-4 text-lg font-semibold text-accent-ink transition-all hover:brightness-95 active:translate-y-px disabled:cursor-not-allowed disabled:bg-line disabled:text-muted disabled:shadow-none disabled:brightness-100"
+                className="action flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-lg font-semibold transition-all active:translate-y-px"
               >
                 احسمها لي
                 <ArrowLeft size={20} />
@@ -560,17 +519,23 @@ function ComposerSection({
             </div>
           </div>
 
-          {/* ------------ اللوح الحبري: الأمثلة ------------ */}
+          {/* ------------ لوح الأمثلة ------------
+              زجاج أفتح من لوح الكتابة وخيط بينهما: الانقسام يُقرأ من
+              فرق الوزن لا من قلب اللون */}
           <aside
             id="examples"
-            className="on-ink flex flex-col gap-8 bg-ink p-6 text-on-ink sm:p-10 lg:p-12"
+            className="glass flex flex-col gap-8 border-line p-6 sm:p-10 lg:border-s lg:p-12"
+            style={{
+              backgroundImage:
+                "linear-gradient(200deg, rgb(255 255 255 / 0.74), rgb(255 255 255 / 0.5))",
+            }}
           >
             {/* فوق المنتصف بقليل — المنتصف الهندسي يبان نازلاً للعين */}
             <div className="my-auto flex flex-col gap-6 lg:-translate-y-4">
               <h3 className="display text-2xl font-bold sm:text-3xl">
                 مو عارف من وين تبدأ؟
               </h3>
-              <p className="text-sm leading-relaxed text-on-ink-muted">
+              <p className="text-sm leading-relaxed text-muted">
                 جرّب واحدة من هذي — تتعبى لك جاهزة وتعدّلها على كيفك:
               </p>
 
@@ -580,7 +545,7 @@ function ComposerSection({
                     key={ex.label}
                     type="button"
                     onClick={() => applyExample(ex)}
-                    className="group -mx-3 flex items-center gap-3 rounded-xl px-3 py-3 text-start transition-colors hover:bg-white/5"
+                    className="group -mx-3 flex items-center gap-3 rounded-xl px-3 py-3 text-start transition-colors hover:bg-ink/5"
                   >
                     <CategoryIcon
                       categoryId={ex.categoryId}
@@ -590,13 +555,12 @@ function ComposerSection({
                     <span className="text-[1.05rem]">{ex.label}</span>
                     <ArrowLeft
                       size={16}
-                      className="mr-auto shrink-0 text-on-ink-muted opacity-0 transition-opacity group-hover:opacity-100"
+                      className="mr-auto shrink-0 text-muted-soft opacity-0 transition-opacity group-hover:opacity-100"
                     />
                   </button>
                 ))}
               </div>
             </div>
-
           </aside>
         </div>
       </Reveal>
@@ -605,7 +569,8 @@ function ComposerSection({
 }
 
 /* ---------------------------------------------------------------
-   الخطوات الثلاث — أرقام هندية ضخمة بالمرعى، تنكشف بالتتابع.
+   الخطوات الثلاث — أرقام هندية ضخمة بتدرّج متدرّج المحطات،
+   تنكشف بالتتابع.
    --------------------------------------------------------------- */
 function StepsSection() {
   return (
@@ -619,13 +584,14 @@ function StepsSection() {
       <div className="grid gap-6 md:grid-cols-3">
         {STEPS.map((step, i) => (
           <Reveal key={step.number} delay={i * 120}>
-            <div className="flex h-full flex-col gap-3 rounded-[1.75rem] border border-line bg-card/60 p-7 transition-all hover:-translate-y-1 hover:bg-card hover:shadow-[0_18px_40px_-24px_rgb(23_20_15/0.3)]">
+            <div className="glass flex h-full flex-col gap-3 rounded-[1.75rem] border border-line bg-card p-7 shadow-[inset_0_1px_0_rgb(255_255_255/0.1)] transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_-24px_rgb(23_20_15/0.3)]">
               <span
                 aria-hidden
-                className="display text-5xl font-bold text-accent"
+                className="grad-text display text-5xl font-bold"
                 style={{
                   fontFamily:
                     "var(--font-heading), var(--font-arabic), sans-serif",
+                  backgroundImage: step.gradient,
                 }}
               >
                 {step.number}
@@ -643,7 +609,31 @@ function StepsSection() {
 /* ---------------------------------------------------------------
    الميزات — ست بطاقات، كل وحدة توديك لمكانها: الصوتية تفتح
    المحادثة، والخطة والتحليل صفحات، والبقية ترجعك للمؤلّف.
+
+   قرص الأيقونة ياخذ تدرّجه من بقعتين من بقع الشفق، فتختلف الستة
+   عن بعض ويبقى الجميع داخل عائلة المزاج. لون الأيقونة نفسها ثابت
+   على --accent-strong: لو تبع كل قرص لونه، صار تباين النص رهاناً
+   على ست قيم بدل قيمة واحدة مضمونة.
    --------------------------------------------------------------- */
+
+// كل زوج: [بقعة البداية، بقعة النهاية] — ودورة تخلي المتجاورين
+// ما يتشابهون
+const BADGES = [
+  ["var(--glow)", "var(--mesh-4)"],
+  ["var(--mesh-4)", "var(--mesh-3)"],
+  ["var(--mesh-3)", "var(--mesh-2)"],
+  ["var(--mesh-2)", "var(--mesh-1)"],
+  ["var(--glow)", "var(--mesh-2)"],
+  ["var(--mesh-4)", "var(--glow)"],
+];
+
+const badgeStyle = (i) => {
+  const [from, to] = BADGES[i % BADGES.length];
+  return {
+    backgroundImage: `linear-gradient(140deg, rgb(${from} / 0.32), rgb(${to} / 0.28))`,
+  };
+};
+
 function FeaturesSection({ onVoiceMode, onCta }) {
   const features = [
     {
@@ -697,7 +687,10 @@ function FeaturesSection({ onVoiceMode, onCta }) {
           const Icon = f.icon;
           const inner = (
             <>
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-strong transition-colors group-hover:bg-accent group-hover:text-accent-ink">
+              <span
+                className="flex h-12 w-12 items-center justify-center rounded-full border border-line text-accent-strong"
+                style={badgeStyle(i)}
+              >
                 <Icon size={22} />
               </span>
               <span className="text-lg font-bold">{f.title}</span>
@@ -707,7 +700,7 @@ function FeaturesSection({ onVoiceMode, onCta }) {
             </>
           );
           const cardClass =
-            "group flex h-full flex-col items-start gap-3 rounded-[1.75rem] border border-line bg-card p-7 text-start transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_-24px_rgb(23_20_15/0.35)]";
+            "glass group flex h-full flex-col items-start gap-3 rounded-[1.75rem] border border-line bg-card p-7 text-start transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_-24px_rgb(23_20_15/0.35)]";
 
           return (
             <Reveal key={f.title} delay={(i % 3) * 120}>
@@ -716,7 +709,11 @@ function FeaturesSection({ onVoiceMode, onCta }) {
                   {inner}
                 </Link>
               ) : (
-                <button type="button" onClick={f.onClick} className={cardClass + " w-full"}>
+                <button
+                  type="button"
+                  onClick={f.onClick}
+                  className={cardClass + " w-full"}
+                >
                   {inner}
                 </button>
               )}

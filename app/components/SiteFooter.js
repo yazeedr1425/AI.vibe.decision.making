@@ -1,27 +1,27 @@
 import Link from "next/link";
 
-// فوتر حبري: يقفل الصفحة بنفس اللوح الغامق اللي فتحتها فيه شاشة
-// الدخول — الورق بين دفّتين.
+// فوتر زجاجي: يقفل الصفحة بلوح شفاف يكمل الشفق بدل ما يقطعه بلوح
+// حبري. الحبر انسحب من الأطراف وبقي محجوزاً للحكم وحده.
 export default function SiteFooter() {
   return (
-    <footer className="on-ink mt-16 bg-ink text-on-ink">
+    <footer className="glass mt-16 border-t border-line bg-white/55">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-10 text-sm sm:px-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-base font-bold text-accent-ink">
+          <span className="grad-fill flex h-8 w-8 items-center justify-center rounded-full text-base font-bold">
             حـ
           </span>
-          <p className="text-on-ink-muted">
+          <p className="text-muted">
             احسم — يساعدك تحسم قراراتك اليومية بسرعة، مع السبب.
           </p>
         </div>
-        <nav className="flex items-center gap-5 text-on-ink-muted">
-          <Link href="/how" className="transition-colors hover:text-on-ink">
+        <nav className="flex items-center gap-5 text-muted">
+          <Link href="/how" className="transition-colors hover:text-ink">
             كيف يعمل
           </Link>
-          <Link href="/#history" className="transition-colors hover:text-on-ink">
+          <Link href="/#history" className="transition-colors hover:text-ink">
             سجل القرارات
           </Link>
-          <Link href="/settings" className="transition-colors hover:text-on-ink">
+          <Link href="/settings" className="transition-colors hover:text-ink">
             الإعدادات
           </Link>
         </nav>

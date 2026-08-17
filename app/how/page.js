@@ -235,7 +235,7 @@ export default function HowItWorks() {
           </h2>
           <Link
             href="/"
-            className="glow flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-lg font-semibold text-accent-ink transition-all hover:brightness-95 active:translate-y-px"
+            className="action flex items-center gap-2 rounded-full px-8 py-4 text-lg font-semibold transition-all active:translate-y-px"
           >
             احسمها لي
             <ArrowLeft size={20} />
