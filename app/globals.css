@@ -573,3 +573,88 @@ h6 {
   animation: floaty 8s ease-in-out infinite;
   animation-delay: 1.2s;
 }
+
+/* ---------------------------------------------------------------
+   مقبض المبارزة — مدى بخمس محطات بين الخيارين.
+
+   الوسوم البائدة (‎::-webkit-slider-thumb‎ وأخواتها) تُكتب بأيدينا لأن
+   ما لها بديل قياسي أصلاً. وهي **محدِّدات لا خصائص**، فقاعدة «لا تكتب
+   بادئة ‎-webkit-‎ بيدك» ما تنطبق عليها: تلك عن الخصائص التي يسقط
+   Lightning CSS قياسيَّها حين نسبقه بالمبدوءة. أما داخل الكتلة فنكتب
+   القياسي وحده ونترك البناء يبدئه.
+   --------------------------------------------------------------- */
+.duel-range {
+  appearance: none;
+  background: transparent;
+  /* ٤٤px منطقة لمس، والمسار المرئي رفيع داخلها. النقر على أي موضع
+     ينقل المقبض إليه — سلوك المدى الأصلي، فما نحتاج سحباً إجبارياً */
+  height: 44px;
+  cursor: pointer;
+}
+
+.duel-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.duel-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+/* المقبض حبر لا لون: التدرّج محجوز لزر الفعل الواحد في الشاشة،
+   والحلقة الورقية حوله تفصله عن المسار تحته */
+.duel-range::-webkit-slider-thumb {
+  appearance: none;
+  height: 22px;
+  width: 22px;
+  margin-top: -9px;
+  border-radius: 999px;
+  background: var(--ink);
+  border: 3px solid var(--card);
+  box-shadow: 0 2px 8px rgb(23 20 15 / 0.3);
+}
+
+.duel-range::-moz-range-thumb {
+  height: 22px;
+  width: 22px;
+  border-radius: 999px;
+  background: var(--ink);
+  border: 3px solid var(--card);
+  box-shadow: 0 2px 8px rgb(23 20 15 / 0.3);
+}
+
+/* المعيار الأعلى وزناً: مسار أسمك — «الأهم» تُرى قبل أن تُقرأ */
+.duel-range-top::-webkit-slider-runnable-track {
+  height: 7px;
+  background: var(--ink);
+}
+
+.duel-range-top::-moz-range-track {
+  height: 7px;
+  background: var(--ink);
+}
+
+.duel-range-top::-webkit-slider-thumb {
+  margin-top: -8px;
+}
+
+/* ثقة منخفضة: مسار مقطّع. النموذج يخمّن هنا، والتقطيع يقولها قبل
+   أي سطر — ثقة مزيّفة أسوأ من اعتراف */
+.duel-range-shaky::-webkit-slider-runnable-track {
+  background: repeating-linear-gradient(
+    to right,
+    var(--line-strong) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+.duel-range-shaky::-moz-range-track {
+  background: repeating-linear-gradient(
+    to right,
+    var(--line-strong) 0 6px,
+    transparent 6px 12px
+  );
+}
