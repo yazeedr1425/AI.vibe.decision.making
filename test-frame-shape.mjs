@@ -4,7 +4,12 @@
 // وآخر حالة هي بيت القصيد: إطار مولّد يمر على `score.js` بلا سطر
 // واحد تغيّر فيه.
 
-import { frameToCategory, pathQuestions, shapeFrame } from "./lib/engine/frame.js";
+import {
+  frameToCategory,
+  pathAnswers,
+  pathQuestions,
+  shapeFrame,
+} from "./lib/engine/frame.js";
 import { scoreOptions, weightsFor } from "./lib/engine/score.js";
 
 const OPTIONS = ["كبسة", "برجر"];
@@ -133,11 +138,24 @@ check("رقم لاتيني في العنوان يُحوَّل", digits.frame.hea
 check("رقم لاتيني في السؤال يُحوَّل", digits.frame.first.label, "كم عندك من ٣٠ دقيقة؟");
 
 // ---- قراءة المسار ----
+// العدد ثابت من أول شاشة: `QuestionStep.pick` ينادي setAnswers ثم
+// onAnswer في نفس المعالج، فطولٌ متغيّر يخلي onAnswer يقرأ «سؤال
+// واحد» ويقفز للتقييم مبتلعاً سؤال الفرع
 const f = good.frame;
-check("بلا إجابة → سؤال واحد", pathQuestions(f, {}).length, 1);
+check("بلا إجابة → سؤالان (النائب)", pathQuestions(f, {}).length, 2);
+check("النائب هو فرع الإجابة الأولى", pathQuestions(f, {})[1]?.key, "bud_a");
 check("مع إجابة → الفرع الصحيح", pathQuestions(f, { time: "normal" })[1]?.key, "bud_b");
-check("إجابة مجهولة → ما يزيد سؤالاً", pathQuestions(f, { time: "zzz" }).length, 1);
+check("إجابة مجهولة → النائب", pathQuestions(f, { time: "zzz" })[1]?.key, "bud_a");
 check("بلا شجرة → السؤال الثابت", pathQuestions(badAnswer.frame, {})[1]?.affects, "cost");
+check("بلا شجرة ولا ثابت → سؤال واحد", pathQuestions(reuse.frame, {}).length, 1);
+
+// ---- إجابات المسار وحدها ----
+// الرجوع وتغيير السؤال الأول يبدّل الفرع، فتبقى إجابة الفرع القديم
+// بمفتاح ما عاد أحد يسأل عنه
+const stale = { time: "normal", bud_b: "tight", bud_a: "loose" };
+check("إجابة فرع مهجور تُسقَط", pathAnswers(f, stale).bud_a, undefined);
+check("… وإجابة الفرع الحالي تبقى", pathAnswers(f, stale).bud_b, "tight");
+check("… وإجابة السؤال الأول تبقى", pathAnswers(f, stale).time, "normal");
 
 // ---- بيت القصيد: المحرك يقرأ الإطار كأنه فئة ----
 const category = frameToCategory(f, { time: "rush", bud_a: "tight" });
