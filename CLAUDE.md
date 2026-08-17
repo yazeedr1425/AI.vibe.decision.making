@@ -28,7 +28,9 @@ Database schema changes are **new timestamped files** in `supabase/migrations/`,
 
 **`shape()` is the last gate before the screen, so guarantees belong there, not in the prompt.** A HARD RULE is a request the model can miss; `shape()` is code that always runs. `/api/patterns` asks for Arabic-Indic digits *and* converts them in `shape()` — do the same for anything that must always hold.
 
-Only `breakdown`, `third`, `group`, `signup`, and `magic-link` carry the in-process `allowed(ip)` rate limiter. **`decide`, `assist`, `patterns`, `plan`, and `analyze` are unmetered** — that is a known pre-deploy blocker, not a pattern to copy.
+**Every LLM route is rate limited, and the caps follow cost.** `lib/rate-limit.js` exports `createLimiter({ max })`, which returns an `allowed(ip)` closure with its own counter so no route spends another's allowance. `plan` and `patterns` get 6/min (each `plan` request also spends Google Places *and* weather quota), `analyze` 8 (one request is a pipeline of model calls, not one call), `decide` 15, `assist` 20 because it is interactive and users retype. `patterns` checks the limit *before* verifying the token — otherwise the identity check itself becomes the flood target.
+
+Two things to know before trusting it. The five older routes (`signup`, `magic-link`, `third`, `breakdown`, `group`) still hold hand-written copies of the same logic; migrating them onto the factory is pending and touches the auth paths. And **the counters live in one process** — on Vercel each instance keeps its own tally, so the effective ceiling multiplies by instance count and resets on restart. This blocks a casual loop, not a determined attacker; a real ceiling needs shared storage (Vercel KV / Upstash).
 
 **No fallback content, ever.** The project's core principle: if generation fails, show an honest Arabic error with a retry button. A templated question/answer masquerading as intelligence is treated as worse than an error. Related: **numbers are computed in JS, Gemini only interprets** — see `lib/insight/stats.js` (history statistics) feeding `/api/patterns`; the model is never asked to count.
 
@@ -78,6 +80,7 @@ Extended from the login screen across every surface. Tokens live in `app/globals
 | App-wide mood state + `data-mood` | `lib/theme/MoodProvider.js` (mounted in `app/layout.js`) |
 | Low-level `data-mood` writer — call it **only** from the provider | `lib/theme/useMoodTheme.js` |
 | Arabic-Indic digit conversion (UI *and* model output) | `lib/text/digits.js` |
+| Per-route request caps (`createLimiter`, `clientIp`) | `lib/rate-limit.js` |
 | Arabic normalization for matching | `lib/voice/match.js` (`normalizeArabic`) |
 | Opening screen, scroll reveal | `app/components/Splash.js`, `Reveal.js` |
 
