@@ -9,6 +9,8 @@ import {
   pathAnswers,
   pathQuestions,
   shapeFrame,
+  shapeRefinement,
+  withRefinement,
 } from "./lib/engine/frame.js";
 import { scoreOptions, weightsFor } from "./lib/engine/score.js";
 
@@ -128,6 +130,7 @@ const accepted = (key) => {
 check("مفتاح فيه رقم مقبول", accepted("speed2"), true);
 check("مفتاح عربي مقبول", accepted("الحاجة_الفورية"), true);
 check("مفتاح بتشكيل مقبول", accepted("احتاجه_فوراً"), true);
+check("مفتاح يبدأ برقم مقبول", accepted("50_to_100"), true);
 
 // ---- الأرقام ----
 const digits = mut((r) => {
@@ -156,6 +159,40 @@ const stale = { time: "normal", bud_b: "tight", bud_a: "loose" };
 check("إجابة فرع مهجور تُسقَط", pathAnswers(f, stale).bud_a, undefined);
 check("… وإجابة الفرع الحالي تبقى", pathAnswers(f, stale).bud_b, "tight");
 check("… وإجابة السؤال الأول تبقى", pathAnswers(f, stale).time, "normal");
+
+
+// ---- المستوى الثالث ----
+// السؤال الثاني على مسار «rush» هو bud_a، فالتكيّف يخصه
+const shown = pathQuestions(f, { time: "rush" })[1];
+const rawDeeper = {
+  branches: ["tight", "mid", "loose"].map((answer, i) => ({
+    answer,
+    next: question(`crave_${"abc"[i]}`, "crave", ["low", "mid_c", "high"]),
+  })),
+};
+const deeper = shapeRefinement(rawDeeper, {
+  shown,
+  untouchedKeys: ["crave"],
+});
+check("التكيّف يمر", deeper?.branches.length, 3);
+check("… ومربوط بالسؤال المعروض", deeper?.for, "bud_a");
+
+const deep = withRefinement(f, deeper);
+check("قبل الإجابة → ثلاثة أسئلة (النائب)", pathQuestions(deep, { time: "rush" }).length, 3);
+check("مع الإجابة → الفرع الصحيح", pathQuestions(deep, { time: "rush", bud_a: "mid" })[2]?.key, "crave_b");
+check("التكيّف لسؤال آخر يُتجاهل", pathQuestions({ ...f, deeper: { for: "ghost", branches: deeper.branches } }, { time: "rush" }).length, 2);
+check("بلا تكيّف → سؤالان", pathQuestions(f, { time: "rush" }).length, 2);
+
+// يسقط بهدوء: أي خلل يرجّع null فتُعرض شاشة التقييم بلا سؤال ثالث
+check("إجابة فرع لا تطابق", shapeRefinement({ branches: [{ answer: "nope", next: question("q", "crave", ["a1", "a2", "a3"]) }, ...rawDeeper.branches.slice(1)] }, { shown, untouchedKeys: ["crave"] }), null);
+check("معيار مسؤول عنه سلفاً", shapeRefinement({ branches: rawDeeper.branches.map((b) => ({ ...b, next: { ...b.next, affects: "speed" } })) }, { shown, untouchedKeys: ["crave"] }), null);
+check("فرعان بدل ثلاثة", shapeRefinement({ branches: rawDeeper.branches.slice(0, 2) }, { shown, untouchedKeys: ["crave"] }), null);
+check("مخرَج فاضٍ", shapeRefinement(null, { shown, untouchedKeys: ["crave"] }), null);
+
+// إجابات المسار تشمل الثالث، وتسقط فرعاً مهجوراً في أي مستوى
+const deepAnswers = { time: "rush", bud_a: "mid", crave_b: "high", crave_a: "low" };
+check("إجابة المستوى الثالث تبقى", pathAnswers(deep, deepAnswers).crave_b, "high");
+check("وفرع ثالث مهجور يُسقَط", pathAnswers(deep, deepAnswers).crave_a, undefined);
 
 // ---- بيت القصيد: المحرك يقرأ الإطار كأنه فئة ----
 const category = frameToCategory(f, { time: "rush", bud_a: "tight" });
