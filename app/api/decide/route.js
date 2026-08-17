@@ -1,5 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { getCategory } from "@/lib/engine/categories";
+import { isUsableFrame, pathQuestions } from "@/lib/engine/frame";
+import { toArabicDigits } from "@/lib/text/digits";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { clientIp, createLimiter } from "@/lib/rate-limit";
@@ -12,6 +14,8 @@ const allowed = createLimiter({ max: 15 });
 
 const HISTORY_LIMIT = 5;
 const MAX_LABEL_LENGTH = 60;
+// سطر واحد لكل حقل — الأطول يكسر البطاقة ولا يضيف معنى
+const MAX_DEPTH_TEXT = 160;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const MODEL = "gemini-2.5-flash";
@@ -22,7 +26,14 @@ const SYSTEM_INSTRUCTION =
   "Your job is to choose ONE option from the user's list based on their current answers " +
   "and past decision history. Weigh their current answers heavily. Look at their past " +
   "decisions to spot habits. Provide a short, witty, and fun reason in Arabic explaining " +
-  "WHY you chose this. Act like a close friend, not a robotic assistant.";
+  "WHY you chose this. Act like a close friend, not a robotic assistant. " +
+  "Then go one layer deeper, in short Saudi-dialect Arabic with Arabic-Indic digits: " +
+  "decisive_criterion is the criterion key that actually settled it, copied verbatim from " +
+  "the criteria list you were given. edge is the winner's one decisive strength. " +
+  "cost_of_switching is what they give up by taking the other option — concrete, not a " +
+  "platitude. flip_condition names the specific change that would reverse this decision, " +
+  "so they can reuse the rule without the app: «لو صار كذا، ينقلب لكذا». " +
+  "Never hedge in these four — a condition that never flips anything is worse than none.";
 
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -35,9 +46,36 @@ const RESPONSE_SCHEMA = {
       type: Type.STRING,
       description: "One or two witty sentences in Arabic explaining the choice.",
     },
+    decisive_criterion: {
+      type: Type.STRING,
+      description: "A criterion key copied verbatim from the criteria list.",
+    },
+    edge: { type: Type.STRING, description: "The winner's decisive strength." },
+    cost_of_switching: {
+      type: Type.STRING,
+      description: "What they lose by taking the other option.",
+    },
+    flip_condition: {
+      type: Type.STRING,
+      description: "The specific change that would reverse this decision.",
+    },
   },
-  required: ["selected_option", "funny_reason"],
-  propertyOrdering: ["selected_option", "funny_reason"],
+  required: [
+    "selected_option",
+    "funny_reason",
+    "decisive_criterion",
+    "edge",
+    "cost_of_switching",
+    "flip_condition",
+  ],
+  propertyOrdering: [
+    "selected_option",
+    "funny_reason",
+    "decisive_criterion",
+    "edge",
+    "cost_of_switching",
+    "flip_condition",
+  ],
 };
 
 function fail(status, message, extra) {
@@ -53,7 +91,7 @@ function validate(body) {
     return { ok: false, message: "الطلب لازم يكون كائن JSON." };
   }
 
-  const { options, answers, userId, categoryId } = body;
+  const { options, answers, userId, categoryId, frame } = body;
 
   if (!Array.isArray(options)) {
     return { ok: false, message: "options لازم تكون مصفوفة." };
@@ -70,13 +108,15 @@ function validate(body) {
   if (cleaned.length < MIN_OPTIONS || cleaned.length > MAX_OPTIONS) {
     return {
       ok: false,
-      message: `عدد الخيارات لازم يكون بين ${MIN_OPTIONS} و${MAX_OPTIONS}.`,
+      message: toArabicDigits(
+        `عدد الخيارات لازم يكون بين ${MIN_OPTIONS} و${MAX_OPTIONS}.`,
+      ),
     };
   }
   if (cleaned.some((o) => o.length > MAX_LABEL_LENGTH)) {
     return {
       ok: false,
-      message: `طول الخيار الواحد ما يتجاوز ${MAX_LABEL_LENGTH} حرف.`,
+      message: toArabicDigits(`طول الخيار الواحد ما يتجاوز ${MAX_LABEL_LENGTH} حرف.`),
     };
   }
   if (new Set(cleaned).size !== cleaned.length) {
@@ -103,6 +143,11 @@ function validate(body) {
     }
   }
 
+  // الإطار مصدر الأسئلة والمعايير بنصوصها. ما نثق بشكلٍ جاء من
+  // المتصفح أكثر مما نثق بمخرَج النموذج، فيمر على نفس المدقّق —
+  // وإسقاطه عند الفشل يرجّع وصف الإجابات لمفاتيحها، ولا يفشّل الحسم
+  const usable = isUsableFrame(frame) ? frame : null;
+
   return {
     ok: true,
     value: {
@@ -110,6 +155,7 @@ function validate(body) {
       answers,
       userId: userId ?? null,
       categoryId: category?.id ?? null,
+      frame: usable,
     },
   };
 }
@@ -178,16 +224,19 @@ async function fetchRecentDecisions(userId) {
 
 // إجابات المستخدم تجي كمفاتيح خام مثل { time: "rush" }.
 // نحولها لجُمل مفهومة حتى يقدر النموذج يستخدمها فعلاً.
-function describeAnswers(category, answers) {
+//
+// أسئلة الإطار أولاً: مفاتيحها مولّدة فما توجد أبداً بين أسئلة الفئة
+// الثابتة، وبدون هذا يستلم النموذج «‎where_will_you_eat: on_the_go‎»
+// بدل «وين بتاكل؟ ← وأنا ماشي» — معرّفات بدل نصٍّ عربي كتبه هو نفسه.
+function describeAnswers({ category, frame, answers }) {
   const entries = Object.entries(answers);
   if (!entries.length) return "لم يجب على أي سؤال.";
-  if (!category) {
-    return entries.map(([k, v]) => `- ${k}: ${v}`).join("\n");
-  }
+
+  const questions = frame ? pathQuestions(frame, answers) : (category?.questions ?? []);
 
   return entries
     .map(([key, value]) => {
-      const question = category.questions.find((q) => q.key === key);
+      const question = questions.find((q) => q.key === key);
       if (!question) return `- ${key}: ${value}`;
       const choice = question.choices.find((c) => c.value === value);
       return `- ${question.label} ← ${choice?.label ?? value}`;
@@ -209,21 +258,36 @@ function describeHistory(history) {
     .join("\n");
 }
 
-function buildPrompt({ options, answers, category, history }) {
+// المعايير بمفاتيحها: `decisive_criterion` لازم ينسخ واحداً منها،
+// وبلا القائمة يخترع مفتاحاً يسقط في `shape()` ويضيع الحقل
+function describeCriteria(frame) {
+  if (!frame) return null;
   return [
+    "معايير هذا القرار (decisive_criterion لازم يكون أحد مفاتيحها):",
+    ...frame.criteria.map((c) => `- ${c.key}: ${c.label} (${c.low} ← → ${c.high})`),
+  ].join("\n");
+}
+
+function buildPrompt({ options, answers, category, frame, history }) {
+  return [
+    frame?.headline ? `المفاضلة: ${frame.headline}` : null,
     category
       ? `نوع القرار: ${category.label} (${category.en})`
       : "نوع القرار: غير محدد",
     "",
     "الخيارات المطروحة (اختر واحداً منها حرفياً):",
-    ...options.map((o, i) => `${i + 1}. ${o}`),
+    ...options.map((o, i) => `${toArabicDigits(i + 1)}. ${o}`),
     "",
+    describeCriteria(frame),
+    frame ? "" : null,
     "إجاباته على الأسئلة السريعة (وزنها عالي):",
-    describeAnswers(category, answers),
+    describeAnswers({ category, frame, answers }),
     "",
-    `آخر ${HISTORY_LIMIT} قرارات له (للعادات فقط، لا تغلّبها على إجاباته الحالية):`,
+    `آخر ${toArabicDigits(HISTORY_LIMIT)} قرارات له (للعادات فقط، لا تغلّبها على إجاباته الحالية):`,
     describeHistory(history),
-  ].join("\n");
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 }
 
 // ---------------------------------------------------------------
@@ -240,7 +304,33 @@ function matchOption(selected, options) {
   return options.find((o) => normalize(o) === normalize(selected)) ?? null;
 }
 
-async function askGemini({ options, answers, category, history }) {
+// الحقول الأربعة الجديدة إضافة محضة: الحسم يظهر بدونها، فأي حقل
+// لا يجتاز التدقيق يُحذف ولا يُسقِط الطلب. حقل ناقص يعني بطاقة أقل،
+// وحقل مخترع يعني سطراً يشير لمعيار غير موجود.
+const line = (value) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  return trimmed ? toArabicDigits(trimmed.slice(0, MAX_DEPTH_TEXT)) : null;
+};
+
+function depth(parsed, frame) {
+  const out = {};
+
+  // المفتاح لازم يشير لمعيار حقيقي — بدون الإطار ما فيه ما نقيس عليه
+  const keys = frame ? new Set(frame.criteria.map((c) => c.key)) : null;
+  if (keys?.has(parsed.decisive_criterion)) {
+    out.decisive_criterion = parsed.decisive_criterion;
+  }
+
+  for (const field of ["edge", "cost_of_switching", "flip_condition"]) {
+    const value = line(parsed[field]);
+    if (value) out[field] = value;
+  }
+
+  return out;
+}
+
+async function askGemini({ options, answers, category, frame, history }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     const err = new Error("GEMINI_API_KEY is not set");
@@ -256,7 +346,7 @@ async function askGemini({ options, answers, category, history }) {
   try {
     response = await ai.models.generateContent({
       model: MODEL,
-      contents: buildPrompt({ options, answers, category, history }),
+      contents: buildPrompt({ options, answers, category, frame, history }),
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -303,6 +393,7 @@ async function askGemini({ options, answers, category, history }) {
   return {
     selected_option: matched,
     funny_reason: parsed.funny_reason.trim(),
+    ...depth(parsed, frame),
   };
 }
 
@@ -323,7 +414,7 @@ export async function POST(request) {
   const parsed = validate(body);
   if (!parsed.ok) return fail(400, parsed.message);
 
-  const { options, answers, userId: bodyUserId, categoryId } = parsed.value;
+  const { options, answers, userId: bodyUserId, categoryId, frame } = parsed.value;
 
   let identity;
   try {
@@ -355,6 +446,7 @@ export async function POST(request) {
       options,
       answers,
       category: categoryId ? getCategory(categoryId) : null,
+      frame,
       history,
     });
   } catch (err) {

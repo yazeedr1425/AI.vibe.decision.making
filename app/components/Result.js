@@ -13,6 +13,7 @@ import {
   CircleCheck,
   Dices,
   Scale,
+  Shuffle,
   TriangleAlert,
   Trophy,
 } from "./icons";
@@ -24,6 +25,7 @@ const SPIN_MS = 1200;
 // الآن حقيقةً.
 export default function Result({
   scored,
+  frame,
   recommendation,
   apiError,
   saveState,
@@ -52,6 +54,28 @@ export default function Result({
   const reason = recommendation?.funny_reason ?? `${reasonPhrase(scored)}.`;
   const disagrees =
     recommendation && recommendation.selected_option !== localWinner.label;
+
+  // المعيار الحاسم: اسمه من الإطار لا من مفتاحه — المفتاح معرّف
+  // داخلي ما يُعرض أبداً
+  const decisiveKey = recommendation?.decisive_criterion ?? null;
+  const decisive = decisiveKey
+    ? (frame?.criteria?.find((c) => c.key === decisiveKey) ?? null)
+    : null;
+
+  // «وش تخسر» و«متى ينقلب» — الأولى تبرّر الحكم، والثانية تعطي قاعدة
+  // تُستعمل المرة الجاية بلا التطبيق
+  const aftermath = [
+    recommendation?.cost_of_switching && {
+      title: "لو اخترت الثاني",
+      body: recommendation.cost_of_switching,
+      Icon: Scale,
+    },
+    recommendation?.flip_condition && {
+      title: "ينقلب القرار لو",
+      body: recommendation.flip_condition,
+      Icon: Shuffle,
+    },
+  ].filter(Boolean);
 
   // تُقرأ تلقائياً لو المستخدم مفعّل القراءة، ويعيدها زر R
   useScreenAnnounce(`قرارك هو ${chosen}. ${reason}`);
@@ -160,6 +184,18 @@ export default function Result({
           </div>
         ))}
 
+        {/* الوصل: حكم النموذج وحساب JS كانا يظهران كرأيين منفصلين،
+            وهذا السطر يقول على أي معيار التقيا */}
+        {decisive && (
+          <p className="flex items-start gap-2 rounded-2xl bg-accent-soft px-4 py-3 text-sm leading-relaxed">
+            <Trophy size={16} className="mt-0.5 shrink-0 text-accent-strong" />
+            <span>
+              الحاسم كان <span className="font-semibold">{decisive.label}</span>
+              {recommendation.edge ? ` — ${recommendation.edge}` : "."}
+            </span>
+          </p>
+        )}
+
         <button
           type="button"
           onClick={() => setShowDetails((v) => !v)}
@@ -172,7 +208,15 @@ export default function Result({
         {showDetails && (
           <ul className="flex flex-col gap-3 border-t border-line pt-4 text-sm">
             {detailedBreakdown(scored).map((d) => (
-              <li key={d.key} className="flex flex-col gap-0.5">
+              <li
+                key={d.key}
+                className={
+                  "flex flex-col gap-0.5 " +
+                  (d.key === decisiveKey
+                    ? "-mx-2 rounded-xl bg-accent-soft px-2 py-1.5"
+                    : "")
+                }
+              >
                 <span className="font-medium">{d.label}</span>
                 <span className="text-muted">
                   {d.importance} — {d.verdict}
@@ -182,6 +226,26 @@ export default function Result({
           </ul>
         )}
       </Card>
+
+      {/* خارج `Card` عمداً: البطاقة الحبرية فوق هي الحكم، وتعشيش هذي
+          داخل بطاقة ثانية يؤطّره مرتين. سطران فقط — «وش تخسر» يبرّر،
+          و«متى ينقلب» يعطي قاعدة تُستعمل بلا التطبيق */}
+      {aftermath.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {aftermath.map((a) => (
+            <div
+              key={a.title}
+              className="glass flex flex-col gap-1.5 rounded-[var(--radius-card)] border border-line bg-card p-5"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <a.Icon size={16} className="shrink-0 text-accent-strong" />
+                {a.title}
+              </span>
+              <p className="text-sm leading-relaxed text-muted">{a.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* أنا متردد جدًا */}
       <section className="rounded-[var(--radius-card)] border border-dashed border-line-strong bg-card-sunken p-6">
