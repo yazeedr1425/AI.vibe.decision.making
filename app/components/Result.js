@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { chancesFor, weightedRandomPick } from "@/lib/engine/score";
+import { describeLead } from "@/lib/engine/discuss";
 import { detailedBreakdown, reasonPhrase } from "@/lib/engine/explain";
 import { voice } from "@/lib/engine/tone";
+import { discussService } from "@/lib/services/discuss";
 import { useScreenAnnounce } from "@/lib/voice/VoiceProvider";
+import VerdictChat from "./VerdictChat";
 import { Card, GhostButton, PrimaryButton, QuietButton, hindi } from "./ui";
 import {
   ArrowRight,
@@ -23,9 +26,17 @@ const SPIN_MS = 1200;
 // الحكم حبري والحساب ورقي — نفس البطاقة الغامقة العائمة في الهيرو،
 // لكن بالحجم الكامل: اللي شافه المستخدم وعداً أول ما دخل يشوفه
 // الآن حقيقةً.
+//
+// والنقاش يعيش هنا لا في مكوّنه: البطاقة الحبرية لازم تتبع الحكم بعد
+// أي تعديل، فلو ملك المكوّنُ حالتَه صار للحقيقة مصدران — بطاقة تقول
+// شيئاً وفقاعةٌ تحتها تقول غيره.
 export default function Result({
   scored,
   frame,
+  criteria,
+  weights,
+  revision,
+  onDiscuss,
   recommendation,
   apiError,
   saveState,
@@ -38,6 +49,11 @@ export default function Result({
   const [spinning, setSpinning] = useState(false);
   const [flash, setFlash] = useState(null);
   const [randomPick, setRandomPick] = useState(null);
+  const [turns, setTurns] = useState([]);
+  const [talkBusy, setTalkBusy] = useState(false);
+  const [talkError, setTalkError] = useState(null);
+  // الحكم بعد النقاش. `null` = ما تغيّر شي، فيبقى حكم النموذج الأصلي
+  const [revised, setRevised] = useState(null);
   const timers = useRef([]);
 
   useEffect(() => {
@@ -49,33 +65,41 @@ export default function Result({
   const localWinner = scored[0];
   const withChances = chancesFor(scored);
 
-  // التوصية من الـ API هي الأساس، والحساب المحلي احتياط لو فشل النداء
-  const chosen = recommendation?.selected_option ?? localWinner.label;
-  const reason = recommendation?.funny_reason ?? `${reasonPhrase(scored)}.`;
+  // التوصية من الـ API هي الأساس، والحساب المحلي احتياط لو فشل النداء.
+  // والنقاش يعلو عليهما: تعديلٌ طبّقه المستخدم أحدث من حكمٍ سبقه
+  const chosen =
+    revised?.winner ?? recommendation?.selected_option ?? localWinner.label;
+  const reason =
+    revised?.reason ?? recommendation?.funny_reason ?? `${reasonPhrase(scored)}.`;
   const disagrees =
-    recommendation && recommendation.selected_option !== localWinner.label;
+    !revised &&
+    recommendation &&
+    recommendation.selected_option !== localWinner.label;
 
   // المعيار الحاسم: اسمه من الإطار لا من مفتاحه — المفتاح معرّف
   // داخلي ما يُعرض أبداً
   const decisiveKey = recommendation?.decisive_criterion ?? null;
   const decisive = decisiveKey
-    ? (frame?.criteria?.find((c) => c.key === decisiveKey) ?? null)
+    ? (criteria?.find((c) => c.key === decisiveKey) ?? null)
     : null;
 
   // «وش تخسر» و«متى ينقلب» — الأولى تبرّر الحكم، والثانية تعطي قاعدة
-  // تُستعمل المرة الجاية بلا التطبيق
-  const aftermath = [
-    recommendation?.cost_of_switching && {
-      title: "لو اخترت الثاني",
-      body: recommendation.cost_of_switching,
-      Icon: Scale,
-    },
-    recommendation?.flip_condition && {
-      title: "ينقلب القرار لو",
-      body: recommendation.flip_condition,
-      Icon: Shuffle,
-    },
-  ].filter(Boolean);
+  // تُستعمل المرة الجاية بلا التطبيق. تسقطان بعد النقاش لأنهما تصفان
+  // حكماً ما عاد قائماً
+  const aftermath = revised
+    ? []
+    : [
+        recommendation?.cost_of_switching && {
+          title: "لو اخترت الثاني",
+          body: recommendation.cost_of_switching,
+          Icon: Scale,
+        },
+        recommendation?.flip_condition && {
+          title: "ينقلب القرار لو",
+          body: recommendation.flip_condition,
+          Icon: Shuffle,
+        },
+      ].filter(Boolean);
 
   // تُقرأ تلقائياً لو المستخدم مفعّل القراءة، ويعيدها زر R
   useScreenAnnounce(`قرارك هو ${chosen}. ${reason}`);
@@ -99,11 +123,81 @@ export default function Result({
     }, SPIN_MS);
   };
 
+  // ---------------------------------------------------------------
+  // النقاش
+  // ---------------------------------------------------------------
+
+  const talk = async (text) => {
+    const before = chosen;
+    setTurns((prev) => [...prev, { role: "user", text }]);
+    setTalkBusy(true);
+    setTalkError(null);
+
+    // الأرقام تُقرأ من `scored` نفسه: هو ما رسمته الشاشة، فالنموذج
+    // يجادل بما يراه المستخدم لا بنسخة موازية
+    const ratings = Object.fromEntries(
+      scored.map((s) => [
+        s.label,
+        Object.fromEntries(s.breakdown.map((b) => [b.key, b.rating])),
+      ]),
+    );
+
+    let result;
+    try {
+      result = await discussService.send({
+        payload: {
+          options: scored.map((s) => s.label),
+          criteria: criteria.map((c) => ({ key: c.key, label: c.label })),
+          weights,
+          ratings,
+          verdict: {
+            chosen,
+            reason,
+            decisive: decisiveKey,
+            flip: recommendation?.flip_condition ?? null,
+          },
+          lead: describeLead(scored, criteria, weights),
+          turns,
+          spent: revision?.spent ?? {},
+          message: text,
+        },
+      });
+    } finally {
+      setTalkBusy(false);
+    }
+
+    if (!result.ok) {
+      setTalkError(result.message);
+      return;
+    }
+
+    // التعديل يُطبَّق في الصفحة، وترجّع الفائز الجديد محسوباً بنفس دوال
+    // الرندر — فنعرف الانقلاب بلا أثر ولا حالة وسيطة
+    let flippedTo = null;
+    if (result.changes.length) {
+      const after = onDiscuss?.(result.changes) ?? before;
+      if (after !== before) flippedTo = after;
+      setRevised({ winner: after, reason: result.reply });
+    }
+
+    setTurns((prev) => [
+      ...prev,
+      {
+        role: "agent",
+        text: result.reply,
+        applied: result.changes.length,
+        flippedTo,
+      },
+    ]);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* الحكم — يُعلن ويستقبل التركيز أول ما تظهر النتيجة */}
       <section className="on-ink card-shadow rounded-[var(--radius-card)] bg-ink p-7 text-on-ink sm:p-10">
-        <p className="text-sm text-on-ink-muted">قرارك هو</p>
+        <p className="text-sm text-on-ink-muted">
+          {revised ? "بعد كلامك، قرارك هو" : "قرارك هو"}
+        </p>
         <h2
           tabIndex={-1}
           data-step-heading
@@ -186,7 +280,7 @@ export default function Result({
 
         {/* الوصل: حكم النموذج وحساب JS كانا يظهران كرأيين منفصلين،
             وهذا السطر يقول على أي معيار التقيا */}
-        {decisive && (
+        {decisive && !revised && (
           <p className="flex items-start gap-2 rounded-2xl bg-accent-soft px-4 py-3 text-sm leading-relaxed">
             <Trophy size={16} className="mt-0.5 shrink-0 text-accent-strong" />
             <span>
@@ -212,7 +306,7 @@ export default function Result({
                 key={d.key}
                 className={
                   "flex flex-col gap-0.5 " +
-                  (d.key === decisiveKey
+                  (d.key === decisiveKey && !revised
                     ? "-mx-2 rounded-xl bg-accent-soft px-2 py-1.5"
                     : "")
                 }
@@ -245,6 +339,16 @@ export default function Result({
             </div>
           ))}
         </div>
+      )}
+
+      {/* النقاش — بعد الحساب لا قبله: المستخدم يعترض على شيء يراه */}
+      {criteria?.length > 0 && (
+        <VerdictChat
+          turns={turns}
+          busy={talkBusy}
+          error={talkError}
+          onSend={talk}
+        />
       )}
 
       {/* أنا متردد جدًا */}

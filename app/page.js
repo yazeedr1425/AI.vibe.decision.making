@@ -10,6 +10,13 @@ import {
   withRefinement,
 } from "@/lib/engine/frame";
 import { withPriors } from "@/lib/engine/duel";
+import {
+  emptyRevision,
+  mergeChanges,
+  revisedCategory,
+  revisedRatings,
+  revisedWeights,
+} from "@/lib/engine/discuss";
 import { MIN_OPTIONS, scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
@@ -57,6 +64,9 @@ export default function Home() {
   const [framed, setFramed] = useState(null);
   const [voiceCategoryId, setVoiceCategoryId] = useState(null);
   const [frameError, setFrameError] = useState(null);
+  // طبقة المراجعة: ما غيّره النقاش فوق الحساب الأصلي. تعيش هنا لأن
+  // `scoreOptions` يقرأ من هنا — ولو ملكها `Result` لصار للحقيقة مصدران
+  const [revision, setRevision] = useState(emptyRevision);
   // المزاج يعيش في المزوّد الجذري حتى يبقى اللون عبر كل الصفحات
   const { mood, setMood } = useMood();
   const [options, setOptions] = useState(initialOptions);
@@ -114,7 +124,7 @@ export default function Home() {
   // القرار من المحادثة الصوتية. `frameToCategory` يعتمد على الإجابات
   // لأن الشجرة تختار سؤالها الثاني حسب الأولى، فالاشتقاق عند الرندر
   // لا في حالة مخزَّنة.
-  const category = useMemo(
+  const baseCategory = useMemo(
     () =>
       frame
         ? frameToCategory(frame, answers)
@@ -124,12 +134,26 @@ export default function Home() {
     [frame, answers, voiceCategoryId],
   );
 
+  // معيارٌ رفعه المستخدم في النقاش يدخل القالب نفسه، فيقرأه المحرك
+  // كأنه من الإطار — نفس مبدأ الإطار مع الفئة الثابتة
+  const category = useMemo(
+    () => revisedCategory(baseCategory, revision),
+    [baseCategory, revision],
+  );
+
   // الفئة المحفوظة في السجل — قيد `CHECK` على العمود، فلها قيمة دائماً
   const decisionCategory = frame?.category ?? voiceCategoryId ?? "life";
 
-  const weights = useMemo(
+  const baseWeights = useMemo(
     () => (category ? weightsFor(category, answers, mood) : {}),
     [category, answers, mood],
+  );
+
+  // الترتيب مقصود: `weightsFor` يعطي المعيار المضاف وزناً محايداً، ثم
+  // تكتب المراجعة فوقه الوزن الذي بنى عليه النموذج تعديله
+  const weights = useMemo(
+    () => revisedWeights(baseWeights, revision),
+    [baseWeights, revision],
   );
 
   // تقدير النموذج يملأ ما لم يلمسه المستخدم — اشتقاقاً عند الرندر لا
@@ -139,12 +163,17 @@ export default function Home() {
     [ratings, frame, filledOptions],
   );
 
+  const finalRatings = useMemo(
+    () => revisedRatings(seeded, revision),
+    [seeded, revision],
+  );
+
   const scored = useMemo(
     () =>
       category && filledOptions.length
-        ? scoreOptions(category, filledOptions, seeded, weights)
+        ? scoreOptions(category, filledOptions, finalRatings, weights)
         : [],
-    [category, filledOptions, seeded, weights],
+    [category, filledOptions, finalRatings, weights],
   );
 
   // المبارزة للخيارين بإطار مولّد. المحادثة الصوتية بلا إطار، وثلاثة
@@ -324,6 +353,23 @@ export default function Home() {
     else setQuestionIndex((i) => i - 1);
   };
 
+  // النقاش يحتاج جواب «هل انقلب؟» في نفس اللحظة، والحالة ما تحدّثت بعد.
+  // فنحسبه هنا بنفس دوال الرندر لا بأثرٍ يركض بعد الرسم — والنتيجة
+  // واحدة لأن الدوال نقية
+  const applyDiscussion = useCallback(
+    (changes) => {
+      const next = mergeChanges(revision, changes, filledOptions);
+      setRevision(next);
+
+      const cat = revisedCategory(baseCategory, next);
+      const w = revisedWeights(weightsFor(cat, answers, mood), next);
+      const r = revisedRatings(seeded, next);
+
+      return scoreOptions(cat, filledOptions, r, w)[0]?.label ?? null;
+    },
+    [revision, filledOptions, baseCategory, answers, mood, seeded],
+  );
+
   // نداء المحرك: التوصية تجي من /api/decide، والحساب المحلي يبقى
   // كخط رجعة لو النداء فشل حتى ما تنكسر الشاشة على المستخدم.
   // override يجي من وضع المحادثة الصوتية، لأن الحالة ما تكون تحدّثت بعد
@@ -333,6 +379,8 @@ export default function Home() {
       setApiError(null);
       setRecommendation(null);
       setSaveState(null);
+      // بدونه، نقاش قرارٍ سابق يعدّل حساب القرار التالي
+      setRevision(emptyRevision());
 
       const labels = override?.options ?? filledOptions.map((o) => o.label);
       // إجابات المسار وحدها: الرجوع وتغيير السؤال الأول يبدّل الفرع،
@@ -447,9 +495,36 @@ export default function Home() {
     setOptions(initialOptions());
     setAnswers({});
     setRatings({});
+    setRevision(emptyRevision());
     setRecommendation(null);
     setApiError(null);
     setSaveState(null);
+  };
+
+  // طبقة المراجعة تعلو التقييمات، فلو رجع المستخدم لشاشة المبارزة بعد
+  // نقاشٍ حرّك مقبضاً وما تغيّر شي — المراجعة تحجبه، والبق يبان عشوائياً
+  // لأنه يظهر فقط بعد نقاش عدّل تقييماً. الحل تثبيت ما جاء من النقاش
+  // داخل التقييمات نفسها ثم إفراغ طبقته.
+  //
+  // المعايير والأوزان تبقى في المراجعة — هي إضافات لا تعارض ما يحرّكه
+  // المستخدم، والمقبض ما يلمسها أصلاً.
+  const settleRevision = () => {
+    setRatings(revisedRatings(seeded, revision));
+    setRevision((prev) => ({ ...prev, ratings: {} }));
+  };
+
+  const backToRatings = () => {
+    settleRevision();
+    setQuestionIndex(category.questions.length - 1);
+    setStep("ratings");
+  };
+
+  // «رجوع» من شاشة التقييم وجهتها الأسئلة لا التقييم — تثبيت المراجعة
+  // واحد والوجهتان مختلفتان، فلو وحّدناهما صار زر الرجوع بلا أثر
+  const backToQuestions = () => {
+    settleRevision();
+    setQuestionIndex(category.questions.length - 1);
+    setStep("questions");
   };
 
   const isLanding = step === "landing";
@@ -511,12 +586,16 @@ export default function Home() {
           <Result
             scored={scored}
             frame={frame}
+            criteria={category?.criteria ?? []}
+            weights={weights}
+            revision={revision}
+            onDiscuss={applyDiscussion}
             recommendation={recommendation}
             apiError={apiError}
             saveState={saveState}
             tone={tone}
             onRestart={restart}
-            onBack={() => setStep("ratings")}
+            onBack={backToRatings}
             onRetry={decide}
           />
         ) : (
@@ -556,27 +635,21 @@ export default function Home() {
                 <Duel
                   frame={frame}
                   options={filledOptions}
-                  ratings={seeded}
+                  ratings={finalRatings}
                   setRatings={setRatings}
                   weights={weights}
                   onNext={() => decide()}
-                  onBack={() => {
-                    setQuestionIndex(category.questions.length - 1);
-                    setStep("questions");
-                  }}
+                  onBack={backToQuestions}
                 />
               ) : (
                 <RatingGrid
                   category={category}
                   options={filledOptions}
-                  ratings={seeded}
+                  ratings={finalRatings}
                   setRatings={setRatings}
                   weights={weights}
                   onNext={() => decide()}
-                  onBack={() => {
-                    setQuestionIndex(category.questions.length - 1);
-                    setStep("questions");
-                  }}
+                  onBack={backToQuestions}
                 />
               ))}
           </Card>
