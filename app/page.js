@@ -67,6 +67,11 @@ export default function Home() {
   // طبقة المراجعة: ما غيّره النقاش فوق الحساب الأصلي. تعيش هنا لأن
   // `scoreOptions` يقرأ من هنا — ولو ملكها `Result` لصار للحقيقة مصدران
   const [revision, setRevision] = useState(emptyRevision);
+  // ما هو محفوظ فعلاً في السجل، لا ما تحسبه الشاشة. الحفظ يقع لحظة
+  // ظهور النتيجة والنقاش يجي بعده، فبدون هذين يبقى العمود على فائزٍ
+  // رفضه المستخدم — و`/api/decide` يقرأه ليستنتج عاداته.
+  const [decisionId, setDecisionId] = useState(null);
+  const [savedWinner, setSavedWinner] = useState(null);
   // المزاج يعيش في المزوّد الجذري حتى يبقى اللون عبر كل الصفحات
   const { mood, setMood } = useMood();
   const [options, setOptions] = useState(initialOptions);
@@ -364,10 +369,39 @@ export default function Home() {
       const cat = revisedCategory(baseCategory, next);
       const w = revisedWeights(weightsFor(cat, answers, mood), next);
       const r = revisedRatings(seeded, next);
+      const winner = scoreOptions(cat, filledOptions, r, w)[0]?.label ?? null;
 
-      return scoreOptions(cat, filledOptions, r, w)[0]?.label ?? null;
+      // المقارنة بـ`savedWinner` لا بـ`scored[0]`: المحفوظ هو حكم
+      // النموذج، وقد يخالف حساب JS أصلاً (حالة «حسابي يقول كذا بس
+      // شفت كذا»). المقارنة بالحساب المحلي تطلق تحديثاً في غير محله
+      // أو تفوّت انقلاباً حقيقياً.
+      //
+      // بلا `await`: الدالة تُرجع التسمية فوراً لأن `Result` يعلن بها
+      // الانقلاب في نفس اللحظة. والتصحيح شأن السجل لا شأن الشاشة.
+      //
+      // والضيف بلا `decisionId` — ما فيه شي يُصحَّح، فيُتجاهل بصمت.
+      if (decisionId && winner && winner !== savedWinner) {
+        decisionService
+          .updateWinner({ decisionId, chosen: winner })
+          .then((res) => {
+            if (res.ok) setSavedWinner(winner);
+            else console.warn("[decide] winner update failed:", res.reason);
+          })
+          .catch((err) => console.warn("[decide] winner update failed:", err));
+      }
+
+      return winner;
     },
-    [revision, filledOptions, baseCategory, answers, mood, seeded],
+    [
+      revision,
+      filledOptions,
+      baseCategory,
+      answers,
+      mood,
+      seeded,
+      decisionId,
+      savedWinner,
+    ],
   );
 
   // نداء المحرك: التوصية تجي من /api/decide، والحساب المحلي يبقى
@@ -381,6 +415,8 @@ export default function Home() {
       setSaveState(null);
       // بدونه، نقاش قرارٍ سابق يعدّل حساب القرار التالي
       setRevision(emptyRevision());
+      setDecisionId(null);
+      setSavedWinner(null);
 
       const labels = override?.options ?? filledOptions.map((o) => o.label);
       // إجابات المسار وحدها: الرجوع وتغيير السؤال الأول يبدّل الفرع،
@@ -445,6 +481,11 @@ export default function Home() {
             answers: finalAnswers,
             weights,
           });
+          if (saved.ok) {
+            // المعرّف كان يُرمى، وهو ما يخلي التصحيح ممكناً أصلاً
+            setDecisionId(saved.decisionId ?? null);
+            setSavedWinner(result.selected_option);
+          }
           setSaveState(
             saved.ok
               ? { status: "saved" }
@@ -496,6 +537,8 @@ export default function Home() {
     setAnswers({});
     setRatings({});
     setRevision(emptyRevision());
+    setDecisionId(null);
+    setSavedWinner(null);
     setRecommendation(null);
     setApiError(null);
     setSaveState(null);
