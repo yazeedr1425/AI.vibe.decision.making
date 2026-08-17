@@ -36,7 +36,7 @@ export default function VerdictChat({ turns, busy, error, onSend }) {
     // متقطّع رمادي كان يقرأ حاشيةً تُتجاوَز. والقوس يتلوّن بمحطات
     // المزاج فيبقى الحبر للحكم فوقه والتدرّج للفعل الواحد أسفله.
     <section className="snake card-shadow">
-      <div className="glass rounded-[calc(var(--radius-card)-2px)] bg-white/85 p-6">
+      <div className="glass rounded-[calc(var(--radius-card)-2px)] bg-white/72 p-6">
         <p className="text-base font-semibold">
           {turns.length ? "كمّل النقاش" : "ما اقتنعت؟"}
         </p>
