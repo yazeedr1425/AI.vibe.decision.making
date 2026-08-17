@@ -2,9 +2,13 @@ import { GoogleGenAI } from "@google/genai";
 import { PIPELINE, RESEARCH, SWOT, SCENARIOS, CRITIC, SYNTHESIS } from "@/lib/analyze/agents";
 import { rankPaths } from "@/lib/analyze/risk";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { clientIp, createLimiter } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// كل طلب هنا خط أنابيب من عدة نداءات لا نداءً واحداً، فالسقف منخفض
+const allowed = createLimiter({ max: 8 });
 
 const MODEL = "gemini-2.5-flash";
 
@@ -317,6 +321,13 @@ function absorb(agent, output, state) {
 // ---------------------------------------------------------------
 
 export async function POST(request) {
+  if (!allowed(clientIp(request))) {
+    return Response.json(
+      { ok: false, error: "محاولات كثيرة — انتظر دقيقة." },
+      { status: 429 },
+    );
+  }
+
   let body;
   try {
     body = await request.json();

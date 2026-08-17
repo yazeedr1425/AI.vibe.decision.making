@@ -2,9 +2,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { getCategory } from "@/lib/engine/categories";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { clientIp, createLimiter } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// حسم واحد يكفيه نداء واحد — ١٥ في الدقيقة سخيّ لمستخدم حقيقي وضيّق على حلقة
+const allowed = createLimiter({ max: 15 });
 
 const HISTORY_LIMIT = 5;
 const MAX_LABEL_LENGTH = 60;
@@ -307,6 +311,8 @@ async function askGemini({ options, answers, category, history }) {
 // ---------------------------------------------------------------
 
 export async function POST(request) {
+  if (!allowed(clientIp(request))) return fail(429, "محاولات كثيرة — انتظر دقيقة.");
+
   let body;
   try {
     body = await request.json();

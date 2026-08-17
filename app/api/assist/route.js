@@ -1,9 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CATEGORIES, getCategory } from "@/lib/engine/categories";
 import { MAX_OPTIONS, MIN_OPTIONS, RATING_SCALE } from "@/lib/engine/score";
+import { clientIp, createLimiter } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// المساعد تفاعلي: المستخدم يكتب ويعيد، فالسقف أوسع من غيره
+const allowed = createLimiter({ max: 20 });
 
 const MODEL = "gemini-2.5-flash";
 const TIMEOUT_MS = 12000;
@@ -180,6 +184,8 @@ function sanitize(raw) {
 }
 
 export async function POST(request) {
+  if (!allowed(clientIp(request))) return fail(429, "محاولات كثيرة — انتظر دقيقة.");
+
   let body;
   try {
     body = await request.json();

@@ -17,9 +17,14 @@ import {
   minutesOfDay,
   vibe,
 } from "@/lib/plan/config";
+import { clientIp, createLimiter } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// أغلى مسار في المشروع: نداء جيميناي مع أماكن جوجل والطقس في الطلب
+// الواحد، فالسقف هو الأضيق
+const allowed = createLimiter({ max: 6 });
 
 // نفس نموذج /api/decide — مزوّد واحد لكل التطبيق
 const MODEL = "gemini-2.5-flash";
@@ -223,6 +228,8 @@ async function askGemini(input) {
 // ---------------------------------------------------------------
 
 export async function POST(request) {
+  if (!allowed(clientIp(request))) return fail(429, "محاولات كثيرة — انتظر دقيقة.");
+
   let body;
   try {
     body = await request.json();

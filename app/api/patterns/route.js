@@ -3,10 +3,15 @@ import { getCategory } from "@/lib/engine/categories";
 import { RESPONSE_SCHEMA, SYSTEM_INSTRUCTION, shape } from "@/lib/insight/prompt";
 import { describe, summarize } from "@/lib/insight/stats";
 import { toArabicDigits } from "@/lib/text/digits";
+import { clientIp, createLimiter } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// القراءة بضغطة زر لا بكل رندر، فستة في الدقيقة أكثر من كافية —
+// والحدّ قبل التحقق من الهوية حتى لا يصير التحقق نفسه هدفاً للإغراق
+const allowed = createLimiter({ max: 6 });
 
 const MODEL = "gemini-2.5-flash";
 const TIMEOUT_MS = 20000;
@@ -66,6 +71,8 @@ async function fetchHistory(userId) {
 // ---------------------------------------------------------------
 
 export async function GET(request) {
+  if (!allowed(clientIp(request))) return fail(429, "محاولات كثيرة — انتظر دقيقة.");
+
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : null;
   if (!token) return fail(401, "قراءة أنماطك تحتاج تسجيل دخول.");
