@@ -37,8 +37,9 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
 
   useEffect(() => () => clearTimeout(revertTimer.current), []);
 
-  // الشريط يتحول عند التمرير: ملتصق شفاف في الأعلى، وحبّة عائمة
-  // مضبّبة بعد النزول. شريط التقدم يُحرَّك على الـ DOM مباشرة —
+  // الحبّة الزجاجية موجودة من أول الصفحة لا تتكوّن عند النزول —
+  // التمرير يشدّها فقط: تضيق وتزيد عتامتها حتى يبقى النص تحتها
+  // مقروءاً وهو يمر خلفها. شريط التقدم يُحرَّك على الـ DOM مباشرة —
   // حالة React لكل بكسل تمرير تعني رندر لكل بكسل.
   const [scrolled, setScrolled] = useState(false);
   const progressRef = useRef(null);
@@ -87,27 +88,25 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
   const openVoice = onVoiceMode ?? (() => router.push("/"));
 
   return (
-    <header className="sticky top-0 z-40">
+    <header className="sticky top-0 z-40 pt-3.5">
       {/* خيط التقدم: ينمو من اليمين لأن القراءة كذلك */}
       <div
         aria-hidden
         ref={progressRef}
-        className="absolute inset-x-0 top-0 z-50 h-0.5 origin-right bg-accent"
+        className="grad-fill absolute inset-x-0 top-0 z-50 h-0.5 origin-right"
         style={{ transform: "scaleX(0)" }}
       />
 
       <div
         className={
-          "mx-auto transition-all duration-500 " +
-          (scrolled
-            ? "card-shadow mt-3 max-w-4xl rounded-full border border-line bg-card/85 px-3 backdrop-blur-md"
-            : "max-w-6xl bg-transparent px-4 sm:px-6")
+          "mx-auto px-4 transition-all duration-500 sm:px-6 " +
+          (scrolled ? "max-w-4xl" : "max-w-6xl")
         }
       >
         <nav
           className={
-            "flex w-full items-center justify-between gap-4 transition-all duration-500 " +
-            (scrolled ? "px-2 py-2" : "py-4")
+            "glass flex w-full items-center justify-between gap-4 rounded-full border border-line px-3.5 py-2.5 shadow-[0_18px_44px_-28px_rgb(23_20_15/0.28)] transition-all duration-500 " +
+            (scrolled ? "bg-white/80" : "bg-white/65")
           }
         >
           {/* الشعار والروابط يبدآن من اليمين ويتدفقان لليسار.
@@ -120,7 +119,7 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
               className="flex items-center gap-2.5"
               aria-label="احسم — الصفحة الرئيسية"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-lg font-bold text-accent-ink">
+              <span className="grad-fill glow-sm flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold">
                 حـ
               </span>
               <span
@@ -188,10 +187,12 @@ export default function SiteNav({ onHome, onVoiceMode, onSignIn, onStart }) {
               </button>
             )}
 
+            {/* أبيض لا حبر: التدرّج محجوز لـ«ابدأ قرارك» في الهيرو،
+                وزرّان بارزان في شاشة واحدة يلغي أحدهما الآخر */}
             <button
               type="button"
               onClick={startDeciding}
-              className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-on-ink transition-opacity hover:opacity-85"
+              className="rounded-full border border-line bg-white/72 px-4 py-2 text-sm font-medium transition-colors hover:border-ink"
             >
               ابدأ الآن
             </button>

@@ -6,7 +6,7 @@ import { decisionService } from "@/lib/services/decisions";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import OutcomeAsk from "./OutcomeAsk";
 import PatternsCard from "./PatternsCard";
-import { GhostButton, InkButton } from "./ui";
+import { GhostButton } from "./ui";
 import { ArrowLeft, CircleCheck, TriangleAlert } from "./icons";
 
 // كان معروضاً ٣، وقراءة الأنماط تحتاج ٥ مقيَّمة — فما كان للمستخدم
@@ -100,16 +100,21 @@ export default function HistorySection({ onSignIn, refreshKey }) {
       </div>
 
       {state.status === "anonymous" && (
-        <div className="rounded-[var(--radius-card)] border border-dashed border-line-strong bg-card p-8 text-center">
+        <div className="glass rounded-[var(--radius-card)] border border-dashed border-line-strong bg-card p-8 text-center">
           <p className="text-lg font-semibold">
             سجلك يبدأ بعد أول قرار تحفظه.
           </p>
           <p className="mt-1.5 text-sm text-muted">
             سجّل دخولك عشان نحفظ قراراتك ونتعلم من عاداتك.
           </p>
-          <InkButton onClick={onSignIn} className="mt-5 px-6 py-2.5 text-sm">
+          {/* أبيض لا حبر: الحبر هنا يزاحم بطاقة الأنماط الحبرية
+              اللي تحتها في نفس القسم */}
+          <GhostButton
+            onClick={onSignIn}
+            className="mt-5 bg-white/72 px-6 py-2.5 font-semibold"
+          >
             دخول
-          </InkButton>
+          </GhostButton>
         </div>
       )}
 
@@ -118,21 +123,21 @@ export default function HistorySection({ onSignIn, refreshKey }) {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-36 animate-pulse rounded-[1.5rem] border border-line bg-card"
+              className="glass h-36 animate-pulse rounded-[1.5rem] border border-line bg-card"
             />
           ))}
         </div>
       )}
 
       {state.status === "error" && (
-        <p className="flex items-center gap-2 rounded-[1.5rem] border border-dashed border-line-strong bg-card p-5 text-sm text-muted">
+        <p className="glass flex items-center gap-2 rounded-[1.5rem] border border-dashed border-line-strong bg-card p-5 text-sm text-muted">
           <TriangleAlert size={15} className="shrink-0" />
           تعذر جلب السجل. {state.message}
         </p>
       )}
 
       {state.status === "ready" && state.decisions.length === 0 && (
-        <div className="rounded-[1.5rem] border border-dashed border-line-strong bg-card p-6 text-center text-sm text-muted">
+        <div className="glass rounded-[1.5rem] border border-dashed border-line-strong bg-card p-6 text-center text-sm text-muted">
           ما فيه قرارات محفوظة بعد — أول قرار تحسمه بيظهر هنا.
         </div>
       )}
@@ -144,7 +149,7 @@ export default function HistorySection({ onSignIn, refreshKey }) {
             return (
               <article
                 key={d.id}
-                className="card-shadow flex flex-col gap-3 rounded-[1.5rem] border border-line bg-card p-5 transition-transform hover:-translate-y-0.5"
+                className="glass card-shadow flex flex-col gap-3 rounded-[1.5rem] border border-line bg-card p-5 transition-transform hover:-translate-y-0.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="pill">

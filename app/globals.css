@@ -1,31 +1,42 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------
-   لوحة «الحبر والورق» — مأخوذة من شاشة الدخول ومعمّمة على كل الموقع.
-   الفكرة: خلفية ورقية دافئة، حبر شبه أسود، وطوبيّ واحد للفعل.
-   السطوح الغامقة ليست عكساً للثيم بل جزء ثابت منه — تُستخدم للتأطير
-   والتباين، فلها متغيراتها الخاصة بدل قلب الألوان بالحاسبة.
+   لوحة «الشفق والورق» — الورق باقٍ أساساً، وفوقه شفقٌ ملوّن مموّه
+   يتحرك ببطء خلف كل شي، والأسطح صارت زجاجاً أبيض شفافاً بدل ألواح
+   مصمتة.
+
+   الشفافية آمنة على القراءة هنا لسبب محدد: ما تحت الزجاج منخفض
+   التردد تماماً (بقع مموّهة ٤٠px، وحبيبات ٦٪ فقط)، فما فيه تفاصيل
+   تخترق النص. لو صار خلف الزجاج صورة أو نص، انكسرت هذي الضمانة.
+
+   السطوح الغامقة ليست عكساً للثيم بل جزء ثابت منه — الحبر يبقى
+   محجوزاً للحكم (النتيجة، التفكير، قراءة الأنماط).
    --------------------------------------------------------------- */
 :root {
-  --background: #e7e0d4;
+  --background: #f6f2ec;
   --foreground: #17140f;
   --ink: #17140f;
 
-  /* السطوح: البطاقة أفتح من الصفحة حتى ترتفع عنها بلا ظل ثقيل */
-  --card: #fbf7f0;
-  --card-sunken: #f4efe4;
+  /* الأسطح: أبيض شفاف. القيمة نفسها تشتغل فوق الورق وفوق الشفق،
+     فما عاد للبطاقة لون ثابت تنسخه كل صفحة */
+  --card: rgb(255 255 255 / 0.62);
+  --card-sunken: rgb(23 20 15 / 0.05);
 
   --accent: var(--mood-default);
   --accent-ink: #fdf6ee;
-  --accent-soft: #f2e2d6;
+  /* مشتق من --glow حتى يتبع المزاج بلا نسخة لكل كتلة، وشفاف حتى
+     ما يصير رقعة مصمتة فوق الزجاج */
+  --accent-soft: rgb(var(--glow) / 0.13);
   --accent-strong: #9c3f1e;
 
-  --line: #ddd3c4;
-  --line-strong: #c9bda9;
+  /* الحدود حبرٌ شفاف لا لون مصمت: فوق الورق تبان خطاً ورقياً، وفوق
+     الزجاج تبان حافة زجاج — والمصمت كان ينشز فوق الاثنين */
+  --line: rgb(23 20 15 / 0.1);
+  --line-strong: rgb(23 20 15 / 0.16);
   --muted: #6b6257;
   --muted-soft: #a89e90;
 
-  /* السطح الغامق ونصوصه — الجانب الأيسر في شاشة الدخول */
+  /* السطح الغامق ونصوصه — النتيجة وبطاقة الحكم في الهيرو */
   --on-ink: #f4efe4;
   --on-ink-muted: #bdb3a4;
   --line-ink: #3a352c;
@@ -43,49 +54,105 @@
   --mood-calm: #2f6b57;
   --mood-drained: #4a4478;
   --mood-happy: #b03a5b;
+
+  /* بقع الشفق الأربع: كل مزاج يبدّل ألوانها ومواضعها ثابتة، فالحركة
+     تبقى هي هي ويتغيّر الجو وحده */
+  --mesh-1: 74 68 120;
+  --mesh-2: 47 107 87;
+  --mesh-3: 91 79 160;
+  --mesh-4: 176 58 91;
+
+  /* محطات التدرّج. الفعل والعنوان يُبنيان منها لا من ألوان مكتوبة
+     بأيديها — بدون ذلك ينفصل أهم زر في الشاشة عن المزاج */
+  --grad-a: #e0703f;
+  --grad-b: #c2452a;
+  --grad-c: #b03a5b;
+  --grad-d: #4a4478;
+  --grad-e: #2f6b57;
+
+  --grad-action: linear-gradient(
+    120deg,
+    var(--grad-a),
+    var(--grad-b) 55%,
+    var(--grad-c)
+  );
+  --grad-title: linear-gradient(
+    100deg,
+    var(--accent),
+    var(--grad-c) 42%,
+    var(--grad-d)
+  );
 }
 
 /* ---------------------------------------------------------------
-   الثيم يتبع المزاج. الهوية (ورق + حبر) ثابتة، والمزاج يحرّك اللون
-   الفاعل ويميل بالورق ميلة خفيفة فقط — لولا ذلك صار كل مزاج تطبيقاً
-   مختلفاً، وهذا آخر شي نبيه بعد ما وحّدنا اللغة البصرية.
+   الثيم يتبع المزاج. الهوية (ورق + حبر + زجاج) ثابتة، والمزاج يحرّك
+   اللون الفاعل ويميل بالورق وبقع الشفق ميلة خفيفة — لولا ذلك صار كل
+   مزاج تطبيقاً مختلفاً، وهذا آخر شي نبيه بعد ما وحّدنا اللغة البصرية.
    المنتقي داخل زر "غيّر" في بطاقة القرار.
    --------------------------------------------------------------- */
 
 :root[data-mood="hyped"] {
-  --background: #ebdfd0;
+  --background: #f7efe6;
   --accent: var(--mood-hyped);
-  --accent-soft: #f3ddd2;
   --accent-strong: #96311a;
-  --line: #dccdb9;
   --glow: 194 69 42;
+  --mesh-1: 194 84 44;
+  --mesh-2: 176 58 91;
+  --mesh-3: 156 63 30;
+  --mesh-4: 74 68 120;
+  --grad-a: #f08a4b;
+  --grad-b: #c2452a;
+  --grad-c: #b03a5b;
+  --grad-d: #8f2b4d;
+  --grad-e: #8f2b4d;
 }
 
 :root[data-mood="calm"] {
-  --background: #dee5e0;
+  --background: #eef3ef;
   --accent: var(--mood-calm);
-  --accent-soft: #dbe8e2;
   --accent-strong: #1f5040;
-  --line: #cbd8d1;
   --glow: 47 107 87;
+  --mesh-1: 47 107 87;
+  --mesh-2: 74 68 120;
+  --mesh-3: 91 79 160;
+  --mesh-4: 47 107 87;
+  --grad-a: #4f9a7e;
+  --grad-b: #2f6b57;
+  --grad-c: #4a4478;
+  --grad-d: #5b4fa0;
+  --grad-e: #b03a5b;
 }
 
 :root[data-mood="drained"] {
-  --background: #e2e0e7;
+  --background: #f1eff6;
   --accent: var(--mood-drained);
-  --accent-soft: #e2dfee;
   --accent-strong: #342f5b;
-  --line: #d0ccd9;
   --glow: 74 68 120;
+  --mesh-1: 74 68 120;
+  --mesh-2: 91 79 160;
+  --mesh-3: 74 68 120;
+  --mesh-4: 47 107 87;
+  --grad-a: #7a72b8;
+  --grad-b: #4a4478;
+  --grad-c: #b03a5b;
+  --grad-d: #2f6b57;
+  --grad-e: #b03a5b;
 }
 
 :root[data-mood="happy"] {
-  --background: #ecdfdd;
+  --background: #f8eff0;
   --accent: var(--mood-happy);
-  --accent-soft: #f2dde3;
   --accent-strong: #862742;
-  --line: #dccbc9;
   --glow: 176 58 91;
+  --mesh-1: 176 58 91;
+  --mesh-2: 224 112 63;
+  --mesh-3: 74 68 120;
+  --mesh-4: 47 107 87;
+  --grad-a: #e0703f;
+  --grad-b: #b03a5b;
+  --grad-c: #8f2b4d;
+  --grad-d: #4a4478;
+  --grad-e: #2f6b57;
 }
 
 @theme inline {
@@ -110,13 +177,19 @@
   --font-latin: var(--font-latin);
 }
 
-body {
+/* لون الورقة على html لا على body: طبقتا الشفق تحت المحتوى بـ
+   ‎z-index:-1‎، وخلفية body تُرسم *بعد* الأولاد السالبين فتغطيهما.
+   خلفية العنصر الجذري تنتقل للوحة الرسم وتُرسم قبل كل شي، فتصير
+   الطبقات فوقها والمحتوى فوق الجميع بلا z-index على كل صفحة */
+html {
   background: var(--background);
+  transition: background-color 600ms ease;
+}
+
+body {
   color: var(--foreground);
   font-family: var(--font-arabic), system-ui, sans-serif;
-  transition:
-    background-color 600ms ease,
-    color 600ms ease;
+  transition: color 600ms ease;
 }
 
 /* العناوين بالمرعى، والمتن ببلكس. التطبيق على الوسوم لا على صنف
@@ -222,6 +295,162 @@ h6 {
   font-weight: 500;
 }
 
+/* ---------------------------------------------------------------
+   الشفق: طبقتان ثابتتان خلف كل الصفحات، تُركّبان مرة في التخطيط
+   الجذري (مكوّن Aurora).
+
+   بـ ‎position:fixed‎ لا تدخل الطبقة في منطقة تمرير المستند، فالتكبير
+   ‎scale(1.15)‎ داخل الحركة ما يولّد تمريراً أفقياً — وهذا فرقها عن
+   الشريط المائل القديم اللي كان يحتاج غلافاً بـ overflow-hidden.
+   للتأكد من عدم الانحدار: ‎document.documentElement.scrollWidth‎ يساوي
+   ‎clientWidth‎.
+   --------------------------------------------------------------- */
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: scale(1.05) translate3d(0, 0, 0);
+  }
+  33% {
+    transform: scale(1.15) translate3d(2%, -3%, 0);
+  }
+  66% {
+    transform: scale(1.1) translate3d(-3%, 2%, 0);
+  }
+}
+
+.aurora {
+  position: fixed;
+  /* تتجاوز الشاشة حتى ما تكشف الحركةُ حافةً فاضية عند أطرافها */
+  inset: -15%;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(
+      62% 58% at 14% 18%,
+      rgb(var(--mesh-1) / 0.29),
+      rgb(var(--mesh-1) / 0) 72%
+    ),
+    radial-gradient(
+      52% 52% at 86% 8%,
+      rgb(var(--mesh-2) / 0.26),
+      rgb(var(--mesh-2) / 0) 72%
+    ),
+    radial-gradient(
+      58% 58% at 78% 72%,
+      rgb(var(--mesh-3) / 0.24),
+      rgb(var(--mesh-3) / 0) 72%
+    ),
+    radial-gradient(
+      44% 46% at 34% 88%,
+      rgb(var(--mesh-4) / 0.22),
+      rgb(var(--mesh-4) / 0) 72%
+    );
+  filter: blur(40px);
+  animation: aurora-drift 34s ease-in-out infinite;
+}
+
+/* حبيبات ورقية فوق الشفق: تكسر نظافة التدرّجات وتخلي الخلفية تبان
+   ورقاً مطبوعاً لا شاشة. ٦٪ بالضرب — أعلى منها يتّسخ النص */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------
+   الزجاج — الضبابة وحدها هنا، واللون يجي من bg-card وأخواتها.
+   فصلهما يخلي أي سطح ورقي قائم يصير زجاجاً بإضافة صنف واحد.
+   --------------------------------------------------------------- */
+.glass {
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+.glass-deep {
+  backdrop-filter: blur(26px) saturate(140%);
+}
+
+/* ---------------------------------------------------------------
+   التدرّج نصاً وفعلاً.
+   --------------------------------------------------------------- */
+
+/* عنوان بتدرّج المزاج. النص شفاف والتدرّج يُقصّ عليه */
+.grad-text {
+  background-image: var(--grad-title);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* نص التدرّج فوق الحبر — طرفاه أفتح، لأن تدرّج الفعل نفسه يغرق
+   في السواد وما يبان منه إلا بقعة داكنة */
+.grad-text-on-ink {
+  background-image: linear-gradient(100deg, #ffb08a, #d94f7a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* في وضع التباين القسري يختفي التدرّج ويبقى نص شفاف — أي عنوان
+   غير مقروء. نرجّع اللون الصلب */
+@media (forced-colors: active) {
+  .grad-text,
+  .grad-text-on-ink {
+    background-image: none;
+    color: CanvasText;
+    -webkit-text-fill-color: CanvasText;
+  }
+}
+
+/* لوح الحكم: حبر شفاف لا مصمت — الشفق يمر من تحته فيبقى جزءاً من
+   الصفحة لا ملصقاً عليها. الصنف on-ink معه يقلب حلقة التركيز */
+.ink-glass {
+  background-image: linear-gradient(
+    150deg,
+    rgb(20 17 28 / 0.92),
+    rgb(38 24 32 / 0.92)
+  );
+  border: 1px solid rgb(23 20 15 / 0.85);
+  color: var(--on-ink);
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 28px 56px -22px rgb(23 20 15 / 0.28);
+}
+
+/* نفس تدرّج الفعل بلا ظله الكبير — للشعار والحبّات الصغيرة */
+.grad-fill {
+  background-image: var(--grad-action);
+  color: var(--accent-ink);
+}
+
+/* الفعل الرئيسي: تدرّج المزاج، توهج تحته، وخيط ضوء داخلي فوقه.
+   الخيط الداخلي هو اللي يعطي الحبّة حجماً — بدونه تبان ملصقاً.
+   القاعدة خارج طبقات Tailwind فتغلب disabled:* مهما كانت الأولوية،
+   فنكتب حالة المعطّل هنا صراحةً بدلاً عنها */
+.action {
+  background-image: var(--grad-action);
+  color: var(--accent-ink);
+  box-shadow:
+    0 14px 36px -10px rgb(var(--glow) / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.22);
+}
+
+.action:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.action:disabled {
+  background-image: none;
+  background-color: rgb(23 20 15 / 0.05);
+  color: var(--muted-soft);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 /* ظل ورقي: خفيف وواسع، بلا حدّ حاد */
 .card-shadow {
   box-shadow:
@@ -229,17 +458,12 @@ h6 {
     0 18px 40px -24px rgb(23 20 15 / 0.28);
 }
 
-/* توهج تحت الزر الفاعل — يتبع لون المزاج عبر --glow.
-   القاعدة هنا خارج طبقات Tailwind فتغلب disabled:shadow-none
-   مهما كانت الأولوية — فنطفيه للمعطّل صراحةً */
-.glow {
-  box-shadow: 0 10px 24px rgb(var(--glow) / 0.35);
+/* ظل أعمق للألواح الكبيرة — المؤلّف والشريط العائم */
+.panel-shadow {
+  box-shadow: 0 40px 90px -50px rgb(23 20 15 / 0.3);
 }
 
-.glow:disabled {
-  box-shadow: none;
-}
-
+/* توهج تحت السطوح الملوّنة الصغيرة — يتبع لون المزاج عبر --glow */
 .glow-sm {
   box-shadow: 0 6px 16px rgb(var(--glow) / 0.28);
 }
@@ -348,29 +572,4 @@ h6 {
 .floaty-slow {
   animation: floaty 8s ease-in-out infinite;
   animation-delay: 1.2s;
-}
-
-/* ---------------------------------------------------------------
-   الشريط الجاري — نسختان من المحتوى وإزاحة نصف المسار تعطي
-   حلقة بلا وصلة ظاهرة. حركة النظام معطّلة؟ قاعدة * فوق توقفه.
-   --------------------------------------------------------------- */
-.marquee {
-  overflow: hidden;
-}
-
-.marquee-track {
-  display: flex;
-  width: max-content;
-  gap: 3rem;
-  padding-inline-start: 3rem;
-  animation: marquee 36s linear infinite;
-}
-
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(50%);
-  }
 }

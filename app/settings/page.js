@@ -261,7 +261,7 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="glow flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-ink transition-all hover:brightness-95 active:translate-y-px disabled:opacity-50"
+                className="action flex items-center gap-2 rounded-full px-7 py-3 font-semibold transition-all active:translate-y-px disabled:opacity-50"
               >
                 {saving ? "…" : "احفظ"}
               </button>

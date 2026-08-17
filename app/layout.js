@@ -6,6 +6,7 @@ import {
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { MoodProvider } from "@/lib/theme/MoodProvider";
 import { VoiceProvider } from "@/lib/voice/VoiceProvider";
+import Aurora from "./components/Aurora";
 import Splash from "./components/Splash";
 import "./globals.css";
 
@@ -47,6 +48,9 @@ export default function RootLayout({ children }) {
       className={`${plexArabic.variable} ${almarai.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* الخلفية أول شي في الجسم: طبقتاها بـ z-index سالب فتنزل
+            تحت كل ما بعدها بلا ترتيب طبقات على كل صفحة */}
+        <Aurora />
         {/* خارج المزوّدات: الافتتاحية ما تحتاج هوية ولا مزاجاً،
             وتغطي الشاشة قبل أن يجهز أي منهما */}
         <Splash />

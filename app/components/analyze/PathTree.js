@@ -106,7 +106,9 @@ function Path({ path, index, recommended, defaultOpen }) {
               <li
                 key={i}
                 className={
-                  "rounded-2xl border-r-4 bg-background/60 p-3 " +
+                  // غائر لا مرتفع: لون الورقة صار أفتح من الزجاج،
+                  // فـ bg-background هنا كان يرفع الفرع بدل ما يغوّره
+                  "rounded-2xl border-r-4 bg-card-sunken p-3 " +
                   (b.tone === "good" ? "border-accent" : "border-accent-strong")
                 }
               >

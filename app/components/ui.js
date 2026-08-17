@@ -2,11 +2,11 @@
 
 import { toArabicDigits } from "@/lib/text/digits";
 
-// عناصر مشتركة على لغة «الحبر والورق».
+// عناصر مشتركة على لغة «الشفق والورق».
 //
-// قاعدة اللون هنا: الطوبيّ محجوز للفعل الواحد الرئيسي في الشاشة،
+// قاعدة اللون هنا: تدرّج المزاج محجوز للفعل الواحد الرئيسي في الشاشة،
 // والحبر (الأسود الدافئ) لكل ما هو مختار أو مؤكَّد. لو صار الاختيار
-// طوبيّاً أيضاً ضاع الترتيب البصري وما عاد للزر الرئيسي وزن.
+// ملوّناً أيضاً ضاع الترتيب البصري وما عاد للزر الرئيسي وزن.
 
 const cx = (...parts) => parts.filter(Boolean).join(" ");
 
@@ -33,14 +33,15 @@ export function Eyebrow({ children, className = "", lang = "ar" }) {
    بينها في الوزن لا في الشكل.
    --------------------------------------------------------------- */
 
+// صنف action يحمل التدرّج والتوهج وحالة المعطّل من globals.css —
+// خارج طبقات Tailwind حتى ما تحتاج كل نسخة تكتب ‎disabled:*‎ بنفسها
 export function PrimaryButton({ children, className = "", ...props }) {
   return (
     <button
       type="button"
       className={cx(
-        "glow rounded-full bg-accent px-7 py-3.5 font-semibold text-accent-ink",
-        "transition-all hover:brightness-95 active:translate-y-px",
-        "disabled:cursor-not-allowed disabled:bg-line disabled:text-muted disabled:shadow-none disabled:brightness-100",
+        "action rounded-full px-7 py-3.5 font-semibold",
+        "transition-all active:translate-y-px",
         className,
       )}
       {...props}
@@ -146,11 +147,13 @@ export function Field({ className = "", ...props }) {
    الأسطح.
    --------------------------------------------------------------- */
 
+// لوح زجاجي: أبيض شفاف وضبابة خلفه. الضبابة على الأسطح الكبيرة فقط —
+// كل عنصر لها كلفة رسم على الجهاز، ولا تضيف شيئاً فوق سطح صغير
 export function Card({ children, className = "", as: As = "section", ...rest }) {
   return (
     <As
       className={cx(
-        "card-shadow rounded-[var(--radius-card)] border border-line bg-card p-6 sm:p-8",
+        "glass card-shadow rounded-[var(--radius-card)] border border-line bg-card p-6 sm:p-8",
         className,
       )}
       {...rest}
