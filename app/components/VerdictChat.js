@@ -53,27 +53,31 @@ export default function VerdictChat({ turns, busy, error, onSend }) {
                 key={i}
                 className={
                   "flex flex-col gap-1.5 " +
-                  (turn.role === "user" ? "items-start" : "items-stretch")
+                  // كلامه في الجهة المقابلة: التبادل يُقرأ من الجانبين
+                  // قبل أن يُقرأ من الألوان. و«البداية» في RTL هي اليمين
+                  (turn.role === "user" ? "items-start" : "items-end")
                 }
               >
                 {turn.role === "user" ? (
-                  <span className="max-w-[85%] rounded-2xl rounded-ss-sm bg-ink px-4 py-2.5 text-sm text-on-ink">
+                  <span className="max-w-[85%] rounded-2xl rounded-ss-sm bg-ink px-4 py-2.5 text-[0.95rem] text-on-ink">
                     {turn.text}
                   </span>
                 ) : (
                   <>
-                    <p className="text-[0.95rem] leading-relaxed">
+                    {/* فقاعته بلون المزاج لا بالحبر: الحبر للحكم فوقها،
+                        ولو تساويا صار للشاشة صوتان بنفس النبرة. والذيل
+                        على الطرف المقابل لذيل فقاعته */}
+                    <span className="max-w-[85%] rounded-2xl rounded-se-sm bg-accent-soft px-4 py-2.5 text-[0.95rem] leading-relaxed">
                       {turn.text}
-                    </p>
+                    </span>
 
                     {/* الانقلاب يُعلَن بسببه: انقلابٌ صامت يقرأ تذبذباً،
-                        ومعلنٌ بسببه يقرأ إصغاءً. والفرق سطر واحد */}
+                        ومعلنٌ بسببه يقرأ إصغاءً. والفرق سطر واحد.
+                        حبريّ لا ملوّن — الفقاعة صارت بلون المزاج، ولونان
+                        متجاوران بنفس الدرجة يبتلع أحدهما الآخر */}
                     {turn.flippedTo && (
-                      <p className="flex items-start gap-2 rounded-2xl bg-accent-soft px-4 py-2.5 text-sm">
-                        <Shuffle
-                          size={16}
-                          className="mt-0.5 shrink-0 text-accent-strong"
-                        />
+                      <p className="on-ink flex items-start gap-2 rounded-2xl bg-ink px-4 py-2.5 text-sm text-on-ink">
+                        <Shuffle size={16} className="mt-0.5 shrink-0" />
                         <span>
                           انقلب — صار{" "}
                           <span className="font-semibold">
