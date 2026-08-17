@@ -281,6 +281,9 @@ export default function Home() {
             options: labels,
             answers: finalAnswers,
             categoryId: finalCategory,
+            // الإطار يحمل الأسئلة والمعايير بنصوصها، فيصف البرومبت
+            // إجابات المستخدم بكلامه بدل مفاتيح مولّدة
+            frame: override?.frame ?? frame,
           }),
         });
 
@@ -292,6 +295,11 @@ export default function Home() {
           result = {
             selected_option: payload.selected_option,
             funny_reason: payload.funny_reason,
+            // الطبقة الأعمق اختيارية — الحقل الغائب يعني بطاقة أقل
+            decisive_criterion: payload.decisive_criterion,
+            edge: payload.edge,
+            cost_of_switching: payload.cost_of_switching,
+            flip_condition: payload.flip_condition,
           };
           setRecommendation(result);
         }
@@ -426,6 +434,7 @@ export default function Home() {
         ) : step === "result" && scored.length > 0 ? (
           <Result
             scored={scored}
+            frame={frame}
             recommendation={recommendation}
             apiError={apiError}
             saveState={saveState}

@@ -52,6 +52,12 @@ Two things to know before trusting it. The five older routes (`signup`, `magic-l
 
 **The frame is fetched on blur and tagged with the options it was built for.** `app/page.js` keys it (`framed.key === optionsKey`) and derives the usable frame at render, so editing an option silently retires the frame built for the old text instead of asking questions about a decision that no longer exists. The in-flight request lives in a ref, not state: pressing «احسمها لي» mid-flight awaits the same promise rather than starting a second call, and a ref causes no render. When the prefetch has landed, pressing goes straight to the first question with no waiting screen at all.
 
+**`/api/decide` takes the frame, and that repair is not optional polish.** It builds its answer lines by looking each answer's key up among the template's questions — and generated keys never appear among a *static* category's questions, so once the picker went the model started reading `- where_will_you_eat: on_the_go` instead of `- وين بتاكل؟ ← وأنا ماشي`. Nothing broke, because the generated keys happen to be readable English, which is exactly why it could have gone unnoticed. Passing the frame restores the Arabic the model wrote itself. `categoryId` is still accepted for the paths not yet migrated — `VoiceMode` is the one that still sends it.
+
+**The four depth fields are additive and never fatal.** `decisive_criterion`, `edge`, `cost_of_switching` and `flip_condition` are required in the *schema* so the model reliably produces them, and optional in `depth()` so a miss costs one card rather than the whole verdict. `decisive_criterion` is dropped unless it names a real criterion — without a frame there is nothing to check it against, so it is dropped wholesale rather than trusted. `flip_condition` is the one that earns its tokens: it hands the user a rule they can reuse without the app.
+
+**Throttling from Gemini surfaces as a 502, and it will lie to a test harness.** The route maps `AbortError` to 504 and everything else to 502, so an upstream rate-limit is indistinguishable from a bad model response. A burst of route tests produced 502s that moved between cases on every run and passed in isolation — `test-decide-depth.mjs` therefore paces its calls. When a route test fails only at the tail of a burst, suspect the quota before the code.
+
 ## The design language: aurora, glass, and ink
 
 Tokens live in `app/globals.css`; the shared kit is `app/components/ui.js`. The login/signup screen (`AuthPanel`) is the one holdout — it paints opaque literal colours inline and keeps its own full-bleed split.
@@ -104,6 +110,7 @@ Tokens live in `app/globals.css`; the shared kit is `app/components/ui.js`. The 
 | Arabic normalization for matching | `lib/voice/match.js` (`normalizeArabic`) |
 | Generated-frame contract, `shapeFrame`, `frameToCategory` | `lib/engine/frame.js` (+ `test-frame-shape.mjs`) |
 | Two-option duel: handle↔ratings table, `withPriors` | `lib/engine/duel.js` (+ `test-duel.mjs`), `app/components/Duel.js` |
+| Depth fields on the verdict (`decisive_criterion`, `flip_condition`, …) | `app/api/decide/route.js` `depth()` (+ `test-decide-depth.mjs`) |
 | Opening screen, scroll reveal | `app/components/Splash.js`, `Reveal.js` |
 | Fixed aurora + grain layers (mounted in `app/layout.js`) | `app/components/Aurora.js` |
 
