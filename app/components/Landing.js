@@ -85,6 +85,7 @@ export default function Landing({
   setMood,
   frame,
   frameError,
+  onOptionBlur,
   options,
   setOptions,
   onStart,
@@ -104,6 +105,7 @@ export default function Landing({
         setMood={setMood}
         frame={frame}
         frameError={frameError}
+        onOptionBlur={onOptionBlur}
         options={options}
         setOptions={setOptions}
         onStart={onStart}
@@ -208,6 +210,7 @@ function ComposerSection({
   setMood,
   frame,
   frameError,
+  onOptionBlur,
   options,
   setOptions,
   onStart,
@@ -355,6 +358,7 @@ function ComposerSection({
                   <Field
                     value={o.label}
                     onChange={(e) => update(o.id, e.target.value)}
+                    onBlur={onOptionBlur}
                     placeholder={`الخيار ${ORDINALS[i]}`}
                     aria-label={`الخيار رقم ${i + 1}`}
                     maxLength={60}

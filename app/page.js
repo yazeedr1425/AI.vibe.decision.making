@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCategory } from "@/lib/engine/categories";
 import { frameToCategory, pathAnswers } from "@/lib/engine/frame";
-import { scoreOptions, weightsFor } from "@/lib/engine/score";
+import { withPriors } from "@/lib/engine/duel";
+import { MIN_OPTIONS, scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
 import { frameService } from "@/lib/services/frame";
@@ -15,6 +16,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import Landing from "./components/Landing";
 import QuestionStep from "./components/QuestionStep";
 import RatingGrid from "./components/RatingGrid";
+import Duel from "./components/Duel";
 import HistorySection from "./components/HistorySection";
 import Result from "./components/Result";
 import SiteFooter from "./components/SiteFooter";
@@ -26,6 +28,9 @@ import Reveal from "./components/Reveal";
 import { Card } from "./components/ui";
 
 // معرّفات ثابتة للخيارين الأوليين حتى لا يختلف الرندر بين الخادم والمتصفح
+// نفس ما يفرضه ‎/api/frame‎: نداء بخيار من حرف واحد مرفوض سلفاً
+const MIN_LABEL_LENGTH = 2;
+
 const initialOptions = () => [
   { id: "opt-1", label: "" },
   { id: "opt-2", label: "" },
@@ -39,7 +44,12 @@ export default function Home() {
   // الإطار المولّد بدل الفئة المختارة. المحادثة الصوتية خارج نطاق
   // هذي الجولة فتظل ترجّع معرّف فئة ثابتة — مصدران للقالب، ومخرَج
   // واحد يقرأه المحرك.
-  const [frame, setFrame] = useState(null);
+  //
+  // موسوم بالخيارات التي بُني لها: الإطلاق المبكر يعني أن الإطار قد
+  // يسبق تعديلاً على النص، وإطارٌ لخيارٍ ما عاد موجوداً يسأل عن قرار
+  // غير الذي أمام المستخدم. الاشتقاق عند الرندر يخلي القديم يسقط من
+  // نفسه بلا تصفير داخل أثر.
+  const [framed, setFramed] = useState(null);
   const [voiceCategoryId, setVoiceCategoryId] = useState(null);
   const [frameError, setFrameError] = useState(null);
   // المزاج يعيش في المزوّد الجذري حتى يبقى اللون عبر كل الصفحات
@@ -84,6 +94,17 @@ export default function Home() {
     heading?.focus();
   }, [step, questionIndex]);
 
+  const filledOptions = useMemo(
+    () =>
+      options
+        .filter((o) => o.label.trim())
+        .map((o) => ({ ...o, label: o.label.trim() })),
+    [options],
+  );
+
+  const optionsKey = filledOptions.map((o) => o.label).join("|");
+  const frame = framed?.key === optionsKey ? framed.frame : null;
+
   // القالب الذي يقرأه المحرك: مولّد من الإطار، أو فئة ثابتة لو جاء
   // القرار من المحادثة الصوتية. `frameToCategory` يعتمد على الإجابات
   // لأن الشجرة تختار سؤالها الثاني حسب الأولى، فالاشتقاق عند الرندر
@@ -101,51 +122,89 @@ export default function Home() {
   // الفئة المحفوظة في السجل — قيد `CHECK` على العمود، فلها قيمة دائماً
   const decisionCategory = frame?.category ?? voiceCategoryId ?? "life";
 
-  const filledOptions = useMemo(
-    () =>
-      options
-        .filter((o) => o.label.trim())
-        .map((o) => ({ ...o, label: o.label.trim() })),
-    [options],
-  );
-
   const weights = useMemo(
     () => (category ? weightsFor(category, answers, mood) : {}),
     [category, answers, mood],
   );
 
+  // تقدير النموذج يملأ ما لم يلمسه المستخدم — اشتقاقاً عند الرندر لا
+  // ضبطاً داخل أثر، فتعديلٌ سبق وصول الإطار ما ينمسح
+  const seeded = useMemo(
+    () => withPriors(ratings, frame, filledOptions),
+    [ratings, frame, filledOptions],
+  );
+
   const scored = useMemo(
     () =>
       category && filledOptions.length
-        ? scoreOptions(category, filledOptions, ratings, weights)
+        ? scoreOptions(category, filledOptions, seeded, weights)
         : [],
-    [category, filledOptions, ratings, weights],
+    [category, filledOptions, seeded, weights],
   );
 
-  // الإطار يُبنى قبل أول سؤال، لأن الأسئلة نفسها منه. الانتظار مكشوف
-  // هنا (٦–١٠ ثوانٍ) والمرحلة القادمة تخفيه بإطلاقه عند خروج المؤشر
-  // من آخر حقل. لا قالب احتياطي عند الفشل: سؤال من قالب يتنكّر
-  // كتوليد أسوأ من خطأ صريح.
-  const buildFrame = useCallback(async () => {
-    const labels = filledOptions.map((o) => o.label);
-    const result = await frameService.build({ options: labels });
-    if (!result.ok) {
-      setFrameError(result.message);
-      return null;
-    }
-    setFrameError(null);
-    setFrame(result.frame);
-    return result.frame;
-  }, [filledOptions]);
+  // المبارزة للخيارين بإطار مولّد. المحادثة الصوتية بلا إطار، وثلاثة
+  // خيارات فأكثر تبقى على الشبكة لأن القيمة المطلقة تهم هناك
+  const isDuel = filledOptions.length === 2 && Boolean(frame);
+
+  // الإطار يُبنى قبل أول سؤال، لأن الأسئلة نفسها منه. النداء الجاري
+  // محفوظ في مرجع لا حالة: الضغط أثناء البناء ينتظر النداء نفسه بدل
+  // ما يطلق ثانياً، والمرجع لا يسبب رندراً.
+  const pendingRef = useRef({ key: null, promise: null });
+
+  const buildFrame = useCallback((key, labels) => {
+    if (pendingRef.current.key === key) return pendingRef.current.promise;
+
+    const promise = frameService
+      .build({ options: labels })
+      .then((result) => {
+        if (pendingRef.current.key === key) {
+          pendingRef.current = { key: null, promise: null };
+        }
+        if (!result.ok) {
+          setFrameError(result.message);
+          return null;
+        }
+        setFrameError(null);
+        setFramed({ key, frame: result.frame });
+        return result.frame;
+      });
+
+    pendingRef.current = { key, promise };
+    return promise;
+  }, []);
+
+  // الإطلاق المبكر: عند خروج المؤشر من حقل خيار، لا عند الضغط على
+  // «احسمها لي». المستخدم عادةً يقرأ ما كتبه قبل ما يمد يده للزر،
+  // فهذي ثانيتان إلى أربع مجاناً — وضربة الكاش في المسار تخلي الخروج
+  // والدخول المتكرر بلا كلفة.
+  //
+  // الشرط أن تكون كل الحقول المعروضة مكتوبة: حقل فاضٍ يعني أن
+  // المستخدم ما خلّص، وبناء إطار لخيارات ناقصة يُرمى بعد سطر.
+  const prefetchFrame = useCallback(() => {
+    const labels = options.map((o) => o.label.trim());
+    if (labels.length < MIN_OPTIONS) return;
+    if (labels.some((l) => l.length < MIN_LABEL_LENGTH)) return;
+
+    const key = labels.join("|");
+    if (framed?.key === key || pendingRef.current.key === key) return;
+    buildFrame(key, labels);
+  }, [options, framed, buildFrame]);
 
   const start = async () => {
     setAnswers({});
     setRatings({});
     setQuestionIndex(0);
     setFrameError(null);
-    setStep("reading");
 
-    const built = await buildFrame();
+    // جاهز من الإطلاق المبكر؟ انتقال فوري بلا شاشة انتظار
+    if (frame) {
+      setStep("questions");
+      return;
+    }
+
+    setStep("reading");
+    const labels = filledOptions.map((o) => o.label);
+    const built = await buildFrame(labels.join("|"), labels);
     setStep(built ? "questions" : "landing");
   };
 
@@ -162,10 +221,11 @@ export default function Home() {
     // التصويت يحتاج فئة للحفظ لا أسئلة، فالإطار هنا وسيلة لا غاية.
     // ولو فشل نكمل بـ«حياة» بدل ما نمنع إنشاء تصويت لأجل حقل تصنيف —
     // هذا سقوط في وسم داخلي، لا محتوى مصنوع يُعرض على أنه مولّد.
-    const built = frame ?? (await buildFrame());
+    const labels = filledOptions.map((o) => o.label);
+    const built = frame ?? (await buildFrame(labels.join("|"), labels));
     const result = await groupService.createGroup({
       categoryId: built?.category ?? "life",
-      options: filledOptions.map((o) => o.label),
+      options: labels,
     });
     if (!result.ok) {
       setGroupBusy(false);
@@ -283,7 +343,7 @@ export default function Home() {
         if (given) byId[option.id] = given;
       }
 
-      setFrame(null);
+      setFramed(null);
       setVoiceCategoryId(payload.categoryId);
       setOptions(voiceOptions);
       setAnswers(payload.answers);
@@ -296,7 +356,7 @@ export default function Home() {
   const restart = () => {
     setStep("landing");
     setQuestionIndex(0);
-    setFrame(null);
+    setFramed(null);
     setVoiceCategoryId(null);
     setFrameError(null);
     setMood(null);
@@ -342,6 +402,7 @@ export default function Home() {
               setMood={setMood}
               frame={frame}
               frameError={frameError}
+              onOptionBlur={prefetchFrame}
               options={options}
               setOptions={setOptions}
               onStart={start}
@@ -404,20 +465,35 @@ export default function Home() {
               />
             )}
 
-            {step === "ratings" && category && (
-              <RatingGrid
-                category={category}
-                options={filledOptions}
-                ratings={ratings}
-                setRatings={setRatings}
-                weights={weights}
-                onNext={() => decide()}
-                onBack={() => {
-                  setQuestionIndex(category.questions.length - 1);
-                  setStep("questions");
-                }}
-              />
-            )}
+            {step === "ratings" &&
+              category &&
+              (isDuel ? (
+                <Duel
+                  frame={frame}
+                  options={filledOptions}
+                  ratings={seeded}
+                  setRatings={setRatings}
+                  weights={weights}
+                  onNext={() => decide()}
+                  onBack={() => {
+                    setQuestionIndex(category.questions.length - 1);
+                    setStep("questions");
+                  }}
+                />
+              ) : (
+                <RatingGrid
+                  category={category}
+                  options={filledOptions}
+                  ratings={seeded}
+                  setRatings={setRatings}
+                  weights={weights}
+                  onNext={() => decide()}
+                  onBack={() => {
+                    setQuestionIndex(category.questions.length - 1);
+                    setStep("questions");
+                  }}
+                />
+              ))}
           </Card>
         )}
       </main>
