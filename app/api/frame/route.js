@@ -2,8 +2,12 @@ import { GoogleGenAI } from "@google/genai";
 import {
   FRAME_SCHEMA,
   FRAME_SYSTEM,
+  REFINE_SCHEMA,
+  REFINE_SYSTEM,
   framePrompt,
+  refinePrompt,
   shapeFrame,
+  shapeRefinement,
 } from "@/lib/engine/frame";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { clientIp, createLimiter } from "@/lib/rate-limit";
@@ -91,7 +95,45 @@ function validate(body) {
     return { ok: false, message: "فيه خيارات مكررة — غيّر واحد منها." };
   }
 
-  return { ok: true, value: { options: cleaned } };
+  return { ok: true, value: { options: cleaned, refine: readRefine(body.refine) } };
+}
+
+// مدخل التكيّف مقصوص عمداً: الإطار كامل ٨٠٠ رمز، والمطلوب منه هنا
+// مفاتيح المعايير غير المسؤول عنها والمسار المسلوك والسؤال المعروض.
+// أي نقص يرجّع null فيُعامَل الطلب كطلب إطار عادي.
+function readRefine(refine) {
+  if (!refine || typeof refine !== "object") return null;
+
+  const shown = refine.shown;
+  if (!shown || typeof shown.key !== "string") return null;
+  if (!Array.isArray(shown.choices) || shown.choices.length !== 3) return null;
+  if (shown.choices.some((c) => typeof c?.value !== "string")) return null;
+
+  const untouched = (Array.isArray(refine.untouched) ? refine.untouched : [])
+    .filter((c) => c && typeof c.key === "string")
+    .map((c) => ({ key: c.key, label: String(c.label ?? c.key).slice(0, 60) }));
+  // ما فيه معيار بلا سؤال؟ ما فيه سؤال ثالث يُسأل أصلاً
+  if (!untouched.length) return null;
+
+  const asked = (Array.isArray(refine.asked) ? refine.asked : [])
+    .filter((a) => a && typeof a.question === "string")
+    .map((a) => ({
+      question: a.question.slice(0, 120),
+      answer: String(a.answer ?? "").slice(0, 120),
+    }));
+
+  return {
+    shown: {
+      key: shown.key,
+      label: String(shown.label ?? "").slice(0, 120),
+      choices: shown.choices.map((c) => ({
+        value: c.value,
+        label: String(c.label ?? c.value).slice(0, 120),
+      })),
+    },
+    untouched,
+    asked,
+  };
 }
 
 // ---------------------------------------------------------------
@@ -101,7 +143,7 @@ function validate(body) {
 // «كبسة/برجر» يتكرر كثيراً، والإطار أغلى نداء في المسار. الرقم يرتفع
 // مع أي تغيير في البرومبت أو العقد — وإلا تُخدَم إدخالات بشكل قديم.
 // والفرز في المفتاح يخلي ترتيب الخيارات لا يصنع إدخالاً جديداً
-const VERSION = "v4-any-count";
+const VERSION = "v5-refine";
 const TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_ENTRIES = 300;
 const store = new Map();
@@ -109,6 +151,16 @@ const store = new Map();
 // مرتّب بعد التطبيع: «كبسة ضد برجر» و«برجر ضد كبسة» نفس المفاضلة
 const cacheKey = (options) =>
   [VERSION, ...options.map(normalizeArabic).sort()].join("|");
+
+// التكيّف يخص السؤال المعروض والمسار الذي وصل إليه — لا الخيارات وحدها.
+// المسار المتكرر يصير مجانياً بالكامل.
+const refineKey = (options, refine) =>
+  [
+    cacheKey(options),
+    "refine",
+    refine.shown.key,
+    ...refine.asked.map((a) => a.answer),
+  ].join("|");
 
 function readCache(key) {
   const hit = store.get(key);
@@ -189,6 +241,52 @@ async function askGemini(options) {
   return shaped.frame;
 }
 
+async function askRefine({ options, refine }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    const err = new Error("GEMINI_API_KEY is not set");
+    err.code = "NO_API_KEY";
+    throw err;
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model: MODEL,
+      contents: refinePrompt({ options, ...refine }),
+      config: {
+        systemInstruction: REFINE_SYSTEM,
+        responseMimeType: "application/json",
+        responseSchema: REFINE_SCHEMA,
+        temperature: 0.7,
+        thinkingConfig: THINKING,
+        abortSignal: controller.signal,
+      },
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const text = response?.text;
+  if (!text) return null;
+
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+
+  return shapeRefinement(parsed, {
+    shown: refine.shown,
+    untouchedKeys: refine.untouched.map((c) => c.key),
+  });
+}
+
 // ---------------------------------------------------------------
 // POST /api/frame
 // ---------------------------------------------------------------
@@ -204,7 +302,30 @@ export async function POST(request) {
   const parsed = validate(body);
   if (!parsed.ok) return fail(400, parsed.message);
 
-  const { options } = parsed.value;
+  const { options, refine } = parsed.value;
+
+  // وضع التكيّف: نفس المسار لأنه نفس السقف ونفس الكاش ونفس النموذج،
+  // ومخرَجه جزء من نفس الشجرة. الفشل هنا يرجّع 200 بـ deeper=null —
+  // تحسين اختياري ما يستاهل رسالة خطأ ولا شاشة انتظار.
+  if (refine) {
+    const key = refineKey(options, refine);
+    const cached = readCache(key);
+    if (cached) {
+      return Response.json({ ok: true, deeper: cached, source: "cache" });
+    }
+    if (!allowed(clientIp(request))) {
+      return Response.json({ ok: true, deeper: null, source: "throttled" });
+    }
+
+    let deeper = null;
+    try {
+      deeper = await askRefine({ options, refine });
+    } catch (err) {
+      console.warn("[api/frame] refine failed:", err.code ?? err.name ?? err);
+    }
+    if (deeper) writeCache(key, deeper);
+    return Response.json({ ok: true, deeper, source: deeper ? "model" : "none" });
+  }
 
   // ما فيه تحقق هوية هنا عمداً: الإطار ما يقرأ سجلاً ولا يخصّص لأحد،
   // فنداء Supabase للتوكن يضيف قفزة شبكة على المسار الذي كل هذا

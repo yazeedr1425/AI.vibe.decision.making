@@ -58,6 +58,12 @@ Two things to know before trusting it. The five older routes (`signup`, `magic-l
 
 **Throttling from Gemini surfaces as a 502, and it will lie to a test harness.** The route maps `AbortError` to 504 and everything else to 502, so an upstream rate-limit is indistinguishable from a bad model response. A burst of route tests produced 502s that moved between cases on every run and passed in isolation — `test-decide-depth.mjs` therefore paces its calls. When a route test fails only at the tail of a burst, suspect the quota before the code.
 
+**The third question is generated while the second is on screen.** The frame's tree covers question two; question three is a second call (`refine` mode on `/api/frame`) fired the moment question two renders, for the three answers to *that* question only — three branches, not nine. The user spends the call reading, so it lands in about 3s and the question then costs zero network. It is optional in the strongest sense: failure returns `{ok: true, deeper: null}`, the flow shows two questions and moves to ratings, and nothing tells the user anything — they never asked for a third question. The request sends criteria keys, the answered question and the shown question rather than the whole frame, because every input token is latency.
+
+**Anything grafted onto the frame after it is built goes onto the frame object, not beside it.** `withRefinement()` returns a new frame carrying `deeper`, so `pathQuestions`, `pathAnswers`, `/api/decide` and `saveDecision` all keep reading one object and none of them learns that a second call exists. The same stand-in rule applies at level three as at level two, and for the same reason.
+
+**A guard ref must be released when its request is aborted.** The refine effect marks its key before fetching so a re-render cannot double-fire it — but the cleanup aborts in-flight work, and without clearing the key on an unsettled abort the guard would lock the door behind itself and no later attempt could ever run. StrictMode's double-mount is the case that makes this bite.
+
 ## The design language: aurora, glass, and ink
 
 Tokens live in `app/globals.css`; the shared kit is `app/components/ui.js`. The login/signup screen (`AuthPanel`) is the one holdout — it paints opaque literal colours inline and keeps its own full-bleed split.

@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCategory } from "@/lib/engine/categories";
-import { frameToCategory, pathAnswers } from "@/lib/engine/frame";
+import {
+  frameToCategory,
+  pathAnswers,
+  pathQuestions,
+  withRefinement,
+} from "@/lib/engine/frame";
 import { withPriors } from "@/lib/engine/duel";
 import { MIN_OPTIONS, scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
@@ -190,6 +195,76 @@ export default function Home() {
     buildFrame(key, labels);
   }, [options, framed, buildFrame]);
 
+  // المستوى الثالث يُطلَق **لحظة عرض السؤال الثاني**: المستخدم يقرأ
+  // ويختار بينما النداء جارٍ، فيجهز قبل ضغطته. لو تأخّر أو فشل، تُعرض
+  // شاشة التقييم بعد السؤال الثاني بهدوء — بلا انتظار ولا رسالة خطأ
+  // لتحسين ما طلبه أحد.
+  const refineRef = useRef(null);
+
+  useEffect(() => {
+    if (step !== "questions" || questionIndex !== 1) return;
+    if (!frame || frame.deeper) return;
+
+    const asked = pathQuestions(frame, answers);
+    const shown = asked[1];
+    if (!shown) return;
+
+    // المعايير التي ما سُئل عنها بعد — السؤال الثالث لواحد منها،
+    // ومعيار يغطيه سؤالان يكتب وزنه مرتين ويضيع أحدهما
+    const used = new Set(asked.map((q) => q.affects));
+    const untouched = frame.criteria.filter((c) => !used.has(c.key));
+    if (!untouched.length) return;
+
+    const key = `${optionsKey}|${shown.key}`;
+    if (refineRef.current === key) return;
+    refineRef.current = key;
+
+    const controller = new AbortController();
+    let settled = false;
+    frameService
+      .refine({
+        options: filledOptions.map((o) => o.label),
+        refine: {
+          shown: {
+            key: shown.key,
+            label: shown.label,
+            choices: shown.choices.map((c) => ({ value: c.value, label: c.label })),
+          },
+          untouched: untouched.map((c) => ({ key: c.key, label: c.label })),
+          asked: asked
+            .slice(0, 1)
+            .map((q) => ({
+              question: q.label,
+              answer:
+                q.choices.find((c) => c.value === answers[q.key])?.label ?? "",
+            })),
+        },
+        signal: controller.signal,
+      })
+      .then((deeper) => {
+        settled = true;
+        if (!deeper || controller.signal.aborted) return;
+        // نلصقه على الإطار نفسه: كل ما بعده — الأسئلة والحسم والحفظ —
+        // يقرأ كائناً واحداً بلا أن يعرف أن ثمة نداءً ثانياً
+        setFramed((prev) =>
+          prev?.key === optionsKey
+            ? { ...prev, frame: withRefinement(prev.frame, deeper) }
+            : prev,
+        );
+      })
+      .catch(() => {
+        settled = true;
+      });
+
+    // المفتاح يُحرَّر لو أُجهض النداء قبل ما يستقر: بدونه يمنع الحارسُ
+    // أي محاولة لاحقة إلى الأبد — و StrictMode يركّب الأثر مرتين في
+    // التطوير، فالتنظيف الأول كان يقتل النداء ويقفل الباب خلفه
+    return () => {
+      controller.abort();
+      if (!settled && refineRef.current === key) refineRef.current = null;
+    };
+  }, [step, questionIndex, frame, answers, optionsKey, filledOptions]);
+
   const start = async () => {
     setAnswers({});
     setRatings({});
@@ -367,6 +442,7 @@ export default function Home() {
     setFramed(null);
     setVoiceCategoryId(null);
     setFrameError(null);
+    refineRef.current = null;
     setMood(null);
     setOptions(initialOptions());
     setAnswers({});
