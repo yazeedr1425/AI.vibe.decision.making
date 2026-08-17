@@ -658,3 +658,74 @@ h6 {
     transparent 6px 12px
   );
 }
+
+/* ---------------------------------------------------------------
+   الخيط الزاحف — قوسٌ ملوّن يلفّ على حافة الصندوق كالثعبان.
+
+   قوس قصير لا حلقة كاملة: الحلقة اللامعة تزيّن، والرأس الذي يمشي
+   يقول «اكتب هنا». وألوانه من محطات المزاج، فيتبع الثيم بلا لون
+   مكتوب بيده.
+
+   حلقة بقناع لا مربع دوّار خلف وجهٍ يغطيه: المربع كان يظهر من خلال
+   الزجاج فيغسل الصندوق كله بلون بدل أن يبقى على الحافة — والحل
+   برفع عتامة الوجه كان يشتري الحافة بثمن الزجاج.
+
+   والقناع هنا لا يخالف قاعدة «لا تكتب بادئة ‎-webkit-‎ بيدك»: القاعدة
+   عن كتابة المبدوءة **مع** القياسية، فيسقط Lightning CSS القياسية.
+   نكتب القياسية وحدها ويضيف هو البادئات — وهذا ما يفعله فعلاً هنا.
+   --------------------------------------------------------------- */
+/* الحلقة نفسها هي الإطار الآن، فتدوير العنصر يدوّر الإطار معه — ندوّر
+   زاوية التدرّج لا العنصر. و`@property` هي ما يجعل المتغيّر قابلاً
+   للاستيفاء: بدون تسجيله كزاوية يقفز من صفر إلى دورة بلا بينهما */
+@property --snake-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes snake-crawl {
+  to {
+    --snake-angle: 1turn;
+  }
+}
+
+.snake {
+  position: relative;
+  border-radius: var(--radius-card);
+  /* الحشوة هي سُمك الخيط: القناع يفرّغ ما بعدها فلا يبقى إلا الحلقة */
+  padding: 2px;
+}
+
+.snake::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: inherit;
+  pointer-events: none;
+
+  /* طبقتان: الأولى محصورة في صندوق المحتوى والثانية تغطي الحدّ كله،
+     و`exclude` تطرح الأولى من الثانية — فما يُرسم إلا الإطار */
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+
+  background: conic-gradient(
+    from var(--snake-angle),
+    transparent 0 60%,
+    rgb(var(--glow) / 0.35) 68%,
+    var(--grad-a) 78%,
+    var(--grad-c) 88%,
+    transparent 95% 100%
+  );
+  animation: snake-crawl 5s linear infinite;
+}
+
+/* قاعدة `*` توقف الحركة، فيتجمّد القوس في زاوية عشوائية ويقرأ كرقعة
+   لون. نستبدله بحلقة كاملة هادئة تقول نفس الشيء بلا حركة */
+@media (prefers-reduced-motion: reduce) {
+  .snake::before {
+    background: linear-gradient(120deg, var(--grad-a), var(--grad-c));
+  }
+}
