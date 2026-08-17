@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CATEGORIES } from "@/lib/engine/categories";
 import { MOODS } from "@/lib/engine/mood";
 import { looksOversized } from "@/lib/engine/oversized";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
@@ -11,42 +10,46 @@ import { parseSpokenOptions } from "@/lib/voice/match";
 import { useVoice } from "@/lib/voice/VoiceProvider";
 import ThirdOptionHint from "./ThirdOptionHint";
 import Reveal from "./Reveal";
-import { Field } from "./ui";
+import { Field, hindi } from "./ui";
 import {
   Activity,
   ArrowLeft,
   Brain,
-  CategoryIcon,
+  Briefcase,
   Clock,
   Headphones,
   Mic,
   MoodIcon,
   Plus,
   Scale,
+  ShoppingBag,
   TriangleAlert,
   Users,
+  Utensils,
 } from "./icons";
 
-// أمثلة تعبّي الفئة والخيارات بضغطة — مدخل مختصر لا ميزة تُعرض
+// أمثلة تعبّي الخيارين بضغطة — مدخل مختصر لا ميزة تُعرض.
+// بلا فئة: النموذج يستنتجها من النصّين، فتحديدها هنا يعيد اختراع
+// الحقل الذي حذفناه من الشاشة.
 const EXAMPLES = [
   {
     label: "أطلب ولا أطبخ؟",
-    categoryId: "food",
+    icon: Utensils,
     options: ["أطلب من مطعم", "أطبخ بالبيت"],
   },
   {
     label: "أشتري أو أنتظر؟",
-    categoryId: "shopping",
+    icon: ShoppingBag,
     options: ["أشتري الآن", "أنتظر التخفيض"],
   },
   {
     label: "أكمّل أو أغيّر؟",
-    categoryId: "life",
+    icon: Briefcase,
     options: ["أكمّل بمكاني", "أغيّر مساري"],
   },
   {
     label: "أفكّر أو أبدأ؟",
-    categoryId: "time",
+    icon: Brain,
     options: ["أفكّر أكثر", "أبدأ الحين"],
   },
 ];
@@ -80,8 +83,8 @@ const STEPS = [
 export default function Landing({
   mood,
   setMood,
-  categoryId,
-  setCategoryId,
+  frame,
+  frameError,
   options,
   setOptions,
   onStart,
@@ -99,8 +102,8 @@ export default function Landing({
       <ComposerSection
         mood={mood}
         setMood={setMood}
-        categoryId={categoryId}
-        setCategoryId={setCategoryId}
+        frame={frame}
+        frameError={frameError}
         options={options}
         setOptions={setOptions}
         onStart={onStart}
@@ -203,8 +206,8 @@ function Hero({ onCta }) {
 function ComposerSection({
   mood,
   setMood,
-  categoryId,
-  setCategoryId,
+  frame,
+  frameError,
   options,
   setOptions,
   onStart,
@@ -225,14 +228,16 @@ function ComposerSection({
 
   const filledLabels = options.map((o) => o.label.trim()).filter(Boolean);
   const filled = filledLabels.length;
-  const ready = filled >= MIN_OPTIONS && categoryId;
+  const ready = filled >= MIN_OPTIONS;
 
-  // بانر التفكيك: كشف محلي بلا نداء، والدخول بيد المستخدم دائماً
+  // بانر التفكيك: كشف محلي بلا نداء، والدخول بيد المستخدم دائماً.
+  // الفئة صارت تجي من الإطار لا من اختيار المستخدم، فقبل وصوله
+  // تعمل استدلالات النص وحدها، وأول ما يصل تنضم إشارة «حياة».
   const oversizedKey = filledLabels.join("|");
   const showBreakdown =
     filled >= MIN_OPTIONS &&
     dismissedKey !== oversizedKey &&
-    looksOversized(filledLabels, categoryId);
+    looksOversized(filledLabels, frame?.category ?? null);
 
   const update = (id, label) =>
     setOptions((prev) => prev.map((o) => (o.id === id ? { ...o, label } : o)));
@@ -260,10 +265,8 @@ function ComposerSection({
       return [...prev, { id: crypto.randomUUID(), label }];
     });
 
-  const applyExample = (example) => {
-    setCategoryId(example.categoryId);
+  const applyExample = (example) =>
     setOptions(example.options.map((label, i) => ({ id: `ex-${i}`, label })));
-  };
 
   const dictate = useCallback(() => {
     if (!stt || dictating) return;
@@ -416,28 +419,11 @@ function ComposerSection({
               </p>
             )}
 
-            {/* نوع القرار والمزاج: مفتوحان دائماً. نوع القرار مطلوب قبل
-                «احسمها لي»، وإخفاء خطوة إجبارية خلف زر يخلي المستخدم
-                يدوّر على شي ما يعرف إنه موجود. */}
+            {/* المزاج وحده بقي هنا. «نوع القرار» انحذف لأن سؤاله بعد ما
+                كتب المستخدم خياريه اعترافٌ بأننا ما قرأناهما — والنموذج
+                يستنتج الفئة من النصّين. المزاج يبقى لأنه لا يُستنتج:
+                لا أحد يعرف مزاجك إلا أنت، وهو اختياري أصلاً. */}
             <div className="flex flex-col gap-5 border-t border-line pt-6">
-              <fieldset>
-                <legend className="mb-2.5 text-sm text-muted">نوع القرار</legend>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCategoryId(c.id)}
-                      aria-pressed={categoryId === c.id}
-                      className={chip(categoryId === c.id)}
-                    >
-                      <CategoryIcon categoryId={c.id} size={16} />
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
               <fieldset>
                 <legend className="mb-2.5 text-sm text-muted">مزاجك</legend>
                 <div className="flex flex-wrap gap-2">
@@ -486,6 +472,24 @@ function ComposerSection({
               </div>
             )}
 
+            {/* فشل الإطار خطأ صريح لا قالب بديل: بدونه ما فيه أسئلة
+                ولا معايير، وسؤال مصنوع يتنكّر كمولَّد أسوأ من لا شيء */}
+            {frameError && (
+              <p
+                role="alert"
+                className="flex items-start gap-2.5 rounded-2xl bg-accent-soft p-4 text-sm leading-relaxed"
+              >
+                <TriangleAlert
+                  size={17}
+                  className="mt-0.5 shrink-0 text-accent-strong"
+                />
+                {/* الرسالة تجي من المسار كاملةً بإرشادها — و«انتظر
+                    دقيقة» عند تجاوز السقف يناقضها ذيلٌ يقول «جرّب
+                    مرة ثانية» */}
+                {frameError}
+              </p>
+            )}
+
             <div className="flex flex-col gap-3">
               <button
                 type="button"
@@ -512,9 +516,7 @@ function ComposerSection({
               <p className="text-center text-xs text-muted-soft">
                 {ready
                   ? "ما نحفظ قرارك إلا إذا طلبت. القرار لك دائمًا."
-                  : !categoryId
-                    ? "اختر نوع القرار فوق أول."
-                    : `اكتب ${MIN_OPTIONS} خيارات على الأقل.`}
+                  : hindi(`اكتب ${MIN_OPTIONS} خيارات على الأقل.`)}
               </p>
             </div>
           </div>
@@ -547,11 +549,7 @@ function ComposerSection({
                     onClick={() => applyExample(ex)}
                     className="group -mx-3 flex items-center gap-3 rounded-xl px-3 py-3 text-start transition-colors hover:bg-ink/5"
                   >
-                    <CategoryIcon
-                      categoryId={ex.categoryId}
-                      size={19}
-                      className="shrink-0 text-accent"
-                    />
+                    <ex.icon size={19} className="shrink-0 text-accent" />
                     <span className="text-[1.05rem]">{ex.label}</span>
                     <ArrowLeft
                       size={16}

@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCategory } from "@/lib/engine/categories";
+import { frameToCategory, pathAnswers } from "@/lib/engine/frame";
 import { scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
+import { frameService } from "@/lib/services/frame";
 import { groupService } from "@/lib/services/group";
 import { profileService } from "@/lib/services/profile";
 import { useMood } from "@/lib/theme/MoodProvider";
@@ -34,7 +36,12 @@ export default function Home() {
   const router = useRouter();
   const [step, setStep] = useState("landing");
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [categoryId, setCategoryId] = useState(null);
+  // الإطار المولّد بدل الفئة المختارة. المحادثة الصوتية خارج نطاق
+  // هذي الجولة فتظل ترجّع معرّف فئة ثابتة — مصدران للقالب، ومخرَج
+  // واحد يقرأه المحرك.
+  const [frame, setFrame] = useState(null);
+  const [voiceCategoryId, setVoiceCategoryId] = useState(null);
+  const [frameError, setFrameError] = useState(null);
   // المزاج يعيش في المزوّد الجذري حتى يبقى اللون عبر كل الصفحات
   const { mood, setMood } = useMood();
   const [options, setOptions] = useState(initialOptions);
@@ -77,7 +84,22 @@ export default function Home() {
     heading?.focus();
   }, [step, questionIndex]);
 
-  const category = categoryId ? getCategory(categoryId) : null;
+  // القالب الذي يقرأه المحرك: مولّد من الإطار، أو فئة ثابتة لو جاء
+  // القرار من المحادثة الصوتية. `frameToCategory` يعتمد على الإجابات
+  // لأن الشجرة تختار سؤالها الثاني حسب الأولى، فالاشتقاق عند الرندر
+  // لا في حالة مخزَّنة.
+  const category = useMemo(
+    () =>
+      frame
+        ? frameToCategory(frame, answers)
+        : voiceCategoryId
+          ? getCategory(voiceCategoryId)
+          : null,
+    [frame, answers, voiceCategoryId],
+  );
+
+  // الفئة المحفوظة في السجل — قيد `CHECK` على العمود، فلها قيمة دائماً
+  const decisionCategory = frame?.category ?? voiceCategoryId ?? "life";
 
   const filledOptions = useMemo(
     () =>
@@ -100,11 +122,31 @@ export default function Home() {
     [category, filledOptions, ratings, weights],
   );
 
-  const start = () => {
+  // الإطار يُبنى قبل أول سؤال، لأن الأسئلة نفسها منه. الانتظار مكشوف
+  // هنا (٦–١٠ ثوانٍ) والمرحلة القادمة تخفيه بإطلاقه عند خروج المؤشر
+  // من آخر حقل. لا قالب احتياطي عند الفشل: سؤال من قالب يتنكّر
+  // كتوليد أسوأ من خطأ صريح.
+  const buildFrame = useCallback(async () => {
+    const labels = filledOptions.map((o) => o.label);
+    const result = await frameService.build({ options: labels });
+    if (!result.ok) {
+      setFrameError(result.message);
+      return null;
+    }
+    setFrameError(null);
+    setFrame(result.frame);
+    return result.frame;
+  }, [filledOptions]);
+
+  const start = async () => {
     setAnswers({});
     setRatings({});
     setQuestionIndex(0);
-    setStep("questions");
+    setFrameError(null);
+    setStep("reading");
+
+    const built = await buildFrame();
+    setStep(built ? "questions" : "landing");
   };
 
   // القرار الجماعي: ينشئ ويوجه لصفحة التصويت — المنشئ يشارك الرابط
@@ -117,8 +159,12 @@ export default function Home() {
       return;
     }
     setGroupBusy(true);
+    // التصويت يحتاج فئة للحفظ لا أسئلة، فالإطار هنا وسيلة لا غاية.
+    // ولو فشل نكمل بـ«حياة» بدل ما نمنع إنشاء تصويت لأجل حقل تصنيف —
+    // هذا سقوط في وسم داخلي، لا محتوى مصنوع يُعرض على أنه مولّد.
+    const built = frame ?? (await buildFrame());
     const result = await groupService.createGroup({
-      categoryId,
+      categoryId: built?.category ?? "life",
       options: filledOptions.map((o) => o.label),
     });
     if (!result.ok) {
@@ -154,8 +200,12 @@ export default function Home() {
       setSaveState(null);
 
       const labels = override?.options ?? filledOptions.map((o) => o.label);
-      const finalAnswers = override?.answers ?? answers;
-      const finalCategory = override?.categoryId ?? categoryId;
+      // إجابات المسار وحدها: الرجوع وتغيير السؤال الأول يبدّل الفرع،
+      // فتبقى إجابة الفرع القديم بمفتاح ما عاد أحد يسأل عنه — وإرسالها
+      // للنموذج يعني موقفاً تراجع عنه المستخدم
+      const finalAnswers =
+        override?.answers ?? (frame ? pathAnswers(frame, answers) : answers);
+      const finalCategory = override?.categoryId ?? decisionCategory;
       let result = null;
 
       try {
@@ -215,7 +265,7 @@ export default function Home() {
         }
       }
     },
-    [filledOptions, answers, categoryId, weights, accessToken],
+    [filledOptions, answers, frame, decisionCategory, weights, accessToken],
   );
 
   // المحادثة الصوتية تعطينا كل شي دفعة واحدة — بما فيه التقييمات.
@@ -233,7 +283,8 @@ export default function Home() {
         if (given) byId[option.id] = given;
       }
 
-      setCategoryId(payload.categoryId);
+      setFrame(null);
+      setVoiceCategoryId(payload.categoryId);
       setOptions(voiceOptions);
       setAnswers(payload.answers);
       setRatings(byId);
@@ -245,7 +296,9 @@ export default function Home() {
   const restart = () => {
     setStep("landing");
     setQuestionIndex(0);
-    setCategoryId(null);
+    setFrame(null);
+    setVoiceCategoryId(null);
+    setFrameError(null);
     setMood(null);
     setOptions(initialOptions());
     setAnswers({});
@@ -287,8 +340,8 @@ export default function Home() {
             <Landing
               mood={mood}
               setMood={setMood}
-              categoryId={categoryId}
-              setCategoryId={setCategoryId}
+              frame={frame}
+              frameError={frameError}
               options={options}
               setOptions={setOptions}
               onStart={start}
@@ -305,10 +358,10 @@ export default function Home() {
               />
             </Reveal>
           </>
-        ) : step === "thinking" ? (
+        ) : step === "reading" || step === "thinking" ? (
           // التفكير والنتيجة يجيبان سطحهما الحبري بنفسهما —
           // البطاقة الورقية للخطوات اللي يكتب فيها المستخدم
-          <Thinking />
+          <Thinking reading={step === "reading"} />
         ) : step === "result" && scored.length > 0 ? (
           <Result
             scored={scored}
@@ -334,7 +387,7 @@ export default function Home() {
               <BreakdownFlow
                 key={filledOptions.map((o) => o.label).join("|")}
                 options={filledOptions.map((o) => o.label)}
-                categoryId={categoryId}
+                categoryId={frame?.category ?? null}
                 onCancel={() => setStep("landing")}
                 onRestart={restart}
               />

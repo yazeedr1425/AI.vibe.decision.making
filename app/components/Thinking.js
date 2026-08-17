@@ -11,15 +11,27 @@ const LINES = [
   "لحظة، أبي أطلع بشي ذكي…",
 ];
 
+// انتظار بناء الإطار. النص يقول ما يحدث فعلاً: النموذج يقرأ الخيارات
+// ليبني منها المعايير والأسئلة، وما «يفكر» في حكم بعد — والمستخدم
+// ينتظر ست ثوانٍ، فأقل ما يستحقه أن يكون السطر صادقاً.
+const READING_LINES = [
+  "يقرأ خيارينك…",
+  "يشوف وش يفرّق بينهما…",
+  "يجهّز أسئلة تخصهما…",
+];
+
 // لحظة الحكم حبرية: الورق للكتابة والحبر للفصل. الانقلاب من بطاقة
 // فاتحة لغامقة يقول «خلصت الأسئلة» بلا كلمة واحدة.
-export default function Thinking() {
+export default function Thinking({ reading = false }) {
   const [line, setLine] = useState(0);
+  const lines = reading ? READING_LINES : LINES;
 
+  // الطول في التبعيات: تبديل الطور وسط الدوران يخلي الفهرس يتجاوز
+  // القائمة الأقصر فيطلع سطر فاضٍ
   useEffect(() => {
-    const id = setInterval(() => setLine((i) => (i + 1) % LINES.length), 1100);
+    const id = setInterval(() => setLine((i) => (i + 1) % lines.length), 1100);
     return () => clearInterval(id);
-  }, []);
+  }, [lines.length]);
 
   return (
     <div
@@ -43,7 +55,7 @@ export default function Thinking() {
         data-step-heading
         className="text-xl font-semibold"
       >
-        {LINES[line]}
+        {lines[line]}
       </p>
 
       <div className="flex gap-1.5">

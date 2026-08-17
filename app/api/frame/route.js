@@ -5,7 +5,9 @@ import {
   framePrompt,
   shapeFrame,
 } from "@/lib/engine/frame";
+import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { clientIp, createLimiter } from "@/lib/rate-limit";
+import { toArabicDigits as hindi } from "@/lib/text/digits";
 import { normalizeArabic } from "@/lib/voice/match";
 
 export const runtime = "nodejs";
@@ -30,10 +32,8 @@ const GEMINI_TIMEOUT_MS = 20000;
 // و`gemini-2.5-flash-lite` رجّع ‎404‎ (سُحب) — فما بقي إلا هذا.
 const THINKING = { thinkingBudget: 0 };
 
-const OPTIONS_REQUIRED = 2;
 const MAX_LABEL_LENGTH = 60;
 const MIN_LABEL_LENGTH = 2;
-
 
 function fail(status, message) {
   return Response.json({ ok: false, error: message }, { status });
@@ -43,6 +43,12 @@ function fail(status, message) {
 // التحقق من المدخلات
 // ---------------------------------------------------------------
 
+// الإطار يخدم المدى كله لا الخيارين وحدهما: المعايير والأسئلة ما
+// تعرف عدد الخيارات أصلاً، و`priors` مصفوفة لكل خيار. ولو بقي
+// الراوت على اثنين، لَبقي مسار ٣–٥ بلا فئة بعد حذف المنتقي — فتطلع
+// شاشة نتيجة فاضية، وهو أسوأ من قالب.
+//
+// شاشة المبارزة وحدها تخص الخيارين، وهي في الواجهة لا هنا.
 function validate(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { ok: false, message: "الطلب لازم يكون كائن JSON." };
@@ -50,29 +56,39 @@ function validate(body) {
 
   const { options } = body;
 
-  if (!Array.isArray(options) || options.length !== OPTIONS_REQUIRED) {
-    // مسار المبارزة للخيارين بالضبط — الثلاثة فأكثر لها `RatingGrid`
-    return { ok: false, message: "هذا المسار للخيارين بالضبط." };
+  if (
+    !Array.isArray(options) ||
+    options.length < MIN_OPTIONS ||
+    options.length > MAX_OPTIONS
+  ) {
+    return {
+      ok: false,
+      message: hindi(
+        `عدد الخيارات لازم يكون بين ${MIN_OPTIONS} و${MAX_OPTIONS}.`,
+      ),
+    };
   }
 
   const cleaned = options
     .filter((o) => typeof o === "string")
     .map((o) => o.trim());
 
-  if (cleaned.length !== OPTIONS_REQUIRED) {
+  if (cleaned.length !== options.length) {
     return { ok: false, message: "كل خيار لازم يكون نص." };
   }
   if (cleaned.some((o) => o.length < MIN_LABEL_LENGTH)) {
-    return { ok: false, message: "اكتب الخيارين قبل." };
+    return { ok: false, message: "اكتب خياراتك قبل." };
   }
   if (cleaned.some((o) => o.length > MAX_LABEL_LENGTH)) {
     return {
       ok: false,
-      message: `طول الخيار الواحد ما يتجاوز ${MAX_LABEL_LENGTH} حرف.`,
+      message: hindi(`طول الخيار الواحد ما يتجاوز ${MAX_LABEL_LENGTH} حرف.`),
     };
   }
-  if (normalizeArabic(cleaned[0]) === normalizeArabic(cleaned[1])) {
-    return { ok: false, message: "الخياران متطابقان — غيّر واحد منهما." };
+  // التطبيع قبل المقارنة: «أطلب» و«اطلب» خيار واحد، ومعيار يفرّق
+  // بينهما مستحيل
+  if (new Set(cleaned.map(normalizeArabic)).size !== cleaned.length) {
+    return { ok: false, message: "فيه خيارات مكررة — غيّر واحد منها." };
   }
 
   return { ok: true, value: { options: cleaned } };
@@ -83,8 +99,9 @@ function validate(body) {
 // ---------------------------------------------------------------
 
 // «كبسة/برجر» يتكرر كثيراً، والإطار أغلى نداء في المسار. الرقم يرتفع
-// مع أي تغيير في البرومبت أو العقد — وإلا تُخدَم إدخالات بشكل قديم
-const VERSION = "v3-keys-any-letter";
+// مع أي تغيير في البرومبت أو العقد — وإلا تُخدَم إدخالات بشكل قديم.
+// والفرز في المفتاح يخلي ترتيب الخيارات لا يصنع إدخالاً جديداً
+const VERSION = "v4-any-count";
 const TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_ENTRIES = 300;
 const store = new Map();
@@ -215,11 +232,11 @@ export async function POST(request) {
       return fail(503, "محرك القرار غير مهيأ — GEMINI_API_KEY مفقود.");
     }
     if (err.name === "AbortError") {
-      return fail(504, "قراءة خيارينك تأخرت، جرب مرة ثانية.");
+      return fail(504, "قراءة خياراتك تأخرت، جرب مرة ثانية.");
     }
     // مخرَج مرفوض من `shapeFrame` أو خطأ من الـ API نفسه. لا قالب
     // بديل: سؤال من قالب يتنكّر كتوليد أسوأ من خطأ صريح
-    return fail(502, "ما قدرنا نقرأ خيارينك الحين، جرب مرة ثانية.");
+    return fail(502, "ما قدرنا نقرأ خياراتك الحين، جرب مرة ثانية.");
   }
 
   writeCache(key, frame);
