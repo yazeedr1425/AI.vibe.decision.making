@@ -69,6 +69,7 @@
 - [ ] متغيرات البيئة السبعة في Vercel قبل أول build
 - [ ] ضبط Site URL وRedirect URLs في Supabase Auth على النطاق الحقيقي
 - [ ] إكمال توثيق `yazeed.store` في Mailtrap (سجل DMARC) لدخول صندوق الوارد
+- [ ] تفعيل «حماية كلمات المرور المسرّبة» في Supabase Auth (فحص HaveIBeenPwned) — إعداد لوحة لا SQL، فما تقدر مهاجرة تسويه
 
 ## 💡 أفكار مرشحة (بالترتيب المقترح)
 
