@@ -100,7 +100,8 @@ All keys live server-side only; identity travels as `Authorization: Bearer`, nev
 
 ## Data & security
 
-- **Seven tables**: `profiles`, `decisions`, `options`, `answers`, `votes`, `feedback`, `analyses` — all behind RLS.
+- **Eight tables**: `profiles`, `decisions`, `options`, `answers`, `votes`, `feedback`, `analyses`, `decision_winners` — all behind RLS.
+- **`decisions.winner_option_id` is a pointer, `decision_winners` is the record**: the column answers "who wins now" in one read; the table logs every ruling and where it came from (`decide` / `discuss` / `vote`), so a verdict overturned in discussion leaves a trace instead of being erased. The log takes no updates and no deletes, like `votes`.
 - **Guests never touch tables**: the vote page goes through two `security definer` RPCs — `get_vote_page(code)` and `cast_vote(code, …)` — so nothing is exposed except what you hold the link to, and vote weight is pinned in the database.
 - **Realtime as a doorbell**: casting a vote broadcasts an *empty* ping and every listener refetches through the RPC — broadcasts are never trusted as data, so an attacker can ring the bell but can't forge a bar. Presence rides the same channel.
 - Voter names are hidden from guests — they surface only in the final announcement.
