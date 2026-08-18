@@ -308,6 +308,18 @@ export async function POST(request) {
     return fail(502, "ما قدرنا نقفل التصويت — جرب مرة ثانية.");
   }
 
+  // قيدٌ في سجل الفائزين، بعد الإقفال لا قبله: التصويت أُقفل فعلاً
+  // وصفحة التصويت تقرأ العمود، فلا يستاهل فشلُ السجل أن يرجّع خطأ
+  // على إقفالٍ نجح
+  const { error: logError } = await admin.from("decision_winners").insert({
+    decision_id: decisionId,
+    option_id: result.winner.id,
+    option_label: result.winner.label,
+    source: "vote",
+    reason: result.announcement,
+  });
+  if (logError) console.warn("[api/group] winner log failed:", logError.message);
+
   const value = { winner: result.winner.label, announcement: result.announcement };
   writeVerdict(decisionId, value);
   return Response.json({ ok: true, closed: true, ...value });

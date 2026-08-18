@@ -175,7 +175,7 @@ export default function Result({
     // الرندر — فنعرف الانقلاب بلا أثر ولا حالة وسيطة
     let flippedTo = null;
     if (result.changes.length) {
-      const after = onDiscuss?.(result.changes) ?? before;
+      const after = onDiscuss?.(result.changes, result.reply) ?? before;
       if (after !== before) flippedTo = after;
       setRevised({ winner: after, reason: result.reply });
     }

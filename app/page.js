@@ -362,7 +362,7 @@ export default function Home() {
   // فنحسبه هنا بنفس دوال الرندر لا بأثرٍ يركض بعد الرسم — والنتيجة
   // واحدة لأن الدوال نقية
   const applyDiscussion = useCallback(
-    (changes) => {
+    (changes, reply) => {
       const next = mergeChanges(revision, changes, filledOptions);
       setRevision(next);
 
@@ -382,7 +382,9 @@ export default function Home() {
       // والضيف بلا `decisionId` — ما فيه شي يُصحَّح، فيُتجاهل بصمت.
       if (decisionId && winner && winner !== savedWinner) {
         decisionService
-          .updateWinner({ decisionId, chosen: winner })
+          // رد الدورة يمشي معه ليقيّد في السجل *لماذا* انقلب الحكم،
+          // فالواقعة بلا سببها تقول نصف ما جرى
+          .updateWinner({ decisionId, chosen: winner, reason: reply ?? null })
           .then((res) => {
             if (res.ok) setSavedWinner(winner);
             else console.warn("[decide] winner update failed:", res.reason);
