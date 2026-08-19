@@ -15,6 +15,9 @@ export default function SiteFooter() {
           </p>
         </div>
         <nav className="flex items-center gap-5 text-muted">
+          <Link href="/pricing" className="transition-colors hover:text-ink">
+            الأسعار
+          </Link>
           <Link href="/how" className="transition-colors hover:text-ink">
             كيف يعمل
           </Link>
