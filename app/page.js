@@ -21,6 +21,7 @@ import { MIN_OPTIONS, scoreOptions, weightsFor } from "@/lib/engine/score";
 import { DEFAULT_TONE, TONES } from "@/lib/engine/tone";
 import { decisionService } from "@/lib/services/decisions";
 import { frameService } from "@/lib/services/frame";
+import { readNow } from "@/lib/time/now";
 import { groupService } from "@/lib/services/group";
 import { profileService } from "@/lib/services/profile";
 import { useMood } from "@/lib/theme/MoodProvider";
@@ -193,8 +194,10 @@ export default function Home() {
   const buildFrame = useCallback((key, labels) => {
     if (pendingRef.current.key === key) return pendingRef.current.promise;
 
+    // الوقت يُقرأ لحظة الطلب لا عند التركيب: الإطار قد يُبنى بعد أن
+    // تُترك الصفحة مفتوحة ساعات، وساعةٌ قديمة أسوأ من لا ساعة.
     const promise = frameService
-      .build({ options: labels })
+      .build({ options: labels, now: readNow() })
       .then((result) => {
         if (pendingRef.current.key === key) {
           pendingRef.current = { key: null, promise: null };

@@ -11,6 +11,7 @@ import {
 } from "@/lib/engine/frame";
 import { MAX_OPTIONS, MIN_OPTIONS } from "@/lib/engine/score";
 import { clientIp, createLimiter } from "@/lib/rate-limit";
+import { cacheSlice, shapeNow } from "@/lib/time/now";
 import { toArabicDigits as hindi } from "@/lib/text/digits";
 import { normalizeArabic } from "@/lib/voice/match";
 
@@ -95,7 +96,17 @@ function validate(body) {
     return { ok: false, message: "فيه خيارات مكررة — غيّر واحد منها." };
   }
 
-  return { ok: true, value: { options: cleaned, refine: readRefine(body.refine) } };
+  // now تحسين لا شرط: shapeNow يرجّع null لأي خرق للعقد — منطقة
+  // غير صالحة، ساعة خارج المدى، تاريخ لا يُقرأ — فيُبنى الإطار بلا
+  // وقت بدل ما يسقط الطلب على حقيقة اختيارية
+  return {
+    ok: true,
+    value: {
+      options: cleaned,
+      now: shapeNow(body.now),
+      refine: readRefine(body.refine),
+    },
+  };
 }
 
 // مدخل التكيّف مقصوص عمداً: الإطار كامل ٨٠٠ رمز، والمطلوب منه هنا
@@ -143,20 +154,22 @@ function readRefine(refine) {
 // «كبسة/برجر» يتكرر كثيراً، والإطار أغلى نداء في المسار. الرقم يرتفع
 // مع أي تغيير في البرومبت أو العقد — وإلا تُخدَم إدخالات بشكل قديم.
 // والفرز في المفتاح يخلي ترتيب الخيارات لا يصنع إدخالاً جديداً
-const VERSION = "v5-refine";
+const VERSION = "v6-time";
 const TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_ENTRIES = 300;
 const store = new Map();
 
-// مرتّب بعد التطبيع: «كبسة ضد برجر» و«برجر ضد كبسة» نفس المفاضلة
-const cacheKey = (options) =>
-  [VERSION, ...options.map(normalizeArabic).sort()].join("|");
+// مرتّب بعد التطبيع: «كبسة ضد برجر» و«برجر ضد كبسة» نفس المفاضلة.
+// وشريحة الوقت جزء من المفتاح لأن الإطار صار يتغيّر بها: بدونها
+// يُخدَم إطارُ الظهر لقرار منتصف الليل، فتبدو الميزة شغّالة وهي معطّلة.
+const cacheKey = (options, now) =>
+  [VERSION, cacheSlice(now), ...options.map(normalizeArabic).sort()].join("|");
 
 // التكيّف يخص السؤال المعروض والمسار الذي وصل إليه — لا الخيارات وحدها.
 // المسار المتكرر يصير مجانياً بالكامل.
-const refineKey = (options, refine) =>
+const refineKey = (options, now, refine) =>
   [
-    cacheKey(options),
+    cacheKey(options, now),
     "refine",
     refine.shown.key,
     ...refine.asked.map((a) => a.answer),
@@ -184,7 +197,7 @@ function writeCache(key, value) {
 // نداء Gemini
 // ---------------------------------------------------------------
 
-async function askGemini(options) {
+async function askGemini(options, now) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     const err = new Error("GEMINI_API_KEY is not set");
@@ -200,7 +213,7 @@ async function askGemini(options) {
   try {
     response = await ai.models.generateContent({
       model: MODEL,
-      contents: framePrompt(options),
+      contents: framePrompt(options, now),
       config: {
         systemInstruction: FRAME_SYSTEM,
         responseMimeType: "application/json",
@@ -302,13 +315,13 @@ export async function POST(request) {
   const parsed = validate(body);
   if (!parsed.ok) return fail(400, parsed.message);
 
-  const { options, refine } = parsed.value;
+  const { options, now, refine } = parsed.value;
 
   // وضع التكيّف: نفس المسار لأنه نفس السقف ونفس الكاش ونفس النموذج،
   // ومخرَجه جزء من نفس الشجرة. الفشل هنا يرجّع 200 بـ deeper=null —
   // تحسين اختياري ما يستاهل رسالة خطأ ولا شاشة انتظار.
   if (refine) {
-    const key = refineKey(options, refine);
+    const key = refineKey(options, now, refine);
     const cached = readCache(key);
     if (cached) {
       return Response.json({ ok: true, deeper: cached, source: "cache" });
@@ -335,7 +348,7 @@ export async function POST(request) {
   // لأنه هو الذي يكلّف مالاً، وضربة كاش ما تكلّف شيئاً. والترتيب
   // المعكوس يؤذي مستخدماً حقيقياً: الإطار يُطلق عند خروج المؤشر من
   // حقل الخيار الثاني، فدخول وخروج متكرر يستهلك حصته على ردود مجانية.
-  const key = cacheKey(options);
+  const key = cacheKey(options, now);
   const cached = readCache(key);
   if (cached) {
     return Response.json({ ok: true, frame: cached, source: "cache" });
@@ -345,7 +358,7 @@ export async function POST(request) {
 
   let frame;
   try {
-    frame = await askGemini(options);
+    frame = await askGemini(options, now);
   } catch (err) {
     console.error(`[api/frame] failed (${err.code ?? "UNKNOWN"}):`, err);
 
